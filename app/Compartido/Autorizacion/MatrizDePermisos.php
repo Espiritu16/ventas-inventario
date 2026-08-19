@@ -2,6 +2,7 @@
 
 namespace App\Compartido\Autorizacion;
 
+use App\Compartido\Interfaz\RegistroDeComponentesLivewire;
 use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Routing\Route;
 use Livewire\Mechanisms\HandleRequests\EndpointResolver;
@@ -59,13 +60,20 @@ final class MatrizDePermisos
     /**
      * Componentes que pueden invocarse sin sesión — lista cerrada.
      *
-     * Hoy vacía. El de inicio de sesión, único previsto, llega con S-01-F.
+     * Se declaran por su clase, y el nombre con que se invocan se deriva de
+     * la misma fuente que los registra: si se escribiera la cadena a mano,
+     * un renombre dejaría la declaración apuntando a un componente
+     * inexistente sin que nada fallara, y el control se apagaría en silencio.
+     *
+     * El de inicio de sesión es el único previsto, y lo construye S-01-F.
      * Agregar una entrada es decisión de Arquitectura, nunca del sprint que
      * la necesita.
      *
-     * @var array<int, string>
+     * @var array<int, class-string>
      */
-    private const COMPONENTES_SIN_SESION = [];
+    private const COMPONENTES_SIN_SESION = [
+        'App\\Dominios\\Usuarios\\Livewire\\InicioDeSesion',
+    ];
 
     /** Matriz de permisos, filas del actor Anónimo. */
     private const ANONIMAS = [
@@ -100,10 +108,11 @@ final class MatrizDePermisos
      * Asset estático de Livewire: solo GET, solo bajo el prefijo y solo con
      * las extensiones declaradas.
      *
-     * Se reconoce por patrón y no por lista enumerada porque el paquete sirve
-     * `livewire.js` en desarrollo y `livewire.min.js` en producción: una
-     * lista que omitiera el minificado habría dejado de cargar Livewire
-     * únicamente en producción, que es donde menos se ve.
+     * Se reconoce por patrón y no por lista enumerada porque el conjunto
+     * exacto de assets depende de la versión de Livewire: hoy son
+     * `livewire.js` y dos mapas de origen, y una actualización del paquete
+     * puede sumar o renombrar alguno. Una lista enumerada que se quedara
+     * corta dejaría de cargar Livewire sin que nada más fallara.
      */
     private static function esAssetDeLivewire(string $identificador): bool
     {
@@ -126,7 +135,12 @@ final class MatrizDePermisos
 
     public static function componentePuedeInvocarseSinSesion(string $componente): bool
     {
-        return in_array($componente, self::COMPONENTES_SIN_SESION, true);
+        $abiertos = array_map(
+            fn (string $clase) => RegistroDeComponentesLivewire::nombreDe($clase),
+            self::COMPONENTES_SIN_SESION
+        );
+
+        return in_array($componente, $abiertos, true);
     }
 
     public static function tieneReglaDeclarada(string $identificador): bool

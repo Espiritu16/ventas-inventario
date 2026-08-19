@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Autorizacion;
 
+use App\Compartido\Autorizacion\MatrizDePermisos;
+use App\Compartido\Interfaz\RegistroDeComponentesLivewire;
 use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Mechanisms\HandleRequests\EndpointResolver;
@@ -43,10 +45,10 @@ final class RutasDeLivewireTest extends TestCase
     }
 
     /**
-     * Ningún componente está declarado accesible sin sesión todavía: el de
-     * inicio de sesión llega con S-01-F. Hasta entonces, ninguno pasa.
+     * Un componente que no está en la lista cerrada no se invoca sin sesión,
+     * aunque exista y esté registrado.
      */
-    public function test_ningun_componente_se_invoca_sin_sesion_todavia(): void
+    public function test_un_componente_fuera_de_la_lista_no_se_invoca_sin_sesion(): void
     {
         $snapshot = json_encode(['memo' => ['name' => 'usuarios.humo-de-instalacion']]);
 
@@ -63,17 +65,62 @@ final class RutasDeLivewireTest extends TestCase
         $this->assertNotSame(403, $respuesta->status());
     }
 
-    public function test_la_subida_de_archivos_no_esta_autorizada(): void
+    /**
+     * Se comprueba el código de la taxonomía y no solo el status: un 403 lo
+     * puede devolver el framework por su cuenta, y entonces la prueba pasaría
+     * sin que nuestro control se hubiera ejecutado. Ya ocurrió una vez con
+     * `/storage`.
+     */
+    public function test_la_subida_de_archivos_no_esta_autorizada_ni_para_el_administrador(): void
     {
         $this->actingAs(Usuario::factory()->administrador()->create())
             ->postJson($this->ruta('upload-file'))
-            ->assertStatus(403);
+            ->assertStatus(403)
+            ->assertJsonPath('error.codigo', 'NO_AUTORIZADO');
+    }
+
+    public function test_la_subida_de_archivos_rechaza_sin_sesion(): void
+    {
+        $this->postJson($this->ruta('upload-file'))
+            ->assertStatus(401)
+            ->assertJsonPath('error.codigo', 'NO_AUTENTICADO');
+    }
+
+    public function test_la_vista_previa_no_esta_autorizada_ni_para_el_administrador(): void
+    {
+        $this->actingAs(Usuario::factory()->administrador()->create())
+            ->getJson($this->ruta('preview-file/lo-que-sea.pdf'))
+            ->assertStatus(403)
+            ->assertJsonPath('error.codigo', 'NO_AUTORIZADO');
+    }
+
+    public function test_la_vista_previa_rechaza_sin_sesion(): void
+    {
+        $this->getJson($this->ruta('preview-file/lo-que-sea.pdf'))
+            ->assertStatus(401)
+            ->assertJsonPath('error.codigo', 'NO_AUTENTICADO');
     }
 
     public function test_la_ruta_de_almacenamiento_no_esta_autorizada(): void
     {
         $this->actingAs(Usuario::factory()->administrador()->create())
             ->getJson('/storage/lo-que-sea.txt')
-            ->assertStatus(403);
+            ->assertStatus(403)
+            ->assertJsonPath('error.codigo', 'NO_AUTORIZADO');
+    }
+
+    /**
+     * El componente de inicio de sesión está declarado accesible sin sesión,
+     * y su nombre se deriva de la clase que fija la gobernanza. Lo construye
+     * S-01-F; acá se comprueba que la declaración ya lo reconoce, para que ese
+     * sprint no se encuentre con el endpoint cerrado.
+     */
+    public function test_el_componente_de_inicio_de_sesion_esta_declarado_accesible_sin_sesion(): void
+    {
+        $this->assertTrue(MatrizDePermisos::componentePuedeInvocarseSinSesion(
+            RegistroDeComponentesLivewire::nombreDe('App\Dominios\Usuarios\Livewire\InicioDeSesion')
+        ));
+
+        $this->assertFalse(MatrizDePermisos::componentePuedeInvocarseSinSesion('usuarios.humo-de-instalacion'));
     }
 }

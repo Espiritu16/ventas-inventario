@@ -28,15 +28,28 @@ final class RegistroDeComponentesLivewire
             $componente = basename($archivo, '.php');
 
             Livewire::component(
-                self::nombre($dominio, $componente),
+                self::nombreDe("App\\Dominios\\{$dominio}\\Livewire\\{$componente}"),
                 "App\\Dominios\\{$dominio}\\Livewire\\{$componente}"
             );
         }
     }
 
-    private static function nombre(string $dominio, string $componente): string
+    /**
+     * Nombre con el que se invoca un componente, derivado de su clase.
+     *
+     * Es público para que cualquiera que necesite referirse a un componente
+     * —por ejemplo la matriz de permisos— lo derive de la misma fuente que lo
+     * registra, en vez de repetir la cadena a mano y arriesgarse a que las
+     * dos se desalineen sin que nada falle.
+     */
+    public static function nombreDe(string $clase): string
     {
-        return self::kebab($dominio).'.'.self::kebab($componente);
+        $partes = explode('\\', $clase);
+        $componente = array_pop($partes);
+        array_pop($partes);           // "Livewire"
+        $dominio = array_pop($partes);
+
+        return self::kebab((string) $dominio).'.'.self::kebab((string) $componente);
     }
 
     private static function kebab(string $texto): string
