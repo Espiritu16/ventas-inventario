@@ -3,9 +3,9 @@ project: ventas-inventario
 source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
 active_phase: S-00
-active_status: LISTO
+active_status: EN_PROGRESO
 last_completed_phase: null
-bootstrap_status: PENDIENTE
+bootstrap_status: EN_PROGRESO
 planning_horizon_status: COMPLETA
 current_rfc_batch: []
 planning_scope: [RF-001, RF-002, RF-003, RF-004, RF-005, RF-006, RF-007, RF-008, RF-009, RF-010, RF-011, RF-012, RF-013, RF-014, RF-015, RF-016, RF-017, RF-018, RF-019, RF-020, RF-021, RNF-001, RNF-002, RNF-003, RNF-004, RNF-005, RNF-006, RNF-007, RNF-008, RNF-010, RNF-011, RNF-012, RNF-013, RNF-014]
@@ -19,7 +19,9 @@ sprints:
   - id: S-00
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: LISTO
+    execution_status: EN_PROGRESO
+    branch: sprint/S-00
+    base_sha: 99cd0618ec05f8386202813a2efa232724ec0bd8
     depends_on: []
     parallelizable_with: []
   - id: S-01-B
@@ -139,21 +141,36 @@ sprints:
 - Roadmap del horizonte aprobado: 19 sprints en 9 olas, con matriz de cobertura completa.
 - Los 19 RFC redactados y aprobados por el usuario el 2026-08-19. Planificación del horizonte COMPLETA.
 - Repositorio publicado en https://github.com/Espiritu16/ventas-inventario
+- Ejecución iniciada el 2026-08-19. Los cinco chats de rol están abiertos y conectados por canal directo con el Coordinador.
+- S-00 en curso en `sprint/S-00`, desde `main@99cd061`. UT-01, UT-03 y UT-04 verificadas; UT-02 y UT-05 quedaron detenidas por una precondición de entorno (rol y bases de PostgreSQL locales), resuelta por el usuario el mismo día y verificada por el Coordinador conectando con el rol de la aplicación contra `ventas_inventario` y `ventas_inventario_test`.
+
+## Decisiones tomadas durante la ejecución
+
+| # | Fecha | Qué se decidió | Quién lo aprobó | Dónde quedó |
+|---|---|---|---|---|
+| 1 | 2026-08-19 | Política de ramas de dos niveles: `sprint/<id>` → `develop` → `main`. Antes se integraba directo a la protegida | Kevin Espíritu | `AGENTS.md`, secciones "Política de ramas" y "CI por rama" |
+| 2 | 2026-08-19 | La instalación de Livewire se ubica en S-01-B como UT-06. Ningún RFC del horizonte la declaraba, pese a que la gobernanza, ADR-0005 y los contratos la dan por existente | Kevin Espíritu | `docs/rfcs/S-01-B.md`, enmienda y UT-06 |
+
+## Pendientes de planificación
+
+- **Estado externo compartido en la ola 3.** El roadmap declara S-01-F, S-02-B y S-03-B en paralelo, y los tres correrían `php artisan test` contra la misma base `ventas_inventario_test`. Un `git worktree` aísla archivos y ramas, no la base de datos, el puerto ni la caché. Antes de habilitar esa ola hay que decidir explícitamente si se separa (una base por carril) o se serializa (turnos coordinados), y dejarlo escrito acá. Sin eso, el conflicto aparece a mitad de la validación disfrazado de fallo intermitente del código. Detectado por el chat de Frontend el 2026-08-19.
+- **Árbol de trabajo único.** Las cinco sesiones comparten `/Users/sankef/ventas-inventario`. Hoy funciona porque S-00 corre solo, pero cualquier ola con dos sprints simultáneos exige worktrees dedicados por carril, acordados antes del despacho.
 
 ## Bloqueantes
 - Ninguno para planificar ni para ejecutar. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
 - Condición futura, no bloqueante: el RUC real, la razón social, la dirección fiscal, el usuario SOL real y el certificado digital comprado se necesitan solo para el paso a producción, que exige autorización explícita del usuario. Ver `docs/integraciones/sunat.md`.
 
 ## Siguiente fase habilitada
-- S-00 (fundación técnica): `Planificación: LISTO` y `Ejecución: LISTO`. Todos los demás sprints quedan en `PLANIFICADO` hasta que sus dependencias se completen.
-- La ejecución no ha comenzado y requiere una instrucción explícita del usuario.
+- S-00 (fundación técnica) en `EN_PROGRESO`, rama `sprint/S-00`. Cierra cuando Backend reporte su `final_sha` con las cinco unidades verificadas y QA emita `APROBADO` sobre ese SHA.
+- Al cerrar S-00 se habilita la **ola 2: S-01-B y S-DO-01 en paralelo**, lo que abre el turno del chat de DevOps. Frontend sigue esperando: su primer sprint, S-01-F, depende de S-01-B, no de S-00.
+- Todos los demás sprints quedan en `PLANIFICADO` hasta que sus dependencias se completen.
 
 ## Referencias
 - Roadmap: este documento, sección "Roadmap del horizonte"
 - Prompts de apertura de los chats de rol: docs/chats-de-rol.md
 - Contrato entre backend y frontend: docs/contratos/servicios-de-dominio.md
 - Handoffs de sprint: docs/handoffs/
-- Handoff activo: ninguno — no hay ejecución iniciada
+- Handoff activo: docs/handoffs/S-00.md, en la rama `sprint/S-00`
 - Decisiones y contratos: docs/decisiones/, docs/contratos/, docs/persistencia/modelo.md
 
 ---

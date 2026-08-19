@@ -17,7 +17,7 @@
 
 ## Vigencia de gobernanza
 - Estado de gobernanza: APROBADO
-- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-19 tras separar el rol de implementación en backend y frontend
+- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-19 tras adoptar la política de ramas de dos niveles (`sprint/<id>` → `develop` → `main`)
 - Fecha de aprobación: 2026-08-19
 
 ## Roles activos en este repositorio
@@ -76,14 +76,18 @@ que se ejecuta solo, sin nada en paralelo.
 
 ## Política de ramas
 - protegida: `main`
-- integración: ninguna, se integra directo a la protegida
-- trabajo: `sprint/<id>`, `feature/<nombre>`, `fix/<nombre>`
+- integración: `develop` — nace de `main`; es la rama de la que todo rol parte y contra la que se integra
+- trabajo: `sprint/<id>`, `feature/<nombre>`, `fix/<nombre>`; gobernanza: `gobernanza/<tema>`
 - Remoto: `origin` → https://github.com/Espiritu16/ventas-inventario (público)
-- Entrega de Implementación: pull request desde la rama de trabajo hacia `main`, con el `final_sha` y el handoff referenciados en su descripción
-- Gate antes de integrar: QA APROBADO sobre ese `final_sha` cuando el sprint requiere QA; solo el Coordinador integra y cierra
+- Entrega de Implementación: pull request desde la rama de trabajo hacia `develop`, con el `final_sha` y el handoff referenciados en su descripción. Ningún pull request de sprint apunta a `main`
+- Gate antes de integrar a `develop`: QA APROBADO sobre ese `final_sha` cuando el sprint requiere QA; solo el Coordinador integra y cierra
+- Promoción `develop` → `main`: paso separado y explícito, en lote, nunca automático por sprint. Exige que los checks obligatorios de `main` pasen
+- Ramas de gobernanza: las integra el Coordinador directo a `develop`, sin esperar un sprint; son el mecanismo por el que una enmienda de `AGENTS.md` se vuelve visible antes de despachar
+- Despacho con dos anclas: todo despacho de implementación o validación indica el `final_sha` del código **y** `gobierna: develop@<sha>`, el commit donde vive la gobernanza vigente. Una rama de sprint creada antes de una enmienda lleva el `AGENTS.md` viejo en su árbol; el segundo ancla es lo que evita que quien valide derive la política obsoleta
 
 ## CI por rama
-- `main`: previsto en S-DO-02: workflow de GitHub Actions que corre lint, pruebas unitarias, pruebas de integración y build en cada pull request.
+- `develop`: previsto en S-DO-02: workflow de GitHub Actions que corre lint, pruebas unitarias, pruebas de integración y build en cada pull request hacia esta rama.
+- `main`: previsto en S-DO-02: los mismos checks, obligatorios antes de promover `develop` a `main`.
 - Hasta que ese sprint se ejecute, la verificación es local y obligatoria antes de abrir el pull request: los comandos declarados abajo deben pasar y su resultado se registra en el handoff.
 
 ## Convención de commits
