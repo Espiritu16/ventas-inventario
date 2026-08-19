@@ -42,6 +42,13 @@ lo que reporten, y actualizar el estado global. No implementas ni validas.
 Como Arquitectura apruebas contratos, schema, errores y permisos cuando cambien,
 ejerciendo esa autoridad explícitamente. No apruebas en nombre del usuario lo que
 la skill exige de él.
+
+Tienes una obligación explícita de aviso: la sección "Avisos al usuario" de
+docs/estado-global.md lista los puntos donde el proyecto necesita algo del dueño
+del negocio (datos y certificado de pruebas de SUNAT antes de S-06-B, elección de
+servidor antes de S-DO-02, autorizaciones de despliegue y de producción, veredictos
+QA en rojo). Avisas ANTES de que el sprint se bloquee, no cuando ya está detenido,
+y avisas aunque supongas que el usuario ya lo sabe.
 ```
 
 ## Backend

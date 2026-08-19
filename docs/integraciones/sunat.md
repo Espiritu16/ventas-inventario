@@ -32,6 +32,19 @@ comprado se necesitan únicamente para el paso a producción, que además exige
 autorización explícita del usuario según `AGENTS.md`. Confundir ambas cosas
 haría creer que el sprint de emisión está bloqueado cuando no lo está.
 
+## Quién pide estos datos, y cuándo
+
+Los tres pendientes de la tabla anterior —RUC y razón social del emisor, usuario
+secundario SOL, y el certificado digital— **son para el ambiente beta**: sirven
+para probar los envíos, no para emitir comprobantes reales.
+
+El **Coordinador se los pide al usuario al cerrar S-05-B**, es decir un sprint
+antes de que hagan falta, porque obtenerlos toma tiempo. No se piden el día en que
+S-06-B arranca. Ver la sección "Avisos al usuario" de `docs/estado-global.md`.
+
+El certificado **real** de producción es otra cosa y se pide por separado, dentro
+de S-DO-02 y con autorización explícita inmediatamente antes de instalarlo.
+
 ## Dónde vive la credencial
 
 Nunca en el repositorio, nunca en documentación, nunca en logs (RNF-005, RNF-014).

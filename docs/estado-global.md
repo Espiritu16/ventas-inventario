@@ -231,3 +231,31 @@ que se ejecuta solo.
 7. **Ola 7** — S-05-F, S-06-F y S-09-B en paralelo.
 8. **Ola 8** — S-QA-01.
 9. **Ola 9** — S-DO-02.
+
+---
+
+# Avisos al usuario — obligación del Coordinador
+
+Hay puntos del proyecto que **no se pueden resolver sin el dueño del negocio**.
+El Coordinador es responsable de avisarle **antes** de que el sprint se bloquee,
+no cuando ya está detenido. Si un sprint llega a su turno y falta uno de estos
+datos, se marca `BLOQUEADO` y el motivo se reporta explícitamente al usuario.
+
+Ningún rol asume, inventa ni deja "para después" uno de estos puntos, y ninguno
+se salta el aviso porque "seguro lo tiene". El aviso se da aunque el Coordinador
+crea que el usuario ya lo sabe.
+
+| Cuándo avisar | Qué se necesita del usuario | Qué se bloquea si falta |
+|---|---|---|
+| Al cerrar **S-05-B**, antes de habilitar S-06-B | RUC y razón social del emisor, dirección fiscal, usuario secundario SOL y su clave, y el **certificado digital de pruebas**. Todo esto es para el ambiente **beta**: son datos de prueba, no el certificado real de producción | S-06-B completo, y con él S-05-F. El resto del proyecto sigue avanzando |
+| Al cerrar **S-QA-01**, antes de habilitar S-DO-02 | Decisión del proveedor y servidor donde vivirá el sistema, con PostgreSQL disponible. Si el proveedor elegido no lo ofrece, hay que reabrir el ADR-0001 antes de continuar | S-DO-02 completo |
+| Dentro de **S-DO-02**, antes de cada operación | Autorización explícita para desplegar, para instalar el **certificado digital real**, y para cambiar el ambiente de SUNAT de `beta` a `produccion`. Se pide inmediatamente antes de cada acción, nunca por adelantado ni en bloque | La operación puntual, no el sprint |
+| Antes de cualquier `git push` que no esté pre-autorizado | Confirmación puntual en el chat | El push |
+| Cuando QA emite **RECHAZADO** o **BLOQUEADO** | Que el usuario sepa qué falló y decida si se corrige, se posterga o se acepta el riesgo | El cierre del sprint |
+| Cuando un cambio invalida un documento aprobado | Reaprobación del documento afectado (RFC, contrato, `AGENTS.md`) | Los sprints que dependan de ese documento |
+| Cuando aparezca una decisión que cambie alcance, costo o riesgo | Su decisión, con las alternativas explicadas antes de preguntar | Lo que dependa de esa decisión |
+
+**Sobre el aviso de SUNAT en particular**, que es el más previsible: el Coordinador
+lo anuncia al cerrar S-05-B, no al empezar S-06-B. Conseguir un certificado de
+pruebas y un usuario SOL toma tiempo, y avisar el mismo día en que hace falta
+significa detener el proyecto por trámite.
