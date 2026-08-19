@@ -170,7 +170,7 @@ validación.
 | S-05-B | implementation (backend) | Venta registrada en una transacción: descuento FEFO con reparto por lote, cálculo de IGV, reserva de correlativo y comprobante en estado pendiente | RF-011, RF-012, RF-013, RF-014, MIG-007, MIG-008, RNF-003, contratos/ventas | S-04-B | S-03-F | docs/rfcs/S-05-B.md |
 | S-06-B | implementation (backend) | Emisión electrónica real contra el ambiente beta de SUNAT: XML firmado, envío en segundo plano con reintentos, constancia CDR guardada, reenvío manual y resumen diario de boletas | RF-015, RF-016, RF-017, ADR-0002, ADR-0003, integraciones/sunat, contratos/comprobantes | S-05-B | S-07-B, S-08-B, S-04-F | docs/rfcs/S-06-B.md |
 | S-07-B | implementation (backend) | Consultas de alertas de vencimiento y stock bajo, y reportes de ventas y de utilidad con costo real por lote | RF-018, RF-019, RF-020, RF-021, contratos/inventario, contratos/ventas | S-05-B | S-06-B, S-08-B, S-04-F | docs/rfcs/S-07-B.md |
-| S-08-B | implementation (backend) | Registro de auditoría de operaciones sensibles y registro de errores con saneamiento de secretos | MIG-009, RNF-004, RNF-014, modelo (Auditoria, LogError) | S-04-B | S-06-B, S-07-B | docs/rfcs/S-08-B.md |
+| S-08-B | implementation (backend) | Política completa de auditoría aplicada a cada operación sensible, y registro de errores con saneamiento de secretos y canal independiente | RNF-004, RNF-014, modelo (Auditoria, LogError) | S-04-B | S-06-B, S-07-B | docs/rfcs/S-08-B.md |
 | S-01-F | implementation (frontend) | Base de la interfaz: layout, menú por rol, componentes reutilizables y pantalla de inicio de sesión | RF-001, RF-002, frontend/experiencia, frontend/integracion | S-01-B | S-02-B, S-03-B | docs/rfcs/S-01-F.md |
 | S-02-F | implementation (frontend) | Pantallas de catálogo, proveedores, clientes y usuarios, con sus validaciones en el momento de escribir | RF-002, RF-003, RF-004, RF-005, RF-010, frontend/experiencia | S-02-B, S-03-B, S-01-F | S-04-B | docs/rfcs/S-02-F.md |
 | S-03-F | implementation (frontend) | Pantallas de compra, consulta de inventario por lote, kardex y ajuste | RF-006, RF-007, RF-008, RF-009, frontend/experiencia | S-04-B, S-01-F | S-05-B | docs/rfcs/S-03-F.md |
@@ -195,13 +195,13 @@ validación.
 | RNF-001 (rendimiento) | S-09-B mide, S-QA-01 valida |
 | RNF-002 (disponibilidad ante SUNAT) | S-06-B implementa, S-QA-01 valida |
 | RNF-003 (integridad y concurrencia) | S-04-B y S-05-B implementan, S-QA-01 valida |
-| RNF-004 (trazabilidad) | S-08-B |
+| RNF-004 (trazabilidad) | S-01-B crea las tablas, cada sprint audita lo suyo, S-08-B cierra la política completa |
 | RNF-005 (custodia del certificado) | S-06-B implementa la alerta, S-DO-02 la custodia en el servidor |
 | RNF-006 (fecha, hora y moneda) | S-00 configura, cada sprint de dominio lo respeta, S-QA-01 valida |
 | RNF-007 (respaldo) | S-DO-02 |
 | RNF-008 (operación con teclado) | S-04-F implementa, S-09-B automatiza, S-QA-01 valida |
 | RNF-010 a RNF-014 (seguridad) | cada sprint las aplica; S-QA-01 las valida con `seguridad-validacion` |
-| MIG-001 a MIG-009 | S-01-B, S-02-B, S-03-B, S-04-B, S-05-B, S-06-B, S-08-B según su plan |
+| MIG-001 a MIG-009 | S-01-B (MIG-001 y MIG-009), S-02-B (MIG-002), S-03-B (MIG-003, MIG-006), S-04-B (MIG-004, MIG-005), S-05-B (MIG-007, MIG-008) |
 | Integración SUNAT | S-06-B |
 | AGENTS.md — lint, pruebas, build, gestor de paquetes (`previsto en S-00`) | S-00 |
 | AGENTS.md — comando E2E (hoy `no aplica`) | S-09-B lo define y lo vuelve real |

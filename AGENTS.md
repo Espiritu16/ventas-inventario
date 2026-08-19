@@ -12,13 +12,13 @@
 - Runtime y versión: previsto en sprint de fundación (S-00): PHP 8.5.x (verificado en el entorno local: 8.5.9) y la última versión estable de Laravel compatible, verificada contra la fuente oficial al fundar
 - Gestor de paquetes/build: Composer 2.10.2 (PHP) verificado en el entorno local; pnpm para los assets de frontend vía Vite — previsto en S-00
 - Persistencia/motor: previsto en S-00 — motor relacional con transacciones y bloqueo de fila (decisión pendiente de ADR: PostgreSQL o MySQL 8)
-- Estado global / roadmap: docs/estado-global.md — previsto en la planificación del horizonte
+- Estado global / roadmap: docs/estado-global.md
 - Handoffs de sprint: docs/handoffs/<id-sprint>.md — previsto en el primer sprint con entrega
 
 ## Vigencia de gobernanza
-- Estado de gobernanza: APROBADO
-- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com)
-- Fecha de aprobación: 2026-08-19
+- Estado de gobernanza: BORRADOR
+- Aprobado por: pendiente — revisión reabierta el 2026-08-19 por la incorporación del remoto en GitHub
+- Fecha de aprobación: pendiente
 
 ## Roles activos en este repositorio
 
@@ -57,11 +57,13 @@
 - protegida: `main`
 - integración: ninguna, se integra directo a la protegida
 - trabajo: `sprint/<id>`, `feature/<nombre>`, `fix/<nombre>`
-- Entrega de Implementación: rama local sin fusionar + `final_sha` + handoff (no hay remoto configurado todavía)
+- Remoto: `origin` → https://github.com/Espiritu16/ventas-inventario (público)
+- Entrega de Implementación: pull request desde la rama de trabajo hacia `main`, con el `final_sha` y el handoff referenciados en su descripción
 - Gate antes de integrar: QA APROBADO sobre ese `final_sha` cuando el sprint requiere QA; solo el Coordinador integra y cierra
 
 ## CI por rama
-- no aplica — sin pipeline configurado. Si se configura un remoto y CI, esta sección se completa en el sprint que lo introduzca y `AGENTS.md` vuelve a BORRADOR para reaprobación.
+- `main`: previsto en S-DO-02: workflow de GitHub Actions que corre lint, pruebas unitarias, pruebas de integración y build en cada pull request.
+- Hasta que ese sprint se ejecute, la verificación es local y obligatoria antes de abrir el pull request: los comandos declarados abajo deben pasar y su resultado se registra en el handoff.
 
 ## Convención de commits
 - Formato: `<tipo>(<alcance>): <descripción corta>`
@@ -70,7 +72,7 @@
 - Referenciar el sprint en el cuerpo: `Sprint: <id-sprint>`
 - Un commit = un cambio lógico coherente
 - Sin emojis salvo pedido explícito; sin línea `Co-Authored-By`
-- Prohibido: commit directo a `main` fuera del cierre de sprint que hace el Coordinador
+- Prohibido: commit directo a `main`; todo cambio de implementación pasa por pull request
 - Prohibido: `--force` push a `main` sin autorización explícita
 
 ## Comandos de verificación
