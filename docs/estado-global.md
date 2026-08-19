@@ -260,6 +260,27 @@ Esto no reemplaza el inventario de estado externo que hay que hacer en cada ola:
 base era un recurso compartido, no el único. Puertos, caché y directorios temporales
 se siguen inventariando por ola, mirando la máquina y no razonando sobre ella.
 
+## Ola 2 en curso — S-01-B rechazado en su primera validación (2026-08-19)
+
+QA rechazó `b4fbc35` por dos defectos bloqueantes, ambos acotados y ninguno
+estructural. El mecanismo de control de acceso quedó verificado a fondo: QA corrió
+ocho mutaciones sobre él —quitar rutas de las listas, quitar el middleware global,
+hacer que la autorización acepte siempre, abrir el patrón de assets a cualquier
+método— y la suite detectó las ocho.
+
+| ID | Qué falla | Severidad |
+|---|---|---|
+| QA-01 | Un administrador puede desactivarse a sí mismo enviando `activo: 0` o `"0"`. La guarda compara en estricto contra booleano y `validated()` devuelve el valor sin castear. Deja el sistema **sin administrador activo y sin forma de recuperarlo desde la aplicación**. `"0"` es lo que envía un checkbox de HTML, o sea el camino normal de la pantalla que construirá S-01-F | **Bloqueante**, alto |
+| QA-02 / SEG-01 | El login distingue por tiempo un correo inexistente: 392 ms contra 191 ms, razón 2.05x, medible por red. La mitigación introdujo la señal que quería borrar, porque genera el hash señuelo dentro de la petición y ejecuta dos bcrypt en vez de uno. Permite enumerar usuarios | **Bloqueante**, medio |
+| QA-03 | La lista de componentes accesibles sin sesión quedó vacía. **Error de secuencia mío**: fijé el nombre de la clase después de que Backend fijara su `final_sha` | No bloqueante |
+| QA-04 | Un comentario del código repite el dato sobre `livewire.min.js` que ya se corrigió en la gobernanza | No bloqueante |
+
+**SEG-02** — ver la enmienda de `docs/rfcs/S-08-B.md`.
+
+Método a tener en cuenta en S-DO-02: la suite Feature exige que `pnpm build` haya
+corrido antes, o cuatro pruebas fallan por falta del manifiesto de Vite. El orden de
+los pasos del workflow importa.
+
 ## Entradas obligatorias para S-DO-02
 
 Se registran acá, y no solo en el handoff de S-DO-01, porque son condiciones que
