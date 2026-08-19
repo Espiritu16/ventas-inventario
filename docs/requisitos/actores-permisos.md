@@ -23,6 +23,93 @@ aparezca en la matriz con su condición cumplida se trata como **denegada**.
 - Rol técnico: `sistema` (contexto de ejecución de job/comando, no una sesión de usuario)
 - Deriva de: no deriva de RF, es un actor técnico
 
+## Rutas de infraestructura
+
+Rutas que no exponen ningún recurso de negocio y por lo tanto no se modelan con un
+actor. Se declaran aquí **explícitamente** porque el control de acceso es
+deny-by-default (RNF-013): una ruta sin declaración se rechaza, y estas dos tienen
+que responder. Declararlas no es una excepción al mecanismo — es usarlo como
+corresponde, dejando por escrito lo que de otro modo sería una omisión silenciosa.
+
+| Ruta | Tratamiento | Por qué | Deriva de |
+|---|---|---|---|
+| `GET /up` | Pública, sin sesión y sin rol | Verificación de salud del propio framework. La consumen la orquestación de contenedores de S-DO-01 y el despliegue de S-DO-02, que no tienen sesión ni pueden tenerla. No expone datos: responde vivo o no vivo | RNF-002, S-DO-01, S-DO-02 |
+| `GET /` | Pública, redirige | Sin sesión redirige a `/login`; con sesión activa, a `/panel`. No entrega contenido propio, así que no hay nada que autorizar: la protección real vive en el destino | RF-001 |
+
+Decidido por Arquitectura el 2026-08-19, a raíz del desajuste que reportó
+`implementation-backend` al implementar UT-04 de S-01-B. Ninguna otra ruta puede
+tratarse así sin agregarse a esta tabla: la lista es cerrada, no un criterio general
+de "lo que parezca infraestructura".
+
+## Rutas que registra Livewire
+
+Livewire registra rutas propias al instalarse. Bajo deny-by-default se rechazarían
+todas, y con ellas dejaría de funcionar cualquier componente: el endpoint de
+actualización es por donde viajan **todas** las interacciones. El síntoma aparecería
+en el código de quien construye la pantalla, no acá, así que se declara antes de que
+eso ocurra.
+
+**El prefijo NO se declara como cadena literal, y tampoco se fija a un valor
+estático.** Livewire lo deriva de `APP_KEY`: `substr(hash('sha256', app.key .
+'livewire-endpoint'), 0, 8)`. Eso significa que es **distinto en cada instalación** —
+la máquina de quien implementa, la de quien valida, CI y el servidor tienen prefijos
+distintos. Una declaración con la cadena literal sería correcta solo donde se generó
+y dejaría de aplicar en todas las demás, en silencio.
+
+Fijarlo a un valor estático tampoco corresponde: el paquete lo deriva a propósito
+para que un escáner genérico no pueda apuntarle a una ruta conocida. Es oscuridad,
+no control de acceso, pero apagarla de rebote para resolver un problema de
+sincronización de documentos sería tomar una decisión de seguridad por el motivo
+equivocado.
+
+**Las rutas se declaran relativas al prefijo, y el prefijo se resuelve en cada
+petición desde la misma fuente que registra las rutas reales** (`EndpointResolver`
+del paquete). Así no hay dos valores que mantener iguales: hay uno solo, leído de
+donde nace. Una declaración que se deriva de la misma fuente que la ruta no puede
+desalinearse de ella.
+
+| Ruta (relativa al prefijo) | Tratamiento | Por qué |
+|---|---|---|
+| `GET` de assets estáticos bajo el prefijo — `*.js`, `*.css`, `*.map` | Pública | Assets estáticos. No tocan datos ni estado. Mismo criterio que `GET /up`. **Se declara por patrón, no uno por uno**: en Livewire 4.4.1 el paquete registra `livewire.js` y dos mapas de código, pero ese conjunto es un detalle interno del paquete y puede cambiar entre versiones. Una lista enumerada tendría que reeditarse en cada actualización, y el modo de fallo de olvidarlo es que un asset deje de cargar sin que nada lo anuncie |
+| `POST /update` | **Exige sesión**, salvo para los componentes de la lista de abajo | Ver el razonamiento |
+| `POST /upload-file` | **No autorizada** — se rechaza | Ningún RF del horizonte pide subir archivos. Una superficie que nadie usa no se deja abierta |
+| `GET /preview-file/{f}` | **No autorizada** — se rechaza | Ídem |
+| `GET/PUT /storage/{path}` (ruta absoluta, del framework) | **No autorizada** — se rechaza | Ruta del driver de disco local. Ningún RF la necesita hoy |
+
+### Por qué `POST /_livewire/update` no es infraestructura
+
+Es el canal por el que se invoca cualquier método público de cualquier componente
+montado. Declararlo público a secas no sería una fila más en la tabla: movería la
+garantía de control de acceso desde este documento hacia el comportamiento interno
+de un paquete de terceros. Livewire efectivamente reaplica el middleware de la
+petición original, pero entonces la protección dejaría de ser nuestra y pasaría a
+depender de que ese comportamiento no cambie en una versión futura.
+
+Por eso el control se ejerce en nuestra capa: el endpoint exige sesión activa, y solo
+los componentes declarados abajo pueden invocarse sin ella. Esto no reemplaza lo que
+Livewire hace por su cuenta; se suma.
+
+### Componentes accesibles sin sesión — lista cerrada
+
+| Componente | Por qué | Deriva de |
+|---|---|---|
+| `App\Dominios\Usuarios\Livewire\InicioDeSesion` | Es el único que, por definición, se usa antes de tener sesión | RF-001 |
+
+Agregar un componente a esta lista es una decisión de Arquitectura, nunca del sprint
+que lo necesita. Un componente que no esté acá y se invoque sin sesión se rechaza.
+
+**El nombre de la clase queda fijado acá, por Arquitectura, antes de que exista.** La
+lista se materializa en `app/Compartido/Autorizacion/MatrizDePermisos.php`, que es
+ruta de `implementation-backend`; `implementation-frontend` crea el componente pero
+no puede declararlo. Sin esta decisión anticipada, S-01-F quedaría bloqueado su
+primer día por el mismo desajuste de rutas que ya obligó a asignar
+`routes/backend.php`. S-01-B deja la entrada declarada por adelantado y S-01-F debe
+crear el componente **con ese nombre exacto**: si necesita otro, escala a
+Arquitectura, no lo renombra.
+
+Decidido por Arquitectura el 2026-08-19, a partir del hallazgo que reportó
+`implementation-backend` al instalar Livewire en UT-06 de S-01-B.
+
 ## Matriz de permisos
 
 | Actor | Rol técnico | Recurso/Operación | Acción | Condición/alcance | Permitido | Deriva de |
