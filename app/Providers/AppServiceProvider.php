@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Compartido\Interfaz\RegistroDeComponentesLivewire;
 use App\Compartido\Persistencia\GrammarPostgresConZonaHoraria;
 use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Database\PostgresConnection;
@@ -26,5 +27,7 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
         });
+
+        RegistroDeComponentesLivewire::registrar(app_path('Dominios'));
     }
 }
