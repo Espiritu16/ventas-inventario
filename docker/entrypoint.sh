@@ -43,10 +43,18 @@ fi
 
 if [[ "${PREPARAR_ENTORNO:-0}" == "1" ]]; then
     # --- Dependencias de PHP -------------------------------------------------
-    if [[ ! -f vendor/autoload.php ]]; then
-        registrar "Instalando dependencias de Composer (primera vez, tarda un rato)."
-        composer install --no-interaction --prefer-dist
-    fi
+    #
+    # Se ejecuta SIEMPRE, no solo cuando falta `vendor/`. La primera versión
+    # preguntaba si ya existía y se lo saltaba, y eso rompía la promesa del
+    # sprint: al cambiar de rama o traer código nuevo, el entorno seguía
+    # corriendo con las dependencias de antes. Dos personas con el mismo commit
+    # obtenían resultados distintos según cuándo hubieran levantado por primera
+    # vez, que es justo lo contrario de reproducible.
+    #
+    # Cuesta poco: `composer install` compara con composer.lock y no hace nada
+    # si ya coincide.
+    registrar "Sincronizando dependencias de Composer con composer.lock."
+    composer install --no-interaction --prefer-dist
 
     # --- Clave de la aplicación ----------------------------------------------
     #
@@ -77,16 +85,20 @@ if [[ "${PREPARAR_ENTORNO:-0}" == "1" ]]; then
     # ahí, así que acá no es opcional ni queda a cargo de quien levanta el
     # entorno.
     #
+    # También se ejecuta siempre, y acá el motivo es más serio que en Composer.
+    # Unos assets viejos no rompen nada de forma visible: la página carga y el
+    # estilo simplemente no está. Eso no se diagnostica, se sufre — y le caería
+    # encima al sprint que construya las pantallas. Un entorno que sirve el CSS
+    # de hace tres commits es peor que uno que falla.
+    #
     # --store-dir no es un detalle: pnpm guarda su almacén en el mismo sistema de
     # archivos que node_modules para poder enlazarlo en vez de copiarlo, y como
     # node_modules vive en un volumen, sin esto pnpm deduce que el sistema de
     # archivos correcto es el del proyecto montado y deja un `.pnpm-store` de
     # decenas de megas dentro del repositorio de quien programa.
-    if [[ ! -f public/build/manifest.json ]]; then
-        registrar "Instalando dependencias de Node y compilando los assets."
-        pnpm install --frozen-lockfile --store-dir /app/node_modules/.pnpm-store
-        pnpm build
-    fi
+    registrar "Sincronizando dependencias de Node y compilando los assets."
+    pnpm install --frozen-lockfile --store-dir /app/node_modules/.pnpm-store
+    pnpm build
 
     # --- Migraciones ---------------------------------------------------------
     #
