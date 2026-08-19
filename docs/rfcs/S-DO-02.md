@@ -4,8 +4,8 @@
 - Alcance de este sprint: poner el sistema en el servidor y dejarlo operable — integración continua en cada pull request, despliegue reproducible, respaldo diario **probado**, verificación de salud, recolección de logs y procedimiento de reversión. **Explícitamente no**: enviar comprobantes al ambiente de producción de SUNAT ni instalar el certificado real; eso exige autorización explícita del dueño del negocio, por separado.
 - Documentos relacionados: RNF-002, RNF-005, RNF-007, RNF-014, AGENTS.md (operación DevOps/Release), ADR-0001, ADR-0003
 - Contratos que toca: ninguno
-- Estado: propuesto
-- Aprobado por: pendiente — fecha: pendiente
+- Estado: aprobado
+- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — fecha: 2026-08-19
 
 ## Unidades de trabajo
 | ID | Resultado observable | Deriva de | Depende de | Paralelizable con | Interfaz fijada | Criterio de cierre |

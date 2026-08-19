@@ -11,9 +11,9 @@
 - Stack/framework: PHP + Laravel + Livewire + Tailwind CSS; Greenter para emisión electrónica SUNAT — fuente: decisión del usuario en la sesión de diseño (2026-08-19)
 - Runtime y versión: previsto en sprint de fundación (S-00): PHP 8.5.x (verificado en el entorno local: 8.5.9) y la última versión estable de Laravel compatible, verificada contra la fuente oficial al fundar
 - Gestor de paquetes/build: Composer 2.10.2 (PHP) verificado en el entorno local; pnpm para los assets de frontend vía Vite — previsto en S-00
-- Persistencia/motor: previsto en S-00 — motor relacional con transacciones y bloqueo de fila (decisión pendiente de ADR: PostgreSQL o MySQL 8)
+- Persistencia/motor: PostgreSQL, versión estable vigente verificada al fundar — decidido en ADR-0001; la instalación concreta se materializa en S-00
 - Estado global / roadmap: docs/estado-global.md
-- Handoffs de sprint: docs/handoffs/<id-sprint>.md — previsto en el primer sprint con entrega
+- Handoffs de sprint: docs/handoffs/<id-sprint>.md — el primero se crea al cerrar S-00; lo produce el proceso de cierre de sprint, no una unidad de trabajo del RFC
 
 ## Vigencia de gobernanza
 - Estado de gobernanza: APROBADO
@@ -82,7 +82,7 @@
 - E2E: no aplica — sin herramienta E2E decidida; se reevalúa cuando exista la pantalla de caja
 - Accesibilidad: previsto en S-09-B: recorrido completo de la venta operable solo con teclado, verificado de forma automatizada (RNF-008)
 - Build: previsto en S-00: `pnpm build`
-- Otros RNF: previsto en el sprint de emisión electrónica: envío de comprobante contra el ambiente **beta** de SUNAT con verificación de CDR
+- Otros RNF: previsto en S-06-B: envío de comprobante contra el ambiente **beta** de SUNAT con verificación de CDR. Rendimiento (RNF-001) y operación con teclado (RNF-008): previsto en S-09-B
 
 ## Validación QA
 - Entorno autorizado: local, con base de datos de pruebas dedicada
