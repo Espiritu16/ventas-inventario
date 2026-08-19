@@ -9,9 +9,9 @@
 - Identificador canónico del repositorio: ventas-inventario
 - Tipo de repositorio: fullstack (backend Laravel + UI Blade/Livewire en el mismo repositorio)
 - Stack/framework: PHP + Laravel + Livewire + Tailwind CSS; Greenter para emisión electrónica SUNAT — fuente: decisión del usuario en la sesión de diseño (2026-08-19)
-- Runtime y versión: previsto en sprint de fundación (S-00): PHP 8.5.x (verificado en el entorno local: 8.5.9) y la última versión estable de Laravel compatible, verificada contra la fuente oficial al fundar
-- Gestor de paquetes/build: Composer 2.10.2 (PHP) verificado en el entorno local; pnpm para los assets de frontend vía Vite — previsto en S-00
-- Persistencia/motor: PostgreSQL, versión estable vigente verificada al fundar — decidido en ADR-0001; la instalación concreta se materializa en S-00
+- Runtime y versión: PHP 8.5.9 y Laravel v13.26.1 (esqueleto `laravel/laravel` v13.10.0) — verificados al fundar en S-00 contra la fuente oficial y `composer.lock`, no recordados
+- Gestor de paquetes/build: Composer 2.10.2 (PHP) y pnpm 11.22.0 sobre Node 24.19.0 para los assets vía Vite 8.2.1 — verificados al fundar en S-00
+- Persistencia/motor: PostgreSQL 18.3, verificado al fundar en S-00 — decidido en ADR-0001
 - Estado global / roadmap: docs/estado-global.md
 - Handoffs de sprint: docs/handoffs/<id-sprint>.md — el primero se crea al cerrar S-00; lo produce el proceso de cierre de sprint, no una unidad de trabajo del RFC
 
@@ -101,12 +101,12 @@ que se ejecuta solo, sin nada en paralelo.
 - Prohibido: `--force` push a `main` sin autorización explícita
 
 ## Comandos de verificación
-- Lint: previsto en S-00: `./vendor/bin/pint --test`
-- Tests unitarios/componentes: previsto en S-00: `php artisan test --testsuite=Unit`
-- Integración/contrato: previsto en S-00: `php artisan test --testsuite=Feature`
+- Lint: `./vendor/bin/pint --test` — real y en verde desde S-00
+- Tests unitarios/componentes: `php artisan test --testsuite=Unit` — real y en verde desde S-00
+- Integración/contrato: `php artisan test --testsuite=Feature` — real y en verde desde S-00. La suite aborta si la base configurada no termina en `_test`, para que una configuración equivocada no destruya la base de aplicación pasando en verde
 - E2E: no aplica — sin herramienta E2E decidida; se reevalúa cuando exista la pantalla de caja
 - Accesibilidad: previsto en S-09-B: recorrido completo de la venta operable solo con teclado, verificado de forma automatizada (RNF-008)
-- Build: previsto en S-00: `pnpm build`
+- Build: `pnpm build` — real y en verde desde S-00
 - Otros RNF: previsto en S-06-B: envío de comprobante contra el ambiente **beta** de SUNAT con verificación de CDR. Rendimiento (RNF-001) y operación con teclado (RNF-008): previsto en S-09-B
 
 ## Validación QA
