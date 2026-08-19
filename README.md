@@ -16,8 +16,8 @@ fuente oficial y `composer.lock`.
 
 ## Cómo correrlo
 
-> El proyecto todavía no está fundado: estos comandos quedan operativos al
-> completarse el sprint de fundación.
+Necesitas PostgreSQL corriendo, con un rol y una base para la aplicación y otra
+base de pruebas terminada en `_test`. Los nombres por defecto van en `.env.example`.
 
 ```bash
 cp .env.example .env   # completar los valores requeridos; .env nunca se commitea
@@ -25,8 +25,12 @@ composer install
 pnpm install
 php artisan key:generate
 php artisan migrate
+pnpm build             # o `pnpm dev` mientras desarrollas
 php artisan serve
 ```
+
+`pnpm build` no es opcional: sin los assets compilados, Vite no encuentra su
+manifiesto y cualquier vista que extienda el layout base responde 500.
 
 El envío de comprobantes a SUNAT corre en segundo plano, así que además del
 servidor web hace falta el proceso trabajador:
