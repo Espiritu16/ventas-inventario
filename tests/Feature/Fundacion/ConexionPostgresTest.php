@@ -83,10 +83,17 @@ final class ConexionPostgresTest extends TestCase
 
     public function test_la_migracion_aplica_y_revierte_desde_base_limpia(): void
     {
-        $this->artisan('migrate:fresh')->assertSuccessful();
-        $this->assertTrue(Schema::hasTable('sessions'));
+        try {
+            $this->artisan('migrate:fresh')->assertSuccessful();
+            $this->assertTrue(Schema::hasTable('sessions'));
 
-        $this->artisan('migrate:rollback')->assertSuccessful();
-        $this->assertFalse(Schema::hasTable('sessions'));
+            $this->artisan('migrate:rollback')->assertSuccessful();
+            $this->assertFalse(Schema::hasTable('sessions'));
+        } finally {
+            // El rollback es parte de lo que se comprueba, pero dejar la base
+            // desmantelada rompería cualquier uso posterior de ella: la
+            // siguiente prueba la recompone sola, una sesión manual no.
+            $this->artisan('migrate')->assertSuccessful();
+        }
     }
 }

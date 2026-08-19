@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
@@ -11,21 +12,39 @@ abstract class TestCase extends BaseTestCase
      * Ninguna prueba corre contra la base de la aplicación.
      *
      * `RefreshDatabase` ejecuta `migrate:fresh`, así que una suite mal
-     * apuntada no falla: borra la base buena entera y sigue en verde. Por eso
-     * la comprobación va aquí, apenas existe la configuración y antes de que
-     * los traits toquen nada, y no en una aserción dentro de una prueba.
+     * apuntada no falla: borra la base entera y sigue en verde. Por eso la
+     * comprobación va aquí, apenas existe la configuración y antes de que los
+     * traits toquen nada.
+     *
+     * El nombre se le pregunta al motor, no a la configuración. Laravel
+     * resuelve `DB_URL` con prioridad sobre `DB_DATABASE`, de modo que el
+     * nombre configurado y aquel al que el driver acaba conectándose pueden
+     * ser distintos: mirar la configuración dejaría pasar exactamente el caso
+     * que esta salvaguarda existe para impedir.
      */
     protected function refreshApplication(): void
     {
         parent::refreshApplication();
 
-        $base = (string) config('database.connections.pgsql.database');
+        $conexion = DB::connection();
+        $efectiva = (string) $conexion->scalar('select current_database()');
 
-        if (! str_ends_with($base, '_test')) {
-            throw new RuntimeException(
-                "Las pruebas están apuntando a «{$base}», que no es una base de pruebas. "
-                .'Revisa DB_DATABASE en phpunit.xml: debe terminar en _test.'
-            );
+        if (str_ends_with($efectiva, '_test')) {
+            return;
         }
+
+        // Se compara contra el valor declarado en la configuración, no contra
+        // el que ya resolvió el driver: es el que alguien leería en
+        // phpunit.xml, y la divergencia entre ambos es justo la pista útil.
+        $configurada = (string) config("database.connections.{$conexion->getName()}.database");
+        $detalle = $efectiva === $configurada
+            ? ''
+            : " La configuración declara «{$configurada}», así que algo la está pisando: revisa DB_URL.";
+
+        throw new RuntimeException(
+            "Las pruebas están conectadas a «{$efectiva}», que no es una base de pruebas."
+            .$detalle
+            .' El nombre de la base de pruebas debe terminar en _test.'
+        );
     }
 }

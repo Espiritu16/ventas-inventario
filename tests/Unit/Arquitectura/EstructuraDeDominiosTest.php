@@ -77,6 +77,44 @@ final class EstructuraDeDominiosTest extends TestCase
         }
     }
 
+    /**
+     * El contrato de servicios de dominio usa el sufijo en inglés, pero nada
+     * impide que alguien escriba `VentaServicio` o `ProductoRepositorio`. El
+     * guardián tiene que verlos igual: si solo reconociera una de las dos
+     * formas, quedaría ciego justo cuando aparezcan los primeros servicios.
+     */
+    public function test_rechaza_tambien_los_sufijos_escritos_en_espanol(): void
+    {
+        $app = sys_get_temp_dir().'/arquitectura-'.uniqid();
+        mkdir($app.'/Servicios', 0777, true);
+        mkdir($app.'/Repositorios', 0777, true);
+
+        file_put_contents($app.'/Servicios/VentaServicio.php', <<<'CLASE'
+            <?php
+
+            namespace App\Servicios;
+
+            class VentaServicio {}
+            CLASE);
+
+        file_put_contents($app.'/Repositorios/ProductoRepositorio.php', <<<'CLASE'
+            <?php
+
+            namespace App\Repositorios;
+
+            class ProductoRepositorio {}
+            CLASE);
+
+        try {
+            $this->assertSame(
+                ['Repositorios/ProductoRepositorio.php', 'Servicios/VentaServicio.php'],
+                DetectorDeClasesDeDominio::malUbicadas($app)
+            );
+        } finally {
+            self::borrarRecursivo($app);
+        }
+    }
+
     private static function borrarRecursivo(string $ruta): void
     {
         foreach (glob($ruta.'/*') ?: [] as $hijo) {

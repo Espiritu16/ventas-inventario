@@ -69,6 +69,11 @@ final class DetectorDeClasesDeDominio
     /**
      * Una clase es de dominio si es un modelo Eloquent o si su nombre la
      * declara servicio o repositorio del negocio.
+     *
+     * Se reconocen los sufijos en inglés, que son los que usa el contrato de
+     * servicios de dominio, y también sus formas en español: el guardián no
+     * puede quedar ciego ante una clase mal ubicada solo porque quien la
+     * escribió tradujo el sufijo.
      */
     private static function esClaseDeDominio(string $contenido): bool
     {
@@ -76,6 +81,9 @@ final class DetectorDeClasesDeDominio
             return true;
         }
 
-        return preg_match('/\b(?:class|interface)\s+\w+(?:Service|Repository)\b/', $contenido) === 1;
+        return preg_match(
+            '/\b(?:class|interface)\s+\w+(?:Service|Servicio|Repository|Repositorio)\b/',
+            $contenido
+        ) === 1;
     }
 }
