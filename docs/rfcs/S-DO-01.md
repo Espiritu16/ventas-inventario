@@ -4,8 +4,8 @@
 - Alcance de este sprint: Docker Compose con tres servicios —aplicación, PostgreSQL y proceso trabajador de la cola— levantables con un comando, más la documentación de cómo usarlo. **Explícitamente no**: despliegue a ningún servidor, pipeline de integración continua, respaldos ni observabilidad; todo eso es S-DO-02.
 - Documentos relacionados: ADR-0001, ADR-0003 (el envío a SUNAT corre fuera de la petición), RNF-002
 - Contratos que toca: ninguno
-- Estado: propuesto
-- Aprobado por: pendiente — fecha: pendiente
+- Estado: aprobado
+- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — fecha: 2026-08-19
 
 ## Unidades de trabajo
 | ID | Resultado observable | Deriva de | Depende de | Paralelizable con | Interfaz fijada | Criterio de cierre |

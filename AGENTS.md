@@ -16,9 +16,9 @@
 - Handoffs de sprint: docs/handoffs/<id-sprint>.md — previsto en el primer sprint con entrega
 
 ## Vigencia de gobernanza
-- Estado de gobernanza: BORRADOR
-- Aprobado por: pendiente — revisión reabierta el 2026-08-19 por la incorporación del remoto en GitHub
-- Fecha de aprobación: pendiente
+- Estado de gobernanza: APROBADO
+- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — revisión reabierta y reaprobada el 2026-08-19 por la incorporación del remoto en GitHub
+- Fecha de aprobación: 2026-08-19
 
 ## Roles activos en este repositorio
 
