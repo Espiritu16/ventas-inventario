@@ -265,6 +265,24 @@ Esto no reemplaza el inventario de estado externo que hay que hacer en cada ola:
 base era un recurso compartido, no el único. Puertos, caché y directorios temporales
 se siguen inventariando por ola, mirando la máquina y no razonando sobre ella.
 
+**Dentro del entorno contenerizado esta convención no hace falta**: el usuario del
+contenedor es dueño de su propio clúster y puede crear y borrar bases, y cada copia
+del repositorio levanta su propio Compose con volúmenes separados, así que dos
+carriles en contenedores no comparten base ni aunque usaran el mismo nombre.
+Verificado por `devops` creando y eliminando una base de carril, no deducido. La
+convención de arriba sigue rigiendo para quien trabaje contra la instalación local.
+
+**Un puerto publicado es estado externo compartido, y ningún aislamiento de Compose
+lo cubre.** El nombre de proyecto derivado del directorio separa contenedores,
+redes y volúmenes; el puerto del host queda fuera de ese perímetro por definición,
+porque publicar es exactamente exponerlo a la máquina. En S-DO-01 esto aplica solo
+al 8080 —la base no publica ninguno, por decisión—, y el riesgo grave no es que un
+segundo entorno falle al levantar, que sería ruidoso: es que el puerto responda con
+**otro** entorno mientras quien prueba cree estar viendo el suyo. Eso no falla,
+aprueba, y aprueba lo que no era. Si alguna vez hacen falta dos entornos a la vez en
+la misma máquina, la salida conocida es parametrizar el puerto publicado
+(`${PUERTO_APP:-8080}:8000`); no se implementó porque hoy ningún caso lo pide.
+
 ## Patrón recurrente — la configuración declarada y la conexión real divergen
 
 Ha aparecido **tres veces, por caminos distintos**, y se registra como patrón para
