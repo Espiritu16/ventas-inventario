@@ -141,7 +141,8 @@ sprints:
 - Repositorio publicado en https://github.com/Espiritu16/ventas-inventario
 
 ## Bloqueantes
-- Ninguno para planificar. Para ejecutar S-06-B hacen falta datos que solo el negocio puede aportar y que están declarados como pendientes en `docs/integraciones/sunat.md`: RUC y razón social del emisor, usuario secundario SOL y el certificado digital de pruebas. No bloquean ningún otro sprint.
+- Ninguno para planificar ni para ejecutar. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
+- Condición futura, no bloqueante: el RUC real, la razón social, la dirección fiscal, el usuario SOL real y el certificado digital comprado se necesitan solo para el paso a producción, que exige autorización explícita del usuario. Ver `docs/integraciones/sunat.md`.
 
 ## Siguiente fase habilitada
 - S-00 (fundación técnica): `Planificación: LISTO` y `Ejecución: LISTO`. Todos los demás sprints quedan en `PLANIFICADO` hasta que sus dependencias se completen.

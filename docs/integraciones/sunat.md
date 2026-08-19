@@ -19,8 +19,18 @@
 | Catálogos que el sistema usa | tipo de documento de identidad, tipo de comprobante, unidad de medida, tipo de afectación de IGV | fijado |
 | Tasa de IGV | 18 %, incluida en los precios y desglosada al emitir | fijado |
 | Tope de boleta sin identificar al cliente | S/ 700 | fijado — aprobado por el usuario el 2026-08-19 |
-| RUC del emisor, razón social, dirección fiscal | del negocio real | pendiente — se completa antes del sprint de emisión |
-| Usuario secundario SOL del emisor | requerido para el envío | pendiente — se completa antes del sprint de emisión |
+| Identidad del emisor en **beta** | credenciales de prueba de uso general publicadas por SUNAT. Se confirman contra la documentación vigente al implementar S-06-B, nunca de memoria | fijado — no requiere ningún dato del negocio |
+| Certificado para firmar en **beta** | certificado de prueba (el que distribuye Greenter para ese fin) | fijado — no requiere comprar nada |
+| RUC del emisor, razón social, dirección fiscal **reales** | del negocio | pendiente — **solo para producción**; no bloquea el desarrollo ni la validación |
+| Usuario secundario SOL **real** | lo crea el dueño del negocio en el portal de SUNAT | pendiente — **solo para producción** |
+| Certificado digital tributario **real** | comprado a nombre del RUC, con renovación anual | pendiente — **solo para producción** |
+
+**Qué se necesita y cuándo.** Todo el desarrollo de S-06-B y toda la validación
+de S-QA-01 ocurren en beta, con credenciales y certificado de prueba: no hacen
+falta datos del negocio ni ningún gasto. Los datos reales y el certificado
+comprado se necesitan únicamente para el paso a producción, que además exige
+autorización explícita del usuario según `AGENTS.md`. Confundir ambas cosas
+haría creer que el sprint de emisión está bloqueado cuando no lo está.
 
 ## Dónde vive la credencial
 
@@ -50,5 +60,5 @@ certificado por extensión, como red de seguridad adicional.
 | El certificado está vencido | `CERTIFICADO_VENCIDO`. El sistema avisa con 30 días de anticipación para que no se llegue a este punto (RNF-005) |
 | Se agotan los reintentos | El comprobante queda `PENDIENTE` y visible en la pantalla de seguimiento, que es el mecanismo previsto para la intervención manual (RF-016) |
 
-Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — fecha: 2026-08-19
+Aprobado por: pendiente — revisión reabierta el 2026-08-19 al separar lo que hace falta en beta de lo que hace falta en producción
 Parte técnica aprobada por (Arquitectura): sesión de Arquitectura del 2026-08-19 — fecha: 2026-08-19
