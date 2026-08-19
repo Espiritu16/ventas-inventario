@@ -4,6 +4,7 @@ namespace Tests\Feature\Autorizacion;
 
 use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -201,6 +202,45 @@ final class RutasDeUsuariosTest extends TestCase
             ->assertStatus(403);
 
         $this->assertSame(Usuario::ROL_ADMINISTRADOR, $admin->refresh()->rol);
+    }
+
+    public static function formasDeFalso(): array
+    {
+        return [
+            'booleano' => [false],
+            'entero' => [0],
+            'cadena, que es lo que envía un formulario' => ['0'],
+        ];
+    }
+
+    /**
+     * Por HTTP y con las tres formas que la regla `boolean` admite. Con `0` y
+     * `"0"` el administrador llegaba a desactivarse, y ahí el sistema se queda
+     * sin nadie que pueda autenticarse para reactivar a nadie: no hay vuelta
+     * atrás desde la aplicación.
+     */
+    #[DataProvider('formasDeFalso')]
+    public function test_el_administrador_no_puede_desactivarse_por_http(mixed $falso): void
+    {
+        $admin = Usuario::factory()->administrador()->create();
+
+        $this->actingAs($admin)
+            ->patchJson("/usuarios/{$admin->id}", ['activo' => $falso])
+            ->assertStatus(403)
+            ->assertJsonPath('error.codigo', 'NO_AUTORIZADO');
+
+        $this->assertTrue($admin->refresh()->activo);
+    }
+
+    public function test_el_administrador_si_puede_desactivar_a_otro_por_http(): void
+    {
+        $otro = Usuario::factory()->administrador()->create();
+
+        $this->actingAs(Usuario::factory()->administrador()->create())
+            ->patchJson("/usuarios/{$otro->id}", ['activo' => '0'])
+            ->assertOk();
+
+        $this->assertFalse($otro->refresh()->activo);
     }
 
     public function test_el_vendedor_no_puede_editar_usuarios(): void

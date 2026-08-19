@@ -23,6 +23,22 @@ class UsuarioService
     private const POR_PAGINA = 20;
 
     /**
+     * Hash contra el que se compara cuando el correo no existe.
+     *
+     * Está precalculado y es constante a propósito. Generarlo en cada
+     * petición con `Hash::make` costaba un bcrypt entero, así que el camino
+     * sin usuario ejecutaba dos y el camino con usuario uno: la mitigación
+     * creaba, por tiempo, la misma señal que el mensaje idéntico borraba —un
+     * correo inexistente tardaba el doble y quedaba distinguible por red.
+     *
+     * Es el hash de una cadena aleatoria de 32 bytes que ninguna contraseña
+     * puede igualar. Su coste (12) es el de producción: si el proyecto
+     * cambiara `bcrypt.rounds`, hay que regenerarlo con el nuevo coste para
+     * que ambos caminos sigan tardando lo mismo.
+     */
+    private const HASH_SENUELO = '$2y$12$44M4ZMVaFI3jL4HgKj7xMeiIfbqw0wWPa8/HMT2H3T6Xm4LAz6D4e';
+
+    /**
      * Un correo inexistente, uno inactivo y una contraseña equivocada
      * devuelven el mismo error. Además siempre se calcula un hash, aunque el
      * usuario no exista, para que el tiempo de respuesta tampoco delate cuál
@@ -34,9 +50,9 @@ class UsuarioService
 
         $usuario = Usuario::query()->where('email', $email)->first();
 
-        $coincide = $usuario !== null
-            ? Hash::check($password, $usuario->password)
-            : Hash::check($password, Hash::make('cadena-que-nunca-coincide'));
+        // Un solo Hash::check en ambos caminos, contra un señuelo constante:
+        // ver HASH_SENUELO.
+        $coincide = Hash::check($password, $usuario->password ?? self::HASH_SENUELO);
 
         if ($usuario === null || ! $coincide || ! $usuario->activo) {
             throw new ErrorDeDominio(
@@ -88,6 +104,8 @@ class UsuarioService
             'activo' => ['sometimes', 'required', 'boolean'],
         ]);
 
+        $campos = $this->castearBooleanos($campos);
+
         $this->impedirQueElActorSeInhabilite($usuario, $campos, $actor ?? Auth::user());
 
         $usuario->fill($campos)->save();
@@ -110,6 +128,32 @@ class UsuarioService
             ->orderBy('nombre')
             ->orderBy('id')
             ->paginate(self::POR_PAGINA, ['*'], 'pagina', max(1, $pagina));
+    }
+
+    /**
+     * Convierte a booleano real lo que la validación ya aceptó como tal.
+     *
+     * La regla `boolean` de Laravel admite true, false, 1, 0, "1" y "0", pero
+     * `validated()` devuelve el valor tal como llegó. Comparar eso contra
+     * `false` estricto dejaba pasar `0` y `"0"` —justo lo que envía un
+     * checkbox de un formulario— y con ello un administrador podía
+     * desactivarse a sí mismo, que es la única puerta por la que el sistema
+     * se queda sin nadie que lo administre.
+     *
+     * El casteo va después de validar, no antes: normalizar primero
+     * ampliaría lo que se acepta y convertiría entradas inválidas en válidas
+     * en silencio, contra RNF-010.
+     *
+     * @param  array<string, mixed>  $campos
+     * @return array<string, mixed>
+     */
+    private function castearBooleanos(array $campos): array
+    {
+        if (array_key_exists('activo', $campos)) {
+            $campos['activo'] = filter_var($campos['activo'], FILTER_VALIDATE_BOOLEAN);
+        }
+
+        return $campos;
     }
 
     /**

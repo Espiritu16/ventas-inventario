@@ -75,6 +75,40 @@ final class UsuarioServiceTest extends TestCase
         $this->assertCount(1, array_unique($mensajes), 'Los tres casos deben devolver el mismo mensaje.');
     }
 
+    public static function correosDeAmbosCaminos(): array
+    {
+        return [
+            'el usuario existe' => ['existe@ejemplo.pe'],
+            'el usuario no existe' => ['nadie@ejemplo.pe'],
+        ];
+    }
+
+    /**
+     * El contrato exige el mismo error y en el mismo tiempo.
+     *
+     * Se cuentan las comparaciones de hash en vez de medir el reloj: la causa
+     * del desvío era estructural —sin usuario se ejecutaban dos bcrypt y con
+     * usuario uno, así que un correo inexistente tardaba el doble y quedaba
+     * distinguible por red— y contar no depende de la carga de la máquina ni
+     * del coste configurado.
+     */
+    #[DataProvider('correosDeAmbosCaminos')]
+    public function test_ambos_caminos_ejecutan_una_sola_comparacion_de_hash(string $email): void
+    {
+        Usuario::factory()->create(['email' => 'existe@ejemplo.pe', 'password' => 'contrasena-valida']);
+
+        Hash::spy();
+
+        try {
+            $this->servicio->autenticar($email, 'contrasena-equivocada');
+        } catch (ErrorDeDominio) {
+            // el rechazo es lo esperado
+        }
+
+        Hash::shouldHaveReceived('check')->once();
+        Hash::shouldNotHaveReceived('make');
+    }
+
     // --- Alta (RF-002) ---
 
     public function test_crea_un_usuario_guardando_solo_el_hash_de_la_contrasena(): void
@@ -185,13 +219,58 @@ final class UsuarioServiceTest extends TestCase
         $this->assertTrue($admin->refresh()->activo);
     }
 
-    public function test_un_administrador_si_puede_desactivar_a_otro(): void
+    public static function formasDeFalso(): array
+    {
+        return [
+            'booleano' => [false],
+            'entero' => [0],
+            'cadena' => ['0'],
+        ];
+    }
+
+    /**
+     * La regla `boolean` admite false, 0 y "0", y `validated()` los devuelve
+     * tal como llegaron. Comparar contra `false` estricto dejaba pasar las dos
+     * últimas —que son justo lo que envía un checkbox de un formulario— y con
+     * ellas un administrador podía desactivarse a sí mismo y dejar al sistema
+     * sin nadie capaz de administrarlo, sin vuelta atrás desde la aplicación.
+     */
+    #[DataProvider('formasDeFalso')]
+    public function test_un_administrador_no_puede_desactivarse_en_ninguna_forma_de_falso(mixed $falso): void
+    {
+        $admin = Usuario::factory()->administrador()->create();
+
+        try {
+            $this->servicio->actualizar($admin->id, DatosUsuario::desde(['activo' => $falso]), $admin);
+            $this->fail('Un administrador se desactivó con '.var_export($falso, true));
+        } catch (ErrorDeDominio $error) {
+            $this->assertSame(CodigoDeError::NO_AUTORIZADO, $error->codigo);
+        }
+
+        $this->assertTrue($admin->refresh()->activo);
+    }
+
+    /** Un valor que la regla no admite se sigue rechazando por tipo, no se convierte. */
+    public function test_un_valor_no_booleano_se_rechaza_por_formato(): void
+    {
+        $admin = Usuario::factory()->administrador()->create();
+
+        try {
+            $this->servicio->actualizar($admin->id, DatosUsuario::desde(['activo' => 'false']), $admin);
+            $this->fail('Se aceptó un valor que no es booleano.');
+        } catch (ErrorDeDominio $error) {
+            $this->assertSame(CodigoDeError::CAMPO_FORMATO_INVALIDO, $error->codigo);
+        }
+    }
+
+    #[DataProvider('formasDeFalso')]
+    public function test_un_administrador_si_puede_desactivar_a_otro(mixed $falso): void
     {
         $admin = Usuario::factory()->administrador()->create();
         $otro = Usuario::factory()->administrador()->create();
 
         $this->assertFalse(
-            $this->servicio->actualizar($otro->id, DatosUsuario::desde(['activo' => false]), $admin)->activo
+            $this->servicio->actualizar($otro->id, DatosUsuario::desde(['activo' => $falso]), $admin)->activo
         );
     }
 
