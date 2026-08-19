@@ -5,11 +5,14 @@ por lotes con fecha de vencimiento, registra ventas descontando primero lo que
 vence antes, y emite boletas y facturas electrónicas directamente ante SUNAT.
 
 ## Stack
-- PHP 8.5 + Laravel (versión estable vigente al fundar el proyecto)
-- Blade + Livewire + Tailwind CSS
-- PostgreSQL — ver [ADR-0001](docs/decisiones/0001-motor-de-base-de-datos.md)
+- PHP 8.5.9 + Laravel v13.26.1
+- Blade + Livewire + Tailwind CSS 4.3.3, compilados con Vite 8.2.1
+- PostgreSQL 18.3 — ver [ADR-0001](docs/decisiones/0001-motor-de-base-de-datos.md)
 - Greenter para la emisión electrónica — ver [ADR-0002](docs/decisiones/0002-emision-electronica-propia.md)
-- Gestor de paquetes: Composer (PHP) y pnpm (assets)
+- Gestor de paquetes: Composer 2.10.2 (PHP) y pnpm 11.22.0 sobre Node 24.19.0 (assets)
+
+Las versiones quedaron verificadas al fundar el proyecto en S-00, contra la
+fuente oficial y `composer.lock`.
 
 ## Cómo correrlo
 
