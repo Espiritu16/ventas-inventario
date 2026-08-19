@@ -41,6 +41,53 @@ Decidido por Arquitectura el 2026-08-19, a raíz del desajuste que reportó
 tratarse así sin agregarse a esta tabla: la lista es cerrada, no un criterio general
 de "lo que parezca infraestructura".
 
+## Rutas que registra Livewire
+
+Livewire registra rutas propias al instalarse. Bajo deny-by-default se rechazarían
+todas, y con ellas dejaría de funcionar cualquier componente: el endpoint de
+actualización es por donde viajan **todas** las interacciones. El síntoma aparecería
+en el código de quien construye la pantalla, no acá, así que se declara antes de que
+eso ocurra.
+
+**El prefijo se fija en configuración a `_livewire`.** La instalación genera uno con
+un sufijo aleatorio (`livewire-6d8828c5`). Un prefijo generado puede cambiar, y una
+declaración de seguridad que deja de coincidir con la ruta real no falla ruidosamente:
+deja de aplicarse. Se fija a un valor estable y se declara ese.
+
+| Ruta | Tratamiento | Por qué |
+|---|---|---|
+| `GET /_livewire/livewire.js` | Pública | Asset estático. No toca datos ni estado. Mismo criterio que `GET /up` |
+| `GET /_livewire/css/{componente}.css` | Pública | Ídem |
+| `POST /_livewire/update` | **Exige sesión**, salvo para los componentes de la lista de abajo | Ver el razonamiento |
+| `POST /_livewire/upload-file` | **No autorizada** — se rechaza | Ningún RF del horizonte pide subir archivos. Una superficie que nadie usa no se deja abierta |
+| `GET /_livewire/preview-file/{f}` | **No autorizada** — se rechaza | Ídem |
+| `GET/PUT /storage/{path}` | **No autorizada** — se rechaza | Ruta del driver de disco local del framework. Ningún RF la necesita hoy |
+
+### Por qué `POST /_livewire/update` no es infraestructura
+
+Es el canal por el que se invoca cualquier método público de cualquier componente
+montado. Declararlo público a secas no sería una fila más en la tabla: movería la
+garantía de control de acceso desde este documento hacia el comportamiento interno
+de un paquete de terceros. Livewire efectivamente reaplica el middleware de la
+petición original, pero entonces la protección dejaría de ser nuestra y pasaría a
+depender de que ese comportamiento no cambie en una versión futura.
+
+Por eso el control se ejerce en nuestra capa: el endpoint exige sesión activa, y solo
+los componentes declarados abajo pueden invocarse sin ella. Esto no reemplaza lo que
+Livewire hace por su cuenta; se suma.
+
+### Componentes accesibles sin sesión — lista cerrada
+
+| Componente | Por qué | Deriva de |
+|---|---|---|
+| El de inicio de sesión (llega en S-01-F) | Es el único que, por definición, se usa antes de tener sesión | RF-001 |
+
+Agregar un componente a esta lista es una decisión de Arquitectura, nunca del sprint
+que lo necesita. Un componente que no esté acá y se invoque sin sesión se rechaza.
+
+Decidido por Arquitectura el 2026-08-19, a partir del hallazgo que reportó
+`implementation-backend` al instalar Livewire en UT-06 de S-01-B.
+
 ## Matriz de permisos
 
 | Actor | Rol técnico | Recurso/Operación | Acción | Condición/alcance | Permitido | Deriva de |
