@@ -23,6 +23,24 @@ aparezca en la matriz con su condición cumplida se trata como **denegada**.
 - Rol técnico: `sistema` (contexto de ejecución de job/comando, no una sesión de usuario)
 - Deriva de: no deriva de RF, es un actor técnico
 
+## Rutas de infraestructura
+
+Rutas que no exponen ningún recurso de negocio y por lo tanto no se modelan con un
+actor. Se declaran aquí **explícitamente** porque el control de acceso es
+deny-by-default (RNF-013): una ruta sin declaración se rechaza, y estas dos tienen
+que responder. Declararlas no es una excepción al mecanismo — es usarlo como
+corresponde, dejando por escrito lo que de otro modo sería una omisión silenciosa.
+
+| Ruta | Tratamiento | Por qué | Deriva de |
+|---|---|---|---|
+| `GET /up` | Pública, sin sesión y sin rol | Verificación de salud del propio framework. La consumen la orquestación de contenedores de S-DO-01 y el despliegue de S-DO-02, que no tienen sesión ni pueden tenerla. No expone datos: responde vivo o no vivo | RNF-002, S-DO-01, S-DO-02 |
+| `GET /` | Pública, redirige | Sin sesión redirige a `/login`; con sesión activa, a `/panel`. No entrega contenido propio, así que no hay nada que autorizar: la protección real vive en el destino | RF-001 |
+
+Decidido por Arquitectura el 2026-08-19, a raíz del desajuste que reportó
+`implementation-backend` al implementar UT-04 de S-01-B. Ninguna otra ruta puede
+tratarse así sin agregarse a esta tabla: la lista es cerrada, no un criterio general
+de "lo que parezca infraestructura".
+
 ## Matriz de permisos
 
 | Actor | Rol técnico | Recurso/Operación | Acción | Condición/alcance | Permitido | Deriva de |
