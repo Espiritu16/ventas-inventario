@@ -3,10 +3,10 @@ id: S-DO-01
 name: Entorno reproducible
 role: devops
 repository: ventas-inventario
-status: EN_PROGRESO
+status: EN_VALIDACION
 branch: sprint/S-DO-01
 base_sha: b99b93667d47bf49b18f8febabc5b0541f2df579
-final_sha: null
+final_sha: ac207cd2cd7f1364de97512431ffff26bdac1f70
 worktree_path: /private/tmp/claude-501/-Users-sankef-ventas-inventario/8fefec88-810c-4dd5-b0d7-6da99cf44f83/scratchpad/S-DO-01
 updated_at: 2026-08-19
 ---
@@ -26,7 +26,7 @@ lo que el RFC declara explícitamente fuera de alcance y le corresponde a S-DO-0
 | UT-01 | Imagen de la aplicación sobre `php:8.5.9-cli` con las extensiones que el proyecto necesita, más Composer, Node y pnpm en las versiones que S-00 verificó | verificado |
 | UT-02 | Servicio `db` sobre `postgres:18.3-alpine` con volumen propio, sin publicar puerto, y con la base de pruebas creada al inicializarse | verificado |
 | UT-03 | Servicio `trabajador` con `queue:work`, reintentos de espera creciente y reinicio automático ante caída del proceso | verificado |
-| UT-04 | Texto de la sección "Cómo correrlo" redactado abajo — lo aplica el Coordinador, porque `README.md` no es ruta de este rol | pendiente de aplicar |
+| UT-04 | Sección "Cómo correrlo" del README, redactada aquí y aplicada por el Coordinador en `develop@12ba572`, ya fusionada a esta rama | verificado |
 
 ### Archivos
 
@@ -112,9 +112,25 @@ todo estaba bien. Por eso el healthcheck ahora comprueba el **contenido**
 (`Application up`) y no solo el código, y por eso la evidencia de abajo verifica
 que la raíz sirve los assets compilados en vez de conformarse con un 200.
 
+### 2026-08-19 — cierre: `develop` fusionado y UT-04 verificada sobre un clon
+
+El Coordinador aplicó el texto del README en `develop@12ba572` y se fusionó a
+esta rama en `ac207cd`. Con eso UT-04 dejó de depender de un paso externo y su
+criterio se pudo comprobar tal como está escrito: **alguien clona el repositorio,
+sigue solo el README y levanta todo**.
+
+Se verificó así, y no leyendo el texto: se clonó `sprint/S-DO-01` en un
+directorio vacío, se ejecutó el único comando que el README pide y se recorrió
+cada promesa del documento contra el clon. Todas se cumplieron. El clon y sus
+volúmenes se eliminaron después.
+
+Antes de fusionar se revisó qué traía `develop`: entre otras cosas cambió
+`AGENTS.md`, pero el cambio asigna `routes/backend.php` a
+`implementation-backend` y no toca las rutas ni los límites del rol `devops`.
+
 ## Evidencia de verificación
 
-Todo sobre `ventas-inventario@<final_sha>`, imagen `ventas-inventario-app`
+Todo sobre `ventas-inventario@ac207cd`, imagen `ventas-inventario-app`
 `sha256:9c3361b8b33a0dc57427bc017001347a2b57bc86b6a1713bd023b2d69a1e3988`.
 Partiendo de un árbol sin `vendor/`, sin `node_modules/`, sin `public/build/` y
 sin `.env`, y con `docker compose down -v` previo.
@@ -138,142 +154,25 @@ sin `.env`, y con `docker compose down -v` previo.
 | La guardia de `DB_URL` funciona | agregar `DB_URL=` al `.env` y levantar | el arranque se detiene con el mensaje que nombra la causa |
 | Nada del host se tocó | `docker compose ps`, puerto 5432 del host | ningún servicio publica 5432; la instalación local sigue escuchando |
 | El repositorio queda limpio | `git status --porcelain` | solo los archivos nuevos del sprint |
+| **UT-04 — un clon levanta todo con el comando del README** | `git clone` de esta rama en un directorio vacío + `docker compose up -d` | los tres servicios arriba en **28 s**, sin ningún paso adicional |
+| UT-04 — la aplicación responde donde el README dice | `curl http://localhost:8080/` en el clon | 200, con los assets compilados referenciados |
+| UT-04 — los comandos que el README promete | los cinco, copiados tal cual del README, en el clon | `migrate` sin pendientes, pint PASA, 4 Unit, 7 Feature, `pnpm build` PASA |
+| UT-04 — la sesión `psql` que documenta | `docker compose exec db psql -U ventas_inventario -d ventas_inventario` | conecta; `current_database()` responde `ventas_inventario` |
+| UT-04 — el trabajador corre sin lanzarlo | logs del clon recién levantado | `queue:work` en marcha |
+| UT-04 — los datos sobreviven a `docker compose down` | insertar, `down`, `up`, leer, en el clon | el dato vuelve a leerse |
+| UT-04 — la guardia de `DB_URL` que promete el README | agregar `DB_URL` al `.env` del clon | el arranque se detiene con el mensaje; al quitarla vuelve a responder 200 |
+| `docker compose down -v` deja la máquina limpia | al desmontar el clon | contenedores, red y los dos volúmenes eliminados |
 
 Ninguna credencial real pasó por este sprint. La única contraseña que aparece es
 la de la base contenerizada, local y desechable, y está en `docker-compose.yml`
 con la advertencia de que un entorno servido no puede heredar ese patrón.
 
-## Texto para UT-04 — sección "Cómo correrlo" del README
+## UT-04 — dónde quedó el texto
 
-`README.md` no es ruta escribible del rol `devops`, así que este texto lo aplica
-el Coordinador. Reemplaza la sección "Cómo correrlo" actual; el bloque de
-instalación local que hoy está ahí se conserva como segunda opción.
-
----
-
-### Cómo correrlo
-
-Hay dos formas. **Con Docker** no necesitas instalar nada más que Docker, y es
-la recomendada. **Sin Docker** necesitas PHP, PostgreSQL, Composer y pnpm
-instalados en tu máquina.
-
-#### Con Docker (recomendado)
-
-Necesitas Docker Desktop —o Docker Engine con el complemento Compose— y nada más.
-
-```bash
-docker compose up -d
-```
-
-Eso es todo. Ese comando construye la imagen, levanta PostgreSQL, instala las
-dependencias de PHP y de Node, genera la clave de la aplicación, compila los
-assets, aplica las migraciones y arranca el servidor y el proceso trabajador de
-la cola. La primera vez tarda varios minutos porque descarga las imágenes y
-compila las extensiones de PHP; las siguientes son cuestión de segundos.
-
-Cuando termine, la aplicación está en **<http://localhost:8080>**.
-
-Para ver qué está pasando mientras arranca:
-
-```bash
-docker compose logs -f app
-```
-
-**Por qué el 8080 y no el 8000.** El 8000 es el que usa `php artisan serve` si
-trabajas sin Docker, y el entorno contenerizado lo deja libre para que puedas
-tener las dos cosas a la vez sin que se peleen.
-
-**El proceso trabajador ya está corriendo.** No hace falta lanzar
-`php artisan queue:work` a mano: el servicio `trabajador` lo levanta y lo vuelve
-a levantar solo si se cae. Es el proceso que envía los comprobantes a SUNAT
-fuera de la venta; si no corre, los comprobantes se quedan en `PENDIENTE`. Para
-mirar lo que hace:
-
-```bash
-docker compose logs -f trabajador
-```
-
-**Comandos dentro del contenedor.** Cualquier comando del proyecto se ejecuta
-con `docker compose exec app`:
-
-```bash
-docker compose exec app php artisan migrate
-docker compose exec app ./vendor/bin/pint --test
-docker compose exec app php artisan test --testsuite=Unit
-docker compose exec app pnpm build
-```
-
-Las pruebas de la suite `Feature` necesitan que le indiques la base de pruebas,
-porque el contenedor define la base de la aplicación como variable de entorno y
-esa tiene prioridad sobre la configuración de PHPUnit:
-
-```bash
-docker compose exec -e DB_DATABASE=ventas_inventario_test app php artisan test --testsuite=Feature
-```
-
-Si te olvidas, la suite no corre contra la base equivocada: se detiene con un
-mensaje que te dice a qué base se conectó. Está hecho a propósito.
-
-**La base de datos.** Corre dentro de Docker y **no publica ningún puerto**, así
-que no interfiere con un PostgreSQL que tengas instalado en tu máquina, ni puede
-escribir por error en sus bases. Para abrir una sesión contra ella:
-
-```bash
-docker compose exec db psql -U ventas_inventario -d ventas_inventario
-```
-
-Los datos viven en un volumen de Docker y sobreviven a `docker compose down` y a
-reiniciar la máquina. Para empezar de cero y borrarlos:
-
-```bash
-docker compose down -v
-```
-
-La contraseña de esa base está escrita en `docker-compose.yml`. **Es local y
-desechable**: no da acceso a nada fuera de tu máquina, porque el puerto no se
-publica y la base se recrea con el comando de arriba. No la copies a un servidor
-ni la tomes como ejemplo de cómo configurar uno.
-
-**Si ya tenías un `.env`**, se respeta tal cual y no se toca. La conexión a la
-base la define `docker-compose.yml`, así que tu `.env` puede seguir apuntando a
-tu instalación local sin romper nada. La única excepción es `DB_URL`: si la
-tienes definida con un valor, el contenedor se detiene y te lo dice, porque esa
-variable tiene prioridad sobre todas las demás y te conectaría a otro sitio sin
-avisar.
-
-**Este entorno es para desarrollar en tu máquina.** No sirve como base para
-poner el sistema en un servidor: no tiene HTTPS, ni respaldos, ni manejo de
-secretos, y el servidor web es el de desarrollo de PHP. El despliegue es otro
-trabajo.
-
-#### Sin Docker
-
-Necesitas PostgreSQL corriendo, con un rol y una base para la aplicación y otra
-base de pruebas terminada en `_test`. Los nombres por defecto van en
-`.env.example`.
-
-```bash
-cp .env.example .env   # completar los valores requeridos; .env nunca se commitea
-composer install
-pnpm install
-php artisan key:generate
-php artisan migrate
-pnpm build             # o `pnpm dev` mientras desarrollas
-php artisan serve
-```
-
-`pnpm build` no es opcional: sin los assets compilados, Vite no encuentra su
-manifiesto y cualquier vista que extienda el layout base responde 500.
-
-El envío de comprobantes a SUNAT corre en segundo plano, así que además del
-servidor web hace falta el proceso trabajador:
-
-```bash
-php artisan queue:work
-```
-
----
-
+El texto de la sección "Cómo correrlo" se redactó en este sprint y el Coordinador
+lo aplicó al README en `develop@12ba572`, ya fusionado a esta rama. No se copia
+acá para que no existan dos versiones que puedan divergir: la única es
+[`README.md`](../../README.md), sección "Cómo correrlo".
 ## Resultado QA
 
 Pendiente — lo registra el Coordinador cuando QA valide el `final_sha`.
@@ -294,13 +193,11 @@ para que no se pierda tiempo en falsos negativos ni en falsos positivos:
 
 ## Pendientes o desviaciones
 
-1. **UT-04 no está cerrada dentro de esta rama.** El texto está redactado arriba,
-   pero `README.md` no es ruta de `devops`. Acordado con el Coordinador: él lo
-   aplica en una rama de gobernanza, la integra a `develop` y me pasa el SHA;
-   yo traigo `develop` a esta rama **antes** de fijar el `final_sha`, para que
-   la rama contenga el compose y el README juntos y el criterio de UT-04 —
-   levantar todo siguiendo solo el README — se pueda verificar sin pasos
-   intermedios.
+1. **`final_sha` y el commit de este handoff.** El `final_sha` declarado
+   (`ac207cd`) es el último commit que cambia lo que QA valida: el entorno más
+   el README ya fusionado. El commit que agrega este handoff queda por encima y
+   no toca nada de eso. Si prefieres que QA parta del extremo de la rama en vez
+   de este SHA, el contenido verificable es idéntico.
 2. **Endurecimiento de configuración: es de S-DO-02, no de este sprint.**
    `APP_DEBUG=true` y `APP_ENV=local` son lo correcto en un entorno local de
    desarrollo; forzarlos aquí empeoraría el entorno sin proteger nada.
@@ -313,9 +210,11 @@ para que no se pierda tiempo en falsos negativos ni en falsos positivos:
    de entorno ya presente si el `<env>` no lleva `force="true"`, y el contenedor
    define `DB_DATABASE` como variable real. La salvaguarda de S-00 lo detecta y
    aborta, así que es ruidoso pero no peligroso. Queda documentado en el README.
-   Si se quisiera que `php artisan test` funcione sin el añadido, habría que
-   poner `force="true"` en `phpunit.xml`, que es ruta de `implementation-backend`
-   y decisión de Arquitectura, no mía.
+   Se propuso poner `force="true"` en `phpunit.xml` para ahorrarse el añadido y
+   **Arquitectura lo rechazó, con razón**: eso fijaría la base de pruebas a un
+   único nombre para todo el proyecto, y desde la ola 3 cada carril paralelo usa
+   la suya. Arreglaría la comodidad de un comando a costa del aislamiento de
+   tres sprints. El `-e DB_DATABASE=...` explícito se queda.
 4. **Un `.env` con `DB_URL` deja el servicio `app` reiniciándose en bucle.** La
    guardia lo detiene con un mensaje claro en los logs, pero la política de
    reinicio vuelve a intentarlo. Es ruidoso; se prefirió eso a arrancar con una
@@ -323,6 +222,14 @@ para que no se pierda tiempo en falsos negativos ni en falsos positivos:
 5. **La imagen no es un artefacto de despliegue.** No contiene el código —el
    proyecto se monta— y trae herramientas de desarrollo. S-DO-02 necesita
    construir su propia imagen autocontenida; esta no se promueve.
-6. **Sin integración continua todavía.** La verificación de este sprint fue
+6. **Para la ola 3, el entorno contenerizado ya cubre el aislamiento por
+   carril.** El estado global decidió que cada carril paralelo use su propia
+   base de pruebas. Dentro de este entorno eso no necesita un GRANT: el usuario
+   del contenedor es dueño de su propio clúster y puede crear y borrar bases
+   —comprobado—, y además cada copia del repositorio levanta su propio Compose
+   con volúmenes separados, así que dos carriles en contenedores ya no comparten
+   base aunque usaran el mismo nombre. La decisión del estado global sigue
+   valiendo para quien trabaje contra la instalación local.
+7. **Sin integración continua todavía.** La verificación de este sprint fue
    local, como manda `AGENTS.md` hasta que S-DO-02 exista. Cuando ese sprint
    escriba el workflow, tendrá que disparar sobre `develop` además de `main`.
