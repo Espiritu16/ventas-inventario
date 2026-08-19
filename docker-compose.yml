@@ -10,7 +10,11 @@
 # secretos, y la aplicación corre sobre el servidor de desarrollo de PHP. El
 # entorno servido lo define S-DO-02.
 
-name: ventas-inventario
+# Sin `name:` a propósito. Con un nombre de proyecto fijo, dos copias del
+# repositorio en la misma máquina —un worktree de otro sprint, el checkout que
+# usa QA para validar— compartirían contenedores y volúmenes: la segunda que
+# levantara el entorno se llevaría por delante la de la primera sin avisar.
+# Compose deriva el nombre del directorio, así que cada copia queda aislada.
 
 services:
   db:
@@ -66,7 +70,10 @@ services:
       # Estas llegan como variables de entorno reales, que en Laravel tienen
       # prioridad sobre el archivo .env: el .env del repositorio se ve dentro del
       # contenedor porque el proyecto está montado, y apunta a la instalación
-      # local. DB_URL no se define acá a propósito — ver el entrypoint.
+      # local. La única excepción era `php artisan serve`, que reinyectaba el
+      # .env y pisaba esta configuración; por eso el servidor se levanta con
+      # `php -S` (ver el CMD del Dockerfile). DB_URL no se define acá a
+      # propósito — ver el entrypoint.
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: "5432"
@@ -84,11 +91,6 @@ services:
       # le dice otra cosa, y una vista que pide sus assets al mismo servidor se
       # quedaría esperándose a sí misma.
       PHP_CLI_SERVER_WORKERS: "4"
-
-      # El .env que vive en el proyecto no define la conexión de este entorno:
-      # estas variables sí, y Laravel no pisa una variable de entorno real con
-      # el archivo. La excepción era `php artisan serve`, que reinyectaba el
-      # .env; por eso el contenedor usa `php -S` (ver el CMD del Dockerfile).
 
       # Este servicio es el que instala dependencias, compila assets y migra.
       PREPARAR_ENTORNO: "1"
