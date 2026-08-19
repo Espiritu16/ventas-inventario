@@ -7,7 +7,7 @@ active_status: null
 last_completed_phase: null
 bootstrap_status: PENDIENTE
 planning_horizon_status: EN_PROGRESO
-current_rfc_batch: [S-03-B, S-02-F, S-04-B, S-03-F, S-05-B]
+current_rfc_batch: [S-06-B, S-07-B, S-08-B, S-04-F, S-05-F]
 planning_scope: [RF-001, RF-002, RF-003, RF-004, RF-005, RF-006, RF-007, RF-008, RF-009, RF-010, RF-011, RF-012, RF-013, RF-014, RF-015, RF-016, RF-017, RF-018, RF-019, RF-020, RF-021, RNF-001, RNF-002, RNF-003, RNF-004, RNF-005, RNF-006, RNF-007, RNF-008, RNF-010, RNF-011, RNF-012, RNF-013, RNF-014]
 updated_at: 2026-08-19
 repositories:
@@ -36,19 +36,19 @@ sprints:
     parallelizable_with: [S-03-B, S-01-F]
   - id: S-03-B
     repository: ventas-inventario
-    planning_status: BORRADOR
+    planning_status: LISTO
     execution_status: PLANIFICADO
     depends_on: [S-01-B]
     parallelizable_with: [S-02-B, S-01-F]
   - id: S-04-B
     repository: ventas-inventario
-    planning_status: BORRADOR
+    planning_status: LISTO
     execution_status: PLANIFICADO
     depends_on: [S-02-B, S-03-B]
     parallelizable_with: [S-02-F]
   - id: S-05-B
     repository: ventas-inventario
-    planning_status: BORRADOR
+    planning_status: LISTO
     execution_status: PLANIFICADO
     depends_on: [S-04-B]
     parallelizable_with: [S-03-F]
@@ -78,13 +78,13 @@ sprints:
     parallelizable_with: [S-02-B, S-03-B]
   - id: S-02-F
     repository: ventas-inventario
-    planning_status: BORRADOR
+    planning_status: LISTO
     execution_status: PLANIFICADO
     depends_on: [S-02-B, S-03-B, S-01-F]
     parallelizable_with: [S-04-B]
   - id: S-03-F
     repository: ventas-inventario
-    planning_status: BORRADOR
+    planning_status: LISTO
     execution_status: PLANIFICADO
     depends_on: [S-04-B, S-01-F]
     parallelizable_with: [S-05-B]
