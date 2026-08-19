@@ -2,10 +2,9 @@
 project: ventas-inventario
 source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
-active_phase: S-00
-active_status: EN_PROGRESO
-active_note: rechazado por QA el 2026-08-19 (QA-01); vuelve a implementación
-last_completed_phase: null
+active_phase: ola-2
+active_status: LISTO
+last_completed_phase: S-00
 bootstrap_status: EN_PROGRESO
 planning_horizon_status: COMPLETA
 current_rfc_batch: []
@@ -20,15 +19,18 @@ sprints:
   - id: S-00
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: EN_PROGRESO
+    execution_status: COMPLETADO
     branch: sprint/S-00
     base_sha: 99cd0618ec05f8386202813a2efa232724ec0bd8
+    final_sha: ae2b0f73804c8b383dd970d91c1be379e305bc94
+    merge_sha: 4e6af0e
+    qa: APROBADO sobre f65efca con gobernanza c5c5389
     depends_on: []
     parallelizable_with: []
   - id: S-01-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: LISTO
     depends_on: [S-00]
     parallelizable_with: [S-DO-01]
   - id: S-02-B
@@ -118,7 +120,7 @@ sprints:
   - id: S-DO-01
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: LISTO
     depends_on: [S-00]
     parallelizable_with: [S-01-B]
   - id: S-QA-01
@@ -152,7 +154,49 @@ sprints:
 | 1 | 2026-08-19 | Política de ramas de dos niveles: `sprint/<id>` → `develop` → `main`. Antes se integraba directo a la protegida | Kevin Espíritu | `AGENTS.md`, secciones "Política de ramas" y "CI por rama" |
 | 2 | 2026-08-19 | La instalación de Livewire se ubica en S-01-B como UT-06. Ningún RFC del horizonte la declaraba, pese a que la gobernanza, ADR-0005 y los contratos la dan por existente | Kevin Espíritu | `docs/rfcs/S-01-B.md`, enmienda y UT-06 |
 
-## Validación de S-00 — RECHAZADO (2026-08-19)
+## S-00 — COMPLETADO (2026-08-19)
+
+QA emitió **APROBADO** sobre `ventas-inventario@f65efca` con gobernanza
+`develop@c5c5389`, tras un rechazo previo y su corrección. Fusionado a `develop` en
+`4e6af0e`. Rama `sprint/S-00` conservada para auditoría.
+
+Los cuatro comandos de verificación, las cifras y las versiones fueron reproducidos
+por QA desde un checkout aislado, no aceptados del handoff.
+
+Lo que este sprint deja, más allá del andamiaje: **dos mecanismos que nacieron de
+fallos reales, encontrados por pruebas y no por revisión.**
+
+1. Los instantes se escriben con su desplazamiento horario. La configuración de la
+   conexión en UTC era necesaria pero no suficiente: Laravel enviaba las fechas sin
+   zona y PostgreSQL las interpretaba como si ya fueran UTC, corriendo cada instante
+   cinco horas. Nada fallaba; solo quedaba mal. QA lo confirmó por contrafáctico,
+   revirtiendo el mecanismo y viendo reaparecer el corrimiento exacto. RNF-006 se
+   cumple por mecanismo, no por una prueba que lo compense.
+2. La suite aborta si la base a la que **efectivamente** se conectó no termina en
+   `_test`, preguntándole el nombre al motor. La primera versión leía la
+   configuración y se eludía por completo vía `DB_URL` — el caso que un CI o un
+   contenedor producen de forma natural. Habría permitido destruir la base de
+   aplicación con `migrate:fresh` y quedar en verde.
+
+Observaciones informativas registradas por QA, ninguna accionable hoy:
+
+- **OBS-A**: el guardián de arquitectura es una heurística por nombre y no ve
+  `VentaRepositorioInterface` ni una clase sin sufijo como `CalculadoraDeIgv`. Es un
+  límite inherente, no un defecto. No leerlo como garantía total.
+- **OBS-B**: si `DB_CONNECTION` apuntara a un motor sin `current_database()`, la
+  salvaguarda muere con error SQL en vez de su mensaje. Falla cerrado, que es lo
+  correcto; solo el diagnóstico sería menos claro.
+- **QA-05 confirmado empíricamente**: el tamaño del CSS depende del caché de vistas
+  compiladas (`storage/framework/views`), no del código. Un build limpio da la cifra
+  menor. Que nadie lo lea como regresión en S-DO-02.
+- Sin verificar de forma independiente: el esqueleto `laravel/laravel v13.10.0`. El
+  framework v13.26.1 sí. Es dato de proceso, no de producto.
+
+**Riesgo residual para S-DO-01/S-DO-02, no para S-00**: `APP_DEBUG=true`,
+`APP_ENV=local`, `SESSION_SECURE_COOKIE` sin definir y `SESSION_ENCRYPT=false` son
+defaults del esqueleto. Deben endurecerse antes de que exista un entorno servido.
+
+## Validación de S-00 — primer intento, RECHAZADO (2026-08-19)
 
 QA validó `ventas-inventario@58a4c54` contra `develop@b746373`, en checkout aislado
 fuera del árbol compartido, con `seguridad-validacion` activada en modo dirigido.
@@ -186,10 +230,29 @@ advisories.
 - Ninguno para planificar ni para ejecutar. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
 - Condición futura, no bloqueante: el RUC real, la razón social, la dirección fiscal, el usuario SOL real y el certificado digital comprado se necesitan solo para el paso a producción, que exige autorización explícita del usuario. Ver `docs/integraciones/sunat.md`.
 
-## Siguiente fase habilitada
-- S-00 (fundación técnica) en `EN_PROGRESO`, rama `sprint/S-00`. Cierra cuando Backend reporte su `final_sha` con las cinco unidades verificadas y QA emita `APROBADO` sobre ese SHA.
-- Al cerrar S-00 se habilita la **ola 2: S-01-B y S-DO-01 en paralelo**, lo que abre el turno del chat de DevOps. Frontend sigue esperando: su primer sprint, S-01-F, depende de S-01-B, no de S-00.
-- Todos los demás sprints quedan en `PLANIFICADO` hasta que sus dependencias se completen.
+## Siguiente fase habilitada — ola 2
+
+**S-01-B** (`implementation-backend`) y **S-DO-01** (`devops`) en paralelo, ambos
+`LISTO`, ambos partiendo de `develop@<sha de cierre de S-00>`. Es el primer
+paralelismo real del proyecto y el primer turno del chat de DevOps.
+
+Inventario de estado externo compartido, hecho antes de despachar (el worktree
+aísla archivos y ramas, no lo de afuera):
+
+| Recurso | ¿Colisiona? | Decisión |
+|---|---|---|
+| Árbol de trabajo | Sí | **Separar**: un `git worktree` por carril, ninguno en `/Users/sankef/ventas-inventario` |
+| Base `ventas_inventario_test` | No | Solo S-01-B la usa. S-DO-01 levanta su propio PostgreSQL en contenedor |
+| Puerto 5432 | **Sí** | El PostgreSQL de EDB ya lo ocupa. El contenedor de S-DO-01 debe publicar en otro puerto o no publicarlo; DevOps lo resuelve y lo documenta |
+| `vendor/`, `node_modules/` | No | Cada worktree instala lo suyo |
+
+No hace falta serializar en esta ola: solo un carril toca la base local. En la
+**ola 3** eso deja de ser cierto — tres carriles simultáneos contra una sola base
+de pruebas — y ahí sí hace falta el arreglo estructural, ver "Pendientes de
+planificación".
+
+Frontend sigue esperando: S-01-F depende de S-01-B, no de S-00. Los demás sprints
+quedan en `PLANIFICADO` hasta que sus dependencias se completen.
 
 ## Referencias
 - Roadmap: este documento, sección "Roadmap del horizonte"
