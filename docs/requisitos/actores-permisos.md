@@ -49,19 +49,32 @@ actualización es por donde viajan **todas** las interacciones. El síntoma apar
 en el código de quien construye la pantalla, no acá, así que se declara antes de que
 eso ocurra.
 
-**El prefijo se fija en configuración a `_livewire`.** La instalación genera uno con
-un sufijo aleatorio (`livewire-6d8828c5`). Un prefijo generado puede cambiar, y una
-declaración de seguridad que deja de coincidir con la ruta real no falla ruidosamente:
-deja de aplicarse. Se fija a un valor estable y se declara ese.
+**El prefijo NO se declara como cadena literal, y tampoco se fija a un valor
+estático.** Livewire lo deriva de `APP_KEY`: `substr(hash('sha256', app.key .
+'livewire-endpoint'), 0, 8)`. Eso significa que es **distinto en cada instalación** —
+la máquina de quien implementa, la de quien valida, CI y el servidor tienen prefijos
+distintos. Una declaración con la cadena literal sería correcta solo donde se generó
+y dejaría de aplicar en todas las demás, en silencio.
 
-| Ruta | Tratamiento | Por qué |
+Fijarlo a un valor estático tampoco corresponde: el paquete lo deriva a propósito
+para que un escáner genérico no pueda apuntarle a una ruta conocida. Es oscuridad,
+no control de acceso, pero apagarla de rebote para resolver un problema de
+sincronización de documentos sería tomar una decisión de seguridad por el motivo
+equivocado.
+
+**Las rutas se declaran relativas al prefijo, y el prefijo se resuelve en cada
+petición desde la misma fuente que registra las rutas reales** (`EndpointResolver`
+del paquete). Así no hay dos valores que mantener iguales: hay uno solo, leído de
+donde nace. Una declaración que se deriva de la misma fuente que la ruta no puede
+desalinearse de ella.
+
+| Ruta (relativa al prefijo) | Tratamiento | Por qué |
 |---|---|---|
-| `GET /_livewire/livewire.js` | Pública | Asset estático. No toca datos ni estado. Mismo criterio que `GET /up` |
-| `GET /_livewire/css/{componente}.css` | Pública | Ídem |
-| `POST /_livewire/update` | **Exige sesión**, salvo para los componentes de la lista de abajo | Ver el razonamiento |
-| `POST /_livewire/upload-file` | **No autorizada** — se rechaza | Ningún RF del horizonte pide subir archivos. Una superficie que nadie usa no se deja abierta |
-| `GET /_livewire/preview-file/{f}` | **No autorizada** — se rechaza | Ídem |
-| `GET/PUT /storage/{path}` | **No autorizada** — se rechaza | Ruta del driver de disco local del framework. Ningún RF la necesita hoy |
+| `GET` de assets estáticos bajo el prefijo — `*.js`, `*.css`, `*.map`, incluidas las variantes minificadas | Pública | Assets estáticos. No tocan datos ni estado. Mismo criterio que `GET /up`. **Se declara por patrón, no uno por uno**: el paquete registra `livewire.js`, `livewire.min.js` y sus mapas, y en producción sirve el minificado. Una lista enumerada que omitiera el minificado dejaría de cargar Livewire justo en producción, y en ningún otro lado |
+| `POST /update` | **Exige sesión**, salvo para los componentes de la lista de abajo | Ver el razonamiento |
+| `POST /upload-file` | **No autorizada** — se rechaza | Ningún RF del horizonte pide subir archivos. Una superficie que nadie usa no se deja abierta |
+| `GET /preview-file/{f}` | **No autorizada** — se rechaza | Ídem |
+| `GET/PUT /storage/{path}` (ruta absoluta, del framework) | **No autorizada** — se rechaza | Ruta del driver de disco local. Ningún RF la necesita hoy |
 
 ### Por qué `POST /_livewire/update` no es infraestructura
 
