@@ -60,5 +60,5 @@ certificado por extensión, como red de seguridad adicional.
 | El certificado está vencido | `CERTIFICADO_VENCIDO`. El sistema avisa con 30 días de anticipación para que no se llegue a este punto (RNF-005) |
 | Se agotan los reintentos | El comprobante queda `PENDIENTE` y visible en la pantalla de seguimiento, que es el mecanismo previsto para la intervención manual (RF-016) |
 
-Aprobado por: pendiente — revisión reabierta el 2026-08-19 al separar lo que hace falta en beta de lo que hace falta en producción
+Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-19 tras separar lo que hace falta en beta de lo que hace falta en producción
 Parte técnica aprobada por (Arquitectura): sesión de Arquitectura del 2026-08-19 — fecha: 2026-08-19
