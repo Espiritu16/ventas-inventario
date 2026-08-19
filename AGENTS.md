@@ -16,9 +16,9 @@
 - Handoffs de sprint: docs/handoffs/<id-sprint>.md — el primero se crea al cerrar S-00; lo produce el proceso de cierre de sprint, no una unidad de trabajo del RFC
 
 ## Vigencia de gobernanza
-- Estado de gobernanza: APROBADO
-- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — revisión reabierta y reaprobada el 2026-08-19 por la incorporación del remoto en GitHub
-- Fecha de aprobación: 2026-08-19
+- Estado de gobernanza: BORRADOR
+- Aprobado por: pendiente — revisión reabierta el 2026-08-19 por la separación del rol de implementación en backend y frontend
+- Fecha de aprobación: pendiente
 
 ## Roles activos en este repositorio
 
@@ -28,10 +28,31 @@
 - No puede: implementar código, autoaprobar al usuario, sustituir la aprobación de Arquitectura, emitir el veredicto QA ni ejecutar trabajo DevOps
 
 ### implementation
-- Puede escribir código y pruebas: `app/`, `resources/`, `routes/`, `database/`, `tests/`, `config/`, `public/`
-- Puede escribir bootstrap/configuración cuando el RFC lo autoriza: `composer.json`, `composer.lock`, `package.json`, `pnpm-lock.yaml`, `vite.config.js`, `.env.example` (sin secretos), `database/migrations/`
+
+Este repositorio es fullstack y sus sprints se reparten en dos frentes que trabajan
+en paralelo (ver ADR-0005). Por eso el rol `implementation` se declara en **dos
+variantes con rutas disjuntas**: son el mismo rol de `project-continuity`, con
+alcance acotado para que dos sesiones simultáneas no escriban los mismos archivos.
+Un sprint declara cuál variante le corresponde según su sufijo: `-B` backend, `-F`
+frontend. `S-00` es la única excepción: funda el proyecto y usa ambas rutas, por lo
+que se ejecuta solo, sin nada en paralelo.
+
+#### implementation-backend (sprints con sufijo `-B`, y `S-00`)
+- Puede escribir código y pruebas: `app/Dominios/*/` **excepto** la subcarpeta `Livewire/` de cada dominio, `app/Compartido/`, `app/Http/Middleware/`, `app/Providers/`, `app/Jobs/`, `app/Console/`, `database/`, `config/`, `tests/Unit/`, `tests/Feature/Dominios/`
+- Puede escribir bootstrap/configuración cuando el RFC lo autoriza: `composer.json`, `composer.lock`, `.env.example` (sin secretos), `database/migrations/`, y el andamiaje que el framework exige y ningún otro rol cubre: `bootstrap/`, `public/index.php`, `artisan`, `phpunit.xml`, `routes/console.php`, `.gitignore`
+- Es el dueño de las firmas declaradas en `docs/contratos/servicios-de-dominio.md`: puede proponer cambios, pero la aprobación es de Arquitectura
+- No puede escribir: `resources/views/`, `resources/css/`, `resources/js/`, `routes/web.php`, ni ninguna subcarpeta `Livewire/`
+
+#### implementation-frontend (sprints con sufijo `-F`)
+- Puede escribir código y pruebas: `app/Dominios/*/Livewire/`, `resources/views/`, `resources/css/`, `resources/js/`, `routes/web.php`, `tests/Feature/Livewire/`
+- Puede escribir bootstrap/configuración cuando el RFC lo autoriza: `package.json`, `pnpm-lock.yaml`, `vite.config.js`, `tailwind.config.js`
+- Consume las firmas de `docs/contratos/servicios-de-dominio.md`; **no las cambia**. Si necesita una firma distinta, escala a Arquitectura y el sprint queda bloqueado hasta que se apruebe
+- No puede escribir: `app/Dominios/*/` fuera de `Livewire/`, `database/`, `config/`, `app/Http/Middleware/`
+
+#### Reglas comunes a ambas variantes
 - Puede actualizar únicamente este handoff: `docs/handoffs/<id-de-su-propio-sprint>.md`; nunca el estado global ni handoffs ajenos
 - No puede modificar sin autorización de Arquitectura: `docs/contratos/`, `docs/persistencia/`, `docs/errores/`, `docs/requisitos/actores-permisos.md`, `docs/frontend/integracion.md`, `docs/decisiones/`
+- Si un sprint necesita tocar una ruta de la otra variante, **no la toca**: reporta el desajuste al Coordinador, que decide si corresponde reabrir el RFC o coordinar con el otro frente. Descubrir un archivo compartido no declarado significa que la línea base era incorrecta, no que se pueda escribir igual
 
 ### qa
 - Puede leer: todo el repositorio
@@ -109,6 +130,37 @@
 - Retención: no aplica todavía
 - Producción: requiere autorización explícita del usuario inmediatamente antes de mutar
 
+## Autoridad de contratos
+
+Repositorio único: `ventas-inventario` es dueño de todos sus contratos y su
+Arquitectura los aprueba. No hay contratos compartidos con otro repositorio.
+
+El contrato que backend y frontend consumen en común es
+`docs/contratos/servicios-de-dominio.md`: las firmas de los servicios de dominio
+que los componentes Livewire invocan. Ese documento es el que habilita el
+paralelismo entre las dos variantes de `implementation` — mientras una firma que
+un sprint de frontend necesita no esté aprobada, ese sprint queda `BLOQUEADO`.
+
+El contrato de SUNAT es **EXTERNO/REFERENCIADO**: Arquitectura no aprueba el
+contrato del tercero, solo la forma de integrarlo, documentada en
+`docs/integraciones/sunat.md`.
+
+## Chats de rol previstos
+
+El usuario abre estos chats a mano cuando empiece la ejecución. Los prompts de
+apertura ya están redactados en `docs/chats-de-rol.md`.
+
+| Chat | Rol | Sprints que atiende |
+|---|---|---|
+| Coordinación + Arquitectura | `coordinacion` + `arquitectura` | todos: gobierna, aprueba y cierra |
+| Backend | `implementation-backend` | S-00, S-01-B, S-02-B, S-03-B, S-04-B, S-05-B, S-06-B, S-07-B, S-08-B, S-09-B |
+| Frontend | `implementation-frontend` | S-01-F, S-02-F, S-03-F, S-04-F, S-05-F, S-06-F |
+| QA | `qa` | valida cada sprint; S-QA-01 es suyo de punta a punta |
+| DevOps | `devops` | S-DO-01, S-DO-02 |
+
+Ningún chat se abre por adelantado: se abre cuando su primer sprint está
+habilitado. Hoy solo lo está el de Backend, para S-00.
+
 ## Documentación de referencia
 - Requisitos (RF/RNF): docs/requisitos/
 - Glosario: docs/requisitos/glosario.md
@@ -121,3 +173,6 @@
 - Integraciones externas: docs/integraciones/
 - ADR: docs/decisiones/
 - RFCs por sprint: docs/rfcs/
+- Handoffs de sprint: docs/handoffs/
+- Contrato entre backend y frontend: docs/contratos/servicios-de-dominio.md
+- Prompts de apertura de chats de rol: docs/chats-de-rol.md

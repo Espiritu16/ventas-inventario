@@ -150,6 +150,9 @@ sprints:
 
 ## Referencias
 - Roadmap: este documento, sección "Roadmap del horizonte"
+- Prompts de apertura de los chats de rol: docs/chats-de-rol.md
+- Contrato entre backend y frontend: docs/contratos/servicios-de-dominio.md
+- Handoffs de sprint: docs/handoffs/
 - Handoff activo: ninguno — no hay ejecución iniciada
 - Decisiones y contratos: docs/decisiones/, docs/contratos/, docs/persistencia/modelo.md
 
@@ -162,25 +165,31 @@ aprobados nace, de qué depende y con qué puede correr en paralelo. El sufijo
 `-B` marca sprints de backend, `-F` de frontend, `-DO` de DevOps y `-QA` de
 validación.
 
+El rol `implementation` está declarado en `AGENTS.md` en dos variantes con rutas
+disjuntas, para que los dos frentes puedan trabajar a la vez sin escribir los
+mismos archivos: `implementation-backend` (sufijo `-B`) e `implementation-frontend`
+(sufijo `-F`). `S-00` es la excepción: funda el proyecto usando ambas rutas, así
+que se ejecuta solo.
+
 | ID | Rol | Resultado observable | Fuentes | Depende de | Paralelizable con | RFC |
 |---|---|---|---|---|---|---|
-| S-00 | implementation (backend) | Proyecto Laravel fundado y corriendo en local, con PostgreSQL, Tailwind vía Vite, la estructura `app/Dominios/`, y los comandos de lint, pruebas y build funcionando de verdad | ADR-0001, ADR-0005, AGENTS.md | — | — | docs/rfcs/S-00.md |
+| S-00 | implementation-backend | Proyecto Laravel fundado y corriendo en local, con PostgreSQL, Tailwind vía Vite, la estructura `app/Dominios/`, y los comandos de lint, pruebas y build funcionando de verdad | ADR-0001, ADR-0005, AGENTS.md | — | — | docs/rfcs/S-00.md |
 | S-DO-01 | devops | Entorno reproducible con Docker Compose: aplicación, PostgreSQL y proceso trabajador de cola, levantables con un comando | ADR-0001, ADR-0003, RNF-002 | S-00 | S-01-B | docs/rfcs/S-DO-01.md |
-| S-01-B | implementation (backend) | Inicio y cierre de sesión, alta y edición de usuarios, y control de acceso por rol aplicado en el servidor sobre cada ruta | RF-001, RF-002, MIG-001, actores-permisos, contratos/usuarios | S-00 | S-DO-01 | docs/rfcs/S-01-B.md |
-| S-02-B | implementation (backend) | Categorías y productos con precio menor y mayor, stock mínimo y su validación de precios | RF-003, RF-004, MIG-002, contratos/productos | S-01-B | S-03-B, S-01-F | docs/rfcs/S-02-B.md |
-| S-03-B | implementation (backend) | Proveedores y clientes con validación de documento según su tipo | RF-005, RF-010, MIG-003, MIG-006, contratos/proveedores, contratos/clientes | S-01-B | S-02-B, S-01-F | docs/rfcs/S-03-B.md |
-| S-04-B | implementation (backend) | Compras que crean lotes con vencimiento y costo, consulta de stock por lote, kardex inmutable y ajustes con motivo | RF-006, RF-007, RF-008, RF-009, MIG-004, MIG-005, ADR-0004, contratos/compras, contratos/inventario | S-02-B, S-03-B | S-02-F | docs/rfcs/S-04-B.md |
-| S-05-B | implementation (backend) | Venta registrada en una transacción: descuento FEFO con reparto por lote, cálculo de IGV, reserva de correlativo y comprobante en estado pendiente | RF-011, RF-012, RF-013, RF-014, MIG-007, MIG-008, RNF-003, contratos/ventas | S-04-B | S-03-F | docs/rfcs/S-05-B.md |
-| S-06-B | implementation (backend) | Emisión electrónica real contra el ambiente beta de SUNAT: XML firmado, envío en segundo plano con reintentos, constancia CDR guardada, reenvío manual y resumen diario de boletas | RF-015, RF-016, RF-017, ADR-0002, ADR-0003, integraciones/sunat, contratos/comprobantes | S-05-B | S-07-B, S-08-B, S-04-F | docs/rfcs/S-06-B.md |
-| S-07-B | implementation (backend) | Consultas de alertas de vencimiento y stock bajo, y reportes de ventas y de utilidad con costo real por lote | RF-018, RF-019, RF-020, RF-021, contratos/inventario, contratos/ventas | S-05-B | S-06-B, S-08-B, S-04-F | docs/rfcs/S-07-B.md |
-| S-08-B | implementation (backend) | Política completa de auditoría aplicada a cada operación sensible, y registro de errores con saneamiento de secretos y canal independiente | RNF-004, RNF-014, modelo (Auditoria, LogError) | S-04-B | S-06-B, S-07-B | docs/rfcs/S-08-B.md |
-| S-01-F | implementation (frontend) | Base de la interfaz: layout, menú por rol, componentes reutilizables y pantalla de inicio de sesión | RF-001, RF-002, frontend/experiencia, frontend/integracion | S-01-B | S-02-B, S-03-B | docs/rfcs/S-01-F.md |
-| S-02-F | implementation (frontend) | Pantallas de catálogo, proveedores, clientes y usuarios, con sus validaciones en el momento de escribir | RF-002, RF-003, RF-004, RF-005, RF-010, frontend/experiencia | S-02-B, S-03-B, S-01-F | S-04-B | docs/rfcs/S-02-F.md |
-| S-03-F | implementation (frontend) | Pantallas de compra, consulta de inventario por lote, kardex y ajuste | RF-006, RF-007, RF-008, RF-009, frontend/experiencia | S-04-B, S-01-F | S-05-B | docs/rfcs/S-03-F.md |
-| S-04-F | implementation (frontend) | Pantalla de caja completa: búsqueda por teclado y código de barras, precio menor o mayor por línea, confirmación e impresión del comprobante | RF-011, RF-012, RF-013, RNF-008, frontend/experiencia | S-05-B, S-01-F | S-06-B, S-07-B | docs/rfcs/S-04-F.md |
-| S-05-F | implementation (frontend) | Pantalla de seguimiento de comprobantes con reenvío, y pantalla de resúmenes diarios | RF-016, RF-017, frontend/experiencia | S-06-B, S-01-F | S-06-F | docs/rfcs/S-05-F.md |
-| S-06-F | implementation (frontend) | Tablero de alertas de vencimiento y stock bajo, y pantallas de reportes de ventas y utilidad | RF-018, RF-019, RF-020, RF-021, frontend/experiencia | S-07-B, S-01-F | S-05-F | docs/rfcs/S-06-F.md |
-| S-09-B | implementation (backend) | Pruebas de extremo a extremo del recorrido de venta, y prueba de rendimiento que mide el umbral de confirmación de venta sobre volumen realista | RNF-001, RNF-008, AGENTS.md (comando E2E) | S-04-F | S-05-F, S-06-F | docs/rfcs/S-09-B.md |
+| S-01-B | implementation-backend | Inicio y cierre de sesión, alta y edición de usuarios, y control de acceso por rol aplicado en el servidor sobre cada ruta | RF-001, RF-002, MIG-001, actores-permisos, contratos/usuarios | S-00 | S-DO-01 | docs/rfcs/S-01-B.md |
+| S-02-B | implementation-backend | Categorías y productos con precio menor y mayor, stock mínimo y su validación de precios | RF-003, RF-004, MIG-002, contratos/productos | S-01-B | S-03-B, S-01-F | docs/rfcs/S-02-B.md |
+| S-03-B | implementation-backend | Proveedores y clientes con validación de documento según su tipo | RF-005, RF-010, MIG-003, MIG-006, contratos/proveedores, contratos/clientes | S-01-B | S-02-B, S-01-F | docs/rfcs/S-03-B.md |
+| S-04-B | implementation-backend | Compras que crean lotes con vencimiento y costo, consulta de stock por lote, kardex inmutable y ajustes con motivo | RF-006, RF-007, RF-008, RF-009, MIG-004, MIG-005, ADR-0004, contratos/compras, contratos/inventario | S-02-B, S-03-B | S-02-F | docs/rfcs/S-04-B.md |
+| S-05-B | implementation-backend | Venta registrada en una transacción: descuento FEFO con reparto por lote, cálculo de IGV, reserva de correlativo y comprobante en estado pendiente | RF-011, RF-012, RF-013, RF-014, MIG-007, MIG-008, RNF-003, contratos/ventas | S-04-B | S-03-F | docs/rfcs/S-05-B.md |
+| S-06-B | implementation-backend | Emisión electrónica real contra el ambiente beta de SUNAT: XML firmado, envío en segundo plano con reintentos, constancia CDR guardada, reenvío manual y resumen diario de boletas | RF-015, RF-016, RF-017, ADR-0002, ADR-0003, integraciones/sunat, contratos/comprobantes | S-05-B | S-07-B, S-08-B, S-04-F | docs/rfcs/S-06-B.md |
+| S-07-B | implementation-backend | Consultas de alertas de vencimiento y stock bajo, y reportes de ventas y de utilidad con costo real por lote | RF-018, RF-019, RF-020, RF-021, contratos/inventario, contratos/ventas | S-05-B | S-06-B, S-08-B, S-04-F | docs/rfcs/S-07-B.md |
+| S-08-B | implementation-backend | Política completa de auditoría aplicada a cada operación sensible, y registro de errores con saneamiento de secretos y canal independiente | RNF-004, RNF-014, modelo (Auditoria, LogError) | S-04-B | S-06-B, S-07-B | docs/rfcs/S-08-B.md |
+| S-01-F | implementation-frontend | Base de la interfaz: layout, menú por rol, componentes reutilizables y pantalla de inicio de sesión | RF-001, RF-002, frontend/experiencia, frontend/integracion | S-01-B | S-02-B, S-03-B | docs/rfcs/S-01-F.md |
+| S-02-F | implementation-frontend | Pantallas de catálogo, proveedores, clientes y usuarios, con sus validaciones en el momento de escribir | RF-002, RF-003, RF-004, RF-005, RF-010, frontend/experiencia | S-02-B, S-03-B, S-01-F | S-04-B | docs/rfcs/S-02-F.md |
+| S-03-F | implementation-frontend | Pantallas de compra, consulta de inventario por lote, kardex y ajuste | RF-006, RF-007, RF-008, RF-009, frontend/experiencia | S-04-B, S-01-F | S-05-B | docs/rfcs/S-03-F.md |
+| S-04-F | implementation-frontend | Pantalla de caja completa: búsqueda por teclado y código de barras, precio menor o mayor por línea, confirmación e impresión del comprobante | RF-011, RF-012, RF-013, RNF-008, frontend/experiencia | S-05-B, S-01-F | S-06-B, S-07-B | docs/rfcs/S-04-F.md |
+| S-05-F | implementation-frontend | Pantalla de seguimiento de comprobantes con reenvío, y pantalla de resúmenes diarios | RF-016, RF-017, frontend/experiencia | S-06-B, S-01-F | S-06-F | docs/rfcs/S-05-F.md |
+| S-06-F | implementation-frontend | Tablero de alertas de vencimiento y stock bajo, y pantallas de reportes de ventas y utilidad | RF-018, RF-019, RF-020, RF-021, frontend/experiencia | S-07-B, S-01-F | S-05-F | docs/rfcs/S-06-F.md |
+| S-09-B | implementation-backend | Pruebas de extremo a extremo del recorrido de venta, y prueba de rendimiento que mide el umbral de confirmación de venta sobre volumen realista | RNF-001, RNF-008, AGENTS.md (comando E2E) | S-04-F | S-05-F, S-06-F | docs/rfcs/S-09-B.md |
 | S-QA-01 | qa | Veredicto de validación integral: funcional sobre todo el horizonte, concurrencia, seguridad de aplicación y emisión contra el ambiente beta de SUNAT | RNF-001 a RNF-014, todos los RF | S-09-B, S-05-F, S-06-F | — | docs/rfcs/S-QA-01.md |
 | S-DO-02 | devops | Despliegue del sistema en el servidor, con respaldo diario probado, verificación de salud, recolección de logs y procedimiento de reversión | RNF-002, RNF-007, AGENTS.md (operación DevOps) | S-QA-01, S-DO-01 | — | docs/rfcs/S-DO-02.md |
 

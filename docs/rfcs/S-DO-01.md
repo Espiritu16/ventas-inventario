@@ -1,6 +1,6 @@
 ## RFC — S-DO-01 · Entorno reproducible
 - RF que implementa: ninguno directamente. Habilita que cualquiera levante el sistema igual, incluido el proceso trabajador del que depende la emisión.
-- Rol: devops
+- Rol: `devops`
 - Alcance de este sprint: Docker Compose con tres servicios —aplicación, PostgreSQL y proceso trabajador de la cola— levantables con un comando, más la documentación de cómo usarlo. **Explícitamente no**: despliegue a ningún servidor, pipeline de integración continua, respaldos ni observabilidad; todo eso es S-DO-02.
 - Documentos relacionados: ADR-0001, ADR-0003 (el envío a SUNAT corre fuera de la petición), RNF-002
 - Contratos que toca: ninguno

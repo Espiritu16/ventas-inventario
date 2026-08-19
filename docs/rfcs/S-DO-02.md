@@ -1,6 +1,6 @@
 ## RFC — S-DO-02 · Despliegue, respaldos y operación
 - RF que implementa: ninguno. Cubre RNF-002, RNF-007 y las obligaciones de operación que `AGENTS.md` declara como previstas al definir el despliegue.
-- Rol: devops
+- Rol: `devops`
 - Alcance de este sprint: poner el sistema en el servidor y dejarlo operable — integración continua en cada pull request, despliegue reproducible, respaldo diario **probado**, verificación de salud, recolección de logs y procedimiento de reversión. **Explícitamente no**: enviar comprobantes al ambiente de producción de SUNAT ni instalar el certificado real; eso exige autorización explícita del dueño del negocio, por separado.
 - Documentos relacionados: RNF-002, RNF-005, RNF-007, RNF-014, AGENTS.md (operación DevOps/Release), ADR-0001, ADR-0003
 - Contratos que toca: ninguno

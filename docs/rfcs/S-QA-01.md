@@ -1,6 +1,6 @@
 ## RFC — S-QA-01 · Validación integral
 - RF que implementa: ninguno. Valida todo el horizonte: RF-001 a RF-021 y RNF-001 a RNF-014.
-- Rol: qa
+- Rol: `qa`
 - Alcance de este sprint: validación independiente con la skill `qa-validacion` sobre el `final_sha` exacto de los sprints ya integrados: funcional, negativa, de concurrencia, de permisos y de seguridad de aplicación, más la emisión real contra el ambiente **beta** de SUNAT. Produce un veredicto: APROBADO, RECHAZADO o BLOQUEADO. **Explícitamente no**: corregir lo que encuentre — cada corrección vuelve a su sprint bajo el rol de implementación.
 - Documentos relacionados: todos los RF y RNF, docs/requisitos/actores-permisos.md, docs/errores/manejo-errores.md, docs/integraciones/sunat.md
 - Contratos que toca: ninguno — QA no escribe implementación
