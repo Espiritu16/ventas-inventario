@@ -41,7 +41,7 @@ que se ejecuta solo, sin nada en paralelo.
 - Puede escribir código y pruebas: `app/Dominios/*/` **excepto** la subcarpeta `Livewire/` de cada dominio, `app/Compartido/`, `app/Http/Middleware/`, `app/Providers/`, `app/Jobs/`, `app/Console/`, `database/`, `config/`, `tests/Unit/`, `tests/Feature/Dominios/`
 - Puede escribir bootstrap/configuración cuando el RFC lo autoriza: `composer.json`, `composer.lock`, `.env.example` (sin secretos), `database/migrations/`, y el andamiaje que el framework exige y ningún otro rol cubre: `bootstrap/`, `public/index.php`, `artisan`, `phpunit.xml`, `routes/console.php`, `.gitignore`
 - Es el dueño de las firmas declaradas en `docs/contratos/servicios-de-dominio.md`: puede proponer cambios, pero la aprobación es de Arquitectura
-- No puede escribir: `resources/views/`, `resources/css/`, `resources/js/`, `routes/web.php`, ni ninguna subcarpeta `Livewire/`
+- No puede escribir: `resources/views/`, `resources/css/`, `resources/js/`, `routes/web.php`, ni ninguna subcarpeta `Livewire/` — **salvo en S-00**, donde crea el andamiaje inicial de esas rutas (entry points de Vite, layout base vacío y `routes/web.php` con la ruta raíz), tal como declara la excepción del encabezado de este rol. A partir de S-01-F, esas rutas pasan a ser exclusivas de `implementation-frontend`
 
 #### implementation-frontend (sprints con sufijo `-F`)
 - Puede escribir código y pruebas: `app/Dominios/*/Livewire/`, `resources/views/`, `resources/css/`, `resources/js/`, `routes/web.php`, `tests/Feature/Livewire/`
