@@ -70,7 +70,7 @@ desalinearse de ella.
 
 | Ruta (relativa al prefijo) | Tratamiento | Por qué |
 |---|---|---|
-| `GET` de assets estáticos bajo el prefijo — `*.js`, `*.css`, `*.map`, incluidas las variantes minificadas | Pública | Assets estáticos. No tocan datos ni estado. Mismo criterio que `GET /up`. **Se declara por patrón, no uno por uno**: el paquete registra `livewire.js`, `livewire.min.js` y sus mapas, y en producción sirve el minificado. Una lista enumerada que omitiera el minificado dejaría de cargar Livewire justo en producción, y en ningún otro lado |
+| `GET` de assets estáticos bajo el prefijo — `*.js`, `*.css`, `*.map` | Pública | Assets estáticos. No tocan datos ni estado. Mismo criterio que `GET /up`. **Se declara por patrón, no uno por uno**: en Livewire 4.4.1 el paquete registra `livewire.js` y dos mapas de código, pero ese conjunto es un detalle interno del paquete y puede cambiar entre versiones. Una lista enumerada tendría que reeditarse en cada actualización, y el modo de fallo de olvidarlo es que un asset deje de cargar sin que nada lo anuncie |
 | `POST /update` | **Exige sesión**, salvo para los componentes de la lista de abajo | Ver el razonamiento |
 | `POST /upload-file` | **No autorizada** — se rechaza | Ningún RF del horizonte pide subir archivos. Una superficie que nadie usa no se deja abierta |
 | `GET /preview-file/{f}` | **No autorizada** — se rechaza | Ídem |
@@ -93,10 +93,19 @@ Livewire hace por su cuenta; se suma.
 
 | Componente | Por qué | Deriva de |
 |---|---|---|
-| El de inicio de sesión (llega en S-01-F) | Es el único que, por definición, se usa antes de tener sesión | RF-001 |
+| `App\Dominios\Usuarios\Livewire\InicioDeSesion` | Es el único que, por definición, se usa antes de tener sesión | RF-001 |
 
 Agregar un componente a esta lista es una decisión de Arquitectura, nunca del sprint
 que lo necesita. Un componente que no esté acá y se invoque sin sesión se rechaza.
+
+**El nombre de la clase queda fijado acá, por Arquitectura, antes de que exista.** La
+lista se materializa en `app/Compartido/Autorizacion/MatrizDePermisos.php`, que es
+ruta de `implementation-backend`; `implementation-frontend` crea el componente pero
+no puede declararlo. Sin esta decisión anticipada, S-01-F quedaría bloqueado su
+primer día por el mismo desajuste de rutas que ya obligó a asignar
+`routes/backend.php`. S-01-B deja la entrada declarada por adelantado y S-01-F debe
+crear el componente **con ese nombre exacto**: si necesita otro, escala a
+Arquitectura, no lo renombra.
 
 Decidido por Arquitectura el 2026-08-19, a partir del hallazgo que reportó
 `implementation-backend` al instalar Livewire en UT-06 de S-01-B.
