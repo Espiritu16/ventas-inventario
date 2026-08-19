@@ -16,9 +16,9 @@
 - Handoffs de sprint: docs/handoffs/<id-sprint>.md — el primero se crea al cerrar S-00; lo produce el proceso de cierre de sprint, no una unidad de trabajo del RFC
 
 ## Vigencia de gobernanza
-- Estado de gobernanza: BORRADOR
-- Aprobado por: pendiente — revisión reabierta el 2026-08-19 por la separación del rol de implementación en backend y frontend
-- Fecha de aprobación: pendiente
+- Estado de gobernanza: APROBADO
+- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-19 tras separar el rol de implementación en backend y frontend
+- Fecha de aprobación: 2026-08-19
 
 ## Roles activos en este repositorio
 
