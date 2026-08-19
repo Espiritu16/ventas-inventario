@@ -78,7 +78,7 @@
 - Tests unitarios/componentes: previsto en S-00: `php artisan test --testsuite=Unit`
 - Integración/contrato: previsto en S-00: `php artisan test --testsuite=Feature`
 - E2E: no aplica — sin herramienta E2E decidida; se reevalúa cuando exista la pantalla de caja
-- Accesibilidad: no aplica — sin umbral de accesibilidad acordado todavía; se reevalúa al documentar `docs/frontend/experiencia.md`
+- Accesibilidad: previsto en S-09-B: recorrido completo de la venta operable solo con teclado, verificado de forma automatizada (RNF-008)
 - Build: previsto en S-00: `pnpm build`
 - Otros RNF: previsto en el sprint de emisión electrónica: envío de comprobante contra el ambiente **beta** de SUNAT con verificación de CDR
 
@@ -87,7 +87,7 @@
 - Identidades/datos de prueba: seeders del repositorio y el RUC/certificado de **pruebas** de SUNAT; nunca el certificado digital real ni secretos
 - Evidencia durable: `docs/handoffs/<id-sprint>.md` bajo responsabilidad del Coordinador
 - Retención de artefactos externos: no aplica — sin CI ni almacenamiento externo
-- Navegadores/viewports requeridos: previsto al documentar `docs/frontend/experiencia.md`
+- Navegadores/viewports requeridos: Chrome y Edge de escritorio, viewport mínimo 1366x768. La caja no se opera desde móvil (RNF-008: operación con teclado y lector de código de barras)
 - Seguridad de aplicación: automática por superficie/riesgo mediante `seguridad-validacion`
 - Motores permitidos: auto según plataforma; nunca asumir disponibilidad
 - Alcance dinámico autorizado: local y ambiente **beta** de SUNAT. Producción de SUNAT y cualquier envío con el certificado real: prohibido sin autorización explícita del usuario inmediatamente antes

@@ -18,7 +18,7 @@
 | Mecanismo del resumen diario | envío que devuelve un identificador de consulta, con el resultado obtenido en una consulta posterior | fijado |
 | Catálogos que el sistema usa | tipo de documento de identidad, tipo de comprobante, unidad de medida, tipo de afectación de IGV | fijado |
 | Tasa de IGV | 18 %, incluida en los precios y desglosada al emitir | fijado |
-| Tope de boleta sin identificar al cliente | S/ 700 | **propuesto** — pendiente de confirmación del usuario |
+| Tope de boleta sin identificar al cliente | S/ 700 | fijado — aprobado por el usuario el 2026-08-19 |
 | RUC del emisor, razón social, dirección fiscal | del negocio real | pendiente — se completa antes del sprint de emisión |
 | Usuario secundario SOL del emisor | requerido para el envío | pendiente — se completa antes del sprint de emisión |
 

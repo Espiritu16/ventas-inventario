@@ -31,5 +31,5 @@ señalado como propuesto en la propia fila.
 - **Navegación**: recargar y usar atrás/adelante nunca repite una operación que escribe. Tras confirmar una venta o una compra, recargar no la duplica.
 - **Formato**: importes con dos decimales y separador de miles, fechas en formato peruano (día/mes/año) y horas en zona de Lima.
 
-Estado: propuesto
-Aprobado por: pendiente — fecha: pendiente
+Estado: aprobado
+Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — fecha: 2026-08-19

@@ -35,5 +35,5 @@ mismo proceso. Por eso "cuándo consulta" describe el ciclo del componente.
 - **Variables de entorno que la interfaz usa**: ninguna propia. La interfaz no habla con servicios externos; nunca se expone una credencial al navegador.
 - **Sin caché de datos en el cliente**: cada componente consulta al servidor cuando corresponde. No hay estado global duplicado que invalidar.
 
-Estado: propuesto
+Estado: aprobado
 Aprobado por (Arquitectura): sesión de Arquitectura del 2026-08-19 — fecha: 2026-08-19
