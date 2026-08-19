@@ -4,6 +4,7 @@ source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
 active_phase: S-00
 active_status: EN_PROGRESO
+active_note: rechazado por QA el 2026-08-19 (QA-01); vuelve a implementación
 last_completed_phase: null
 bootstrap_status: EN_PROGRESO
 planning_horizon_status: COMPLETA
@@ -150,6 +151,31 @@ sprints:
 |---|---|---|---|---|
 | 1 | 2026-08-19 | Política de ramas de dos niveles: `sprint/<id>` → `develop` → `main`. Antes se integraba directo a la protegida | Kevin Espíritu | `AGENTS.md`, secciones "Política de ramas" y "CI por rama" |
 | 2 | 2026-08-19 | La instalación de Livewire se ubica en S-01-B como UT-06. Ningún RFC del horizonte la declaraba, pese a que la gobernanza, ADR-0005 y los contratos la dan por existente | Kevin Espíritu | `docs/rfcs/S-01-B.md`, enmienda y UT-06 |
+
+## Validación de S-00 — RECHAZADO (2026-08-19)
+
+QA validó `ventas-inventario@58a4c54` contra `develop@b746373`, en checkout aislado
+fuera del árbol compartido, con `seguridad-validacion` activada en modo dirigido.
+Veredicto **RECHAZADO** por un único defecto bloqueante. Las cinco unidades del RFC
+cumplen su criterio literal y RNF-006 quedó confirmado por mecanismo: QA leyó el
+instante desde el motor en cinco zonas horarias y comprobó por contrafáctico que,
+al revertir la grammar, el corrimiento de cinco horas reaparece exacto.
+
+| ID | Qué falla | Severidad | Propietario |
+|---|---|---|---|
+| QA-01 / SEG-01 | La salvaguarda de `tests/TestCase.php` se elude vía `DB_URL`: examina el campo de configuración, no el nombre efectivo que resuelve el driver. Con `DB_URL` presente valida un nombre y conecta a otro, así que `migrate:fresh` podría destruir la base de aplicación con la suite en verde. `phpunit.xml` intenta neutralizarlo pero PHPUnit no pisa una variable ya presente sin `force="true"` | **Bloqueante**, alta | `implementation-backend` |
+| QA-02 | La prueba de migrate/rollback deja la base de pruebas desmantelada al terminar la suite | No bloqueante | `implementation-backend` |
+| QA-03 | El detector de arquitectura de UT-04 reconoce los sufijos `Service`/`Repository` en inglés; con la nomenclatura española del proyecto no ve `VentaServicio` ni `ProductoRepositorio`. Queda ciego cuando S-01-B cree los primeros servicios | No bloqueante | `implementation-backend` |
+| QA-04 | El README no menciona `pnpm build`; seguirlo al pie de la letra da 500 por falta de manifiesto de Vite | No bloqueante | Coordinación — **corregido** en esta misma enmienda |
+| QA-05 | Diferencia de tamaño del CSS entre el handoff y un build limpio. No es defecto: `@source` sobre un caché no versionado del esqueleto | Informativo | — |
+
+Riesgo residual anotado para S-DO-01/S-DO-02, no para S-00: `APP_DEBUG=true`,
+`APP_ENV=local`, `SESSION_SECURE_COOKIE` sin definir y `SESSION_ENCRYPT=false` son
+defaults del esqueleto y deben endurecerse antes de que exista un entorno servido.
+
+Higiene de secretos verificada como buena: ningún `.env`, certificado ni clave
+versionado en todo el rango del sprint; `composer audit` y `pnpm audit` sin
+advisories.
 
 ## Pendientes de planificación
 
