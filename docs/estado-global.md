@@ -221,9 +221,67 @@ Higiene de secretos verificada como buena: ningún `.env`, certificado ni clave
 versionado en todo el rango del sprint; `composer audit` y `pnpm audit` sin
 advisories.
 
+## Aislamiento de base por carril — decidido antes de la ola 3
+
+El usuario otorgó `CREATEDB` al rol `ventas_inventario` el 2026-08-19 (verificado:
+`rolcreatedb = t`). Con eso, cada carril paralelo puede crear su propia base de
+pruebas y la serialización por turnos deja de ser necesaria. Los turnos manuales
+funcionaron con un carril; con tres no escalan.
+
+**Convención de nombre — el orden de las partes no es estético:**
+
+```
+ventas_inventario_<carril>_test
+```
+
+Ejemplos: `ventas_inventario_s01f_test`, `ventas_inventario_s02b_test`,
+`ventas_inventario_s03b_test`.
+
+El sufijo `_test` va **al final, siempre**. La salvaguarda que S-00 dejó en
+`tests/TestCase.php` aborta si el nombre efectivo de la base no termina en `_test`,
+así que un nombre como `ventas_inventario_test_s02b` —que es el orden que sale
+natural al escribirlo— sería rechazado por la propia protección y el carril no
+podría correr sus pruebas. La protección funcionaría exactamente como debe; lo que
+estaría mal es el nombre.
+
+Reglas de uso:
+
+- Cada carril fija su base en el `.env` de **su propio worktree**, que no se versiona.
+  Ningún carril toca la base de otro.
+- `ventas_inventario_test` queda como la base por defecto de quien trabaje sin
+  paralelismo. No es de nadie en particular.
+- `ventas_inventario` es la base de aplicación y ninguna suite la toca jamás. Esa es
+  precisamente la garantía que la salvaguarda existe para dar.
+- El carril crea su base al empezar y puede dejarla al terminar; no se exige
+  limpiarla, porque `RefreshDatabase` la recompone y su nombre dice a qué sprint
+  pertenece.
+
+Esto no reemplaza el inventario de estado externo que hay que hacer en cada ola: la
+base era un recurso compartido, no el único. Puertos, caché y directorios temporales
+se siguen inventariando por ola, mirando la máquina y no razonando sobre ella.
+
+## Entradas obligatorias para S-DO-02
+
+Se registran acá, y no solo en el handoff de S-DO-01, porque son condiciones que
+S-DO-02 debe cumplir y su RFC todavía no las declara.
+
+- **Endurecimiento de configuración para el entorno servido**: `APP_ENV`,
+  `APP_DEBUG`, `SESSION_SECURE_COOKIE` y `SESSION_ENCRYPT`. Lo levantó QA como riesgo
+  residual al validar S-00. DevOps lo ubicó en S-DO-02 y no en S-DO-01, con este
+  razonamiento, que acepto: en un entorno local de desarrollo `APP_DEBUG=true` y
+  `APP_ENV=local` son lo correcto, no un defecto — forzarlos a `production` dentro
+  del compose de desarrollo empeoraría el entorno sin proteger nada. `SESSION_SECURE_COOKIE`
+  exige HTTPS y `SESSION_ENCRYPT` supone sesiones reales de usuarios; ninguna de las
+  dos condiciones existe hoy. Lo que vuelve exigible el endurecimiento es
+  precisamente el despliegue, que el RFC de S-DO-01 declara fuera de alcance.
+- **No heredar la credencial local del compose.** La contraseña de la base
+  contenerizada de S-DO-01 es un literal en `docker-compose.yml`, aceptable ahí
+  porque el puerto no se publica y no da acceso a nada real. El compose de un entorno
+  servido no puede heredar ese patrón.
+
 ## Pendientes de planificación
 
-- **Estado externo compartido en la ola 3.** El roadmap declara S-01-F, S-02-B y S-03-B en paralelo, y los tres correrían `php artisan test` contra la misma base `ventas_inventario_test`. Un `git worktree` aísla archivos y ramas, no la base de datos, el puerto ni la caché. Antes de habilitar esa ola hay que decidir explícitamente si se separa (una base por carril) o se serializa (turnos coordinados), y dejarlo escrito acá. Sin eso, el conflicto aparece a mitad de la validación disfrazado de fallo intermitente del código. Detectado por el chat de Frontend el 2026-08-19.
+- ~~**Estado externo compartido en la ola 3.**~~ **RESUELTO el 2026-08-19** — ver "Aislamiento de base por carril" abajo. Lo detectó el chat de Frontend antes de que costara nada.
 - **Árbol de trabajo único.** Las cinco sesiones comparten `/Users/sankef/ventas-inventario`. Hoy funciona porque S-00 corre solo, pero cualquier ola con dos sprints simultáneos exige worktrees dedicados por carril, acordados antes del despacho.
 
 ## Bloqueantes
@@ -243,8 +301,15 @@ aísla archivos y ramas, no lo de afuera):
 |---|---|---|
 | Árbol de trabajo | Sí | **Separar**: un `git worktree` por carril, ninguno en `/Users/sankef/ventas-inventario` |
 | Base `ventas_inventario_test` | No | Solo S-01-B la usa. S-DO-01 levanta su propio PostgreSQL en contenedor |
-| Puerto 5432 | **Sí** | El PostgreSQL de EDB ya lo ocupa. El contenedor de S-DO-01 debe publicar en otro puerto o no publicarlo; DevOps lo resuelve y lo documenta |
+| Puerto 5432 | **Sí** | Lo ocupa el PostgreSQL del host. S-DO-01 **no publica** el suyo: los servicios del compose se hablan por su red interna. Además de evitar la colisión, vuelve imposible que el contenedor escriba por error en las bases del host |
+| Puerto 8000 | **Sí** | Es el que el README documenta para `php artisan serve`, así que lo va a usar Backend al verificar S-01-B a mano. S-DO-01 publica su aplicación en **8080** y deja 8000 libre |
+| Puerto 5173 | No | Libre, verificado |
 | `vendor/`, `node_modules/` | No | Cada worktree instala lo suyo |
+
+El conflicto del puerto 8000 lo detectó DevOps al verificar la máquina: mi inventario
+inicial daba el 5432 como el único de la ola y era incorrecto. Un inventario de
+estado externo no se completa razonando sobre la topología — se completa mirando qué
+está ocupado.
 
 No hace falta serializar en esta ola: solo un carril toca la base local. En la
 **ola 3** eso deja de ser cierto — tres carriles simultáneos contra una sola base
