@@ -6,7 +6,7 @@ active_phase: S-00
 active_status: LISTO
 last_completed_phase: null
 bootstrap_status: PENDIENTE
-planning_horizon_status: COMPLETA
+planning_horizon_status: BLOQUEADA
 current_rfc_batch: []
 planning_scope: [RF-001, RF-002, RF-003, RF-004, RF-005, RF-006, RF-007, RF-008, RF-009, RF-010, RF-011, RF-012, RF-013, RF-014, RF-015, RF-016, RF-017, RF-018, RF-019, RF-020, RF-021, RNF-001, RNF-002, RNF-003, RNF-004, RNF-005, RNF-006, RNF-007, RNF-008, RNF-010, RNF-011, RNF-012, RNF-013, RNF-014]
 updated_at: 2026-08-19
@@ -54,7 +54,7 @@ sprints:
     parallelizable_with: [S-03-F]
   - id: S-06-B
     repository: ventas-inventario
-    planning_status: LISTO
+    planning_status: BLOQUEADA
     execution_status: PLANIFICADO
     depends_on: [S-05-B]
     parallelizable_with: [S-07-B, S-08-B, S-04-F]
