@@ -30,7 +30,12 @@ sprints:
   - id: S-01-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: LISTO
+    execution_status: COMPLETADO
+    branch: sprint/S-01-B
+    base_sha: b99b936
+    final_sha: 4156f116103cdf843bfeef84ab72798ca012760b
+    merge_sha: db8ec3e
+    qa: APROBADO sobre 31b84fa con gobernanza 20ef754
     depends_on: [S-00]
     parallelizable_with: [S-DO-01]
   - id: S-02-B
@@ -259,6 +264,28 @@ Reglas de uso:
 Esto no reemplaza el inventario de estado externo que hay que hacer en cada ola: la
 base era un recurso compartido, no el único. Puertos, caché y directorios temporales
 se siguen inventariando por ola, mirando la máquina y no razonando sobre ella.
+
+## Patrón recurrente — la configuración declarada y la conexión real divergen
+
+Ha aparecido **tres veces, por caminos distintos**, y se registra como patrón para
+que la cuarta se reconozca antes de costar una validación:
+
+1. **S-00** — la salvaguarda de la suite leía `config(...database)`, pero `DB_URL`
+   pisa los campos sueltos. Validaba un nombre y conectaba a otro.
+2. **S-DO-01** — `php artisan serve` reinyecta el `.env` en el proceso servido y
+   pisaba la configuración del contenedor. `tinker` conectaba bien mientras el
+   navegador fallaba.
+3. **S-01-B** — `validated()` devuelve el valor tal como llegó, sin castear, así que
+   la guarda comparaba contra una forma del dato y el modelo persistía otra.
+
+La forma común: **existe un valor declarado y un valor efectivo, y el código
+confía en el declarado.** El síntoma siempre aparece lejos de la causa, y en los tres
+casos hubo una prueba en verde que no lo detectaba.
+
+Regla que se deriva de esto, aplicable a cualquier sprint: cuando una decisión
+dependa de un valor de configuración, preguntar por el valor **efectivo** a quien
+realmente lo determina —el motor, el driver, el modelo— en vez de leer el declarado.
+La corrección de S-00 con `select current_database()` es el ejemplo de referencia.
 
 ## Ola 2 en curso — S-01-B rechazado en su primera validación (2026-08-19)
 
