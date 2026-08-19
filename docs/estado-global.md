@@ -221,6 +221,45 @@ Higiene de secretos verificada como buena: ningún `.env`, certificado ni clave
 versionado en todo el rango del sprint; `composer audit` y `pnpm audit` sin
 advisories.
 
+## Aislamiento de base por carril — decidido antes de la ola 3
+
+El usuario otorgó `CREATEDB` al rol `ventas_inventario` el 2026-08-19 (verificado:
+`rolcreatedb = t`). Con eso, cada carril paralelo puede crear su propia base de
+pruebas y la serialización por turnos deja de ser necesaria. Los turnos manuales
+funcionaron con un carril; con tres no escalan.
+
+**Convención de nombre — el orden de las partes no es estético:**
+
+```
+ventas_inventario_<carril>_test
+```
+
+Ejemplos: `ventas_inventario_s01f_test`, `ventas_inventario_s02b_test`,
+`ventas_inventario_s03b_test`.
+
+El sufijo `_test` va **al final, siempre**. La salvaguarda que S-00 dejó en
+`tests/TestCase.php` aborta si el nombre efectivo de la base no termina en `_test`,
+así que un nombre como `ventas_inventario_test_s02b` —que es el orden que sale
+natural al escribirlo— sería rechazado por la propia protección y el carril no
+podría correr sus pruebas. La protección funcionaría exactamente como debe; lo que
+estaría mal es el nombre.
+
+Reglas de uso:
+
+- Cada carril fija su base en el `.env` de **su propio worktree**, que no se versiona.
+  Ningún carril toca la base de otro.
+- `ventas_inventario_test` queda como la base por defecto de quien trabaje sin
+  paralelismo. No es de nadie en particular.
+- `ventas_inventario` es la base de aplicación y ninguna suite la toca jamás. Esa es
+  precisamente la garantía que la salvaguarda existe para dar.
+- El carril crea su base al empezar y puede dejarla al terminar; no se exige
+  limpiarla, porque `RefreshDatabase` la recompone y su nombre dice a qué sprint
+  pertenece.
+
+Esto no reemplaza el inventario de estado externo que hay que hacer en cada ola: la
+base era un recurso compartido, no el único. Puertos, caché y directorios temporales
+se siguen inventariando por ola, mirando la máquina y no razonando sobre ella.
+
 ## Entradas obligatorias para S-DO-02
 
 Se registran acá, y no solo en el handoff de S-DO-01, porque son condiciones que
@@ -242,7 +281,7 @@ S-DO-02 debe cumplir y su RFC todavía no las declara.
 
 ## Pendientes de planificación
 
-- **Estado externo compartido en la ola 3.** El roadmap declara S-01-F, S-02-B y S-03-B en paralelo, y los tres correrían `php artisan test` contra la misma base `ventas_inventario_test`. Un `git worktree` aísla archivos y ramas, no la base de datos, el puerto ni la caché. Antes de habilitar esa ola hay que decidir explícitamente si se separa (una base por carril) o se serializa (turnos coordinados), y dejarlo escrito acá. Sin eso, el conflicto aparece a mitad de la validación disfrazado de fallo intermitente del código. Detectado por el chat de Frontend el 2026-08-19.
+- ~~**Estado externo compartido en la ola 3.**~~ **RESUELTO el 2026-08-19** — ver "Aislamiento de base por carril" abajo. Lo detectó el chat de Frontend antes de que costara nada.
 - **Árbol de trabajo único.** Las cinco sesiones comparten `/Users/sankef/ventas-inventario`. Hoy funciona porque S-00 corre solo, pero cualquier ola con dos sprints simultáneos exige worktrees dedicados por carril, acordados antes del despacho.
 
 ## Bloqueantes
