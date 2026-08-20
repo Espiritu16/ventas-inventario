@@ -581,6 +581,22 @@ aprueba, y aprueba lo que no era. Si alguna vez hacen falta dos entornos a la ve
 la misma máquina, la salida conocida es parametrizar el puerto publicado
 (`${PUERTO_APP:-8080}:8000`); no se implementó porque hoy ningún caso lo pide.
 
+## Regla de permisos — "lo escribí yo" no es "es mi ruta"
+
+Un rol es dueño de las rutas que `AGENTS.md` le declara, **no de los archivos que
+escribió primero**. Si valiera la autoría, cada rol sería dueño de lo que tocó antes que
+nadie y la partición dejaría de significar algo: dos roles podrían reclamar el mismo
+directorio según quién llegó primero, que es exactamente lo que la partición existe para
+evitar.
+
+Es la confusión que produjo el inventario de los 32 archivos sin dueño: buena parte los
+escribió `implementation-backend` durante tres sprints, y eso no los volvió suyos.
+
+La distinción importa sobre todo cuando la salida cómoda es tentadora. Lo señaló él mismo
+al quedar bloqueado por un archivo que había escrito dos días antes, en el sprint en
+curso: **"se siente mío, pero se siente no es lo mismo que está declarado"**. Reconocerlo
+ahí, y no cuando el archivo es ajeno, es lo que hace que la regla sirva.
+
 ## Patrón recurrente — dos valores que hay que mantener iguales
 
 Cuatro veces, y las cuatro se resolvieron igual: **reemplazar dos fuentes que alguien
