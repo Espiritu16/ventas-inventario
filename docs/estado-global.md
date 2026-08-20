@@ -613,6 +613,23 @@ debe mantener sincronizadas por una sola, derivada de donde nace el dato.**
    Pendiente en S-08-B: derivarlo del coste vigente.
 4. **La comprobación de permiso en `mount()` y en `render()`.** Se retiró la del montaje
    en lugar de dejar ambas.
+5. **La matriz de permisos y su transcripción a código.** `docs/requisitos/actores-permisos.md`
+   es la autoridad y `app/Compartido/Autorizacion/MatrizDePermisos.php` se escribe a mano
+   desde ella. **Es la instancia más grave de todas**, porque el código es el que decide y
+   el documento el que se lee: cuando divergen, la gobernanza dice una cosa y el sistema
+   hace otra, sin que nada falle.
+
+   Ocurrió el 2026-08-19: Arquitectura corrigió tres filas del vendedor en el documento y
+   no despachó el cambio de código. Durante ese lapso, quien construyera la pantalla de
+   catálogo habría dado acceso al vendedor **derivándolo correctamente de la fuente que la
+   gobernanza le indica usar**. Lo encontró `implementation-frontend` leyendo las dos.
+
+   **Decisión, 2026-08-19: una prueba verifica que el código coincide con el documento.**
+   Vive en `tests/Unit/`, ruta ya declarada de `implementation-backend`. Lee la tabla de
+   `actores-permisos.md` y la compara fila por fila con `MatrizDePermisos`. No convierte
+   al documento en generador —sigue escribiéndose a mano— pero **la divergencia deja de ser
+   silenciosa**, que es lo único que hacía falta. Es el mismo criterio con el que se
+   resolvieron las cuatro anteriores, aplicado al caso donde más costaba.
 
 Sobre la cuarta, el argumento que la cierra es de `qa` y es más fuerte que "no agregaba
 mucha cobertura": **`mount()` corre una vez y siempre antes de un `render()`, así que su
