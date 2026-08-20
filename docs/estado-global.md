@@ -3,7 +3,7 @@ project: ventas-inventario
 source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
 active_phase: ola-3
-active_status: PLANIFICADO
+active_status: EN_PROGRESO
 last_completed_phase: ola-2 (S-01-B, S-DO-01)
 bootstrap_status: EN_PROGRESO
 planning_horizon_status: COMPLETA
@@ -42,7 +42,9 @@ sprints:
   - id: S-02-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: LISTO
+    branch: sprint/S-02-B
+    base_sha: b1c7b13
     depends_on: [S-01-B]
     parallelizable_with: [S-03-B, S-01-F]
   - id: S-03-B
@@ -84,7 +86,9 @@ sprints:
   - id: S-01-F
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: LISTO
+    branch: sprint/S-01-F
+    base_sha: b1c7b13
     depends_on: [S-01-B]
     parallelizable_with: [S-02-B, S-03-B]
   - id: S-02-F
@@ -157,6 +161,100 @@ sprints:
 - Repositorio publicado en https://github.com/Espiritu16/ventas-inventario
 - Ejecución iniciada el 2026-08-19. Los cinco chats de rol están abiertos y conectados por canal directo con el Coordinador.
 - **Tres sprints completados**: S-00 (fundación), S-01-B (acceso, usuarios y control de permisos) y S-DO-01 (entorno reproducible). Los tres fusionados en `develop`. Cada uno fue rechazado una vez por QA y aprobado tras corregir.
+
+## Ola 3 — habilitada el 2026-08-19 (reanudación)
+
+**Decisión: S-02-B y S-03-B van en SECUENCIA, no en paralelo.** El roadmap los declara
+paralelizables y sigue siendo cierto a nivel de dependencias funcionales, pero
+comparten `database/migrations/` y `config/`, así que dos sesiones simultáneas
+chocarían en el árbol. Renunciar al paralelo por una razón operativa real es una salida
+válida y no contradice el roadmap. Decisión del Coordinador sobre la recomendación
+registrada, autorizada por el usuario al ordenar la reanudación.
+
+Habilitados ahora, en dos carriles:
+
+| Carril | Sprint | Rol | Rama | Worktree |
+|---|---|---|---|---|
+| 1 | **S-02-B** — catálogo: categorías y productos | `implementation-backend` | `sprint/S-02-B` | scratchpad de sesión |
+| 2 | **S-01-F** — base de la interfaz y pantalla de acceso | `implementation-frontend` | `sprint/S-01-F` | scratchpad de sesión |
+
+Ambos parten de `develop@b1c7b13`. **S-03-B queda en `PLANIFICADO`** y se habilita al
+cerrar S-02-B, en el mismo carril.
+
+### Inventario de estado externo — hecho mirando la máquina
+
+| Recurso | Estado real | Decisión |
+|---|---|---|
+| PostgreSQL local | Corriendo, conecta con el rol de la aplicación | Base por carril: `ventas_inventario_s02b_test` y `ventas_inventario_s01f_test` |
+| Puerto 8000 | Libre | Para quien levante `artisan serve`; se coordina si los dos lo quieren a la vez |
+| Puerto 8080 | Libre | Entorno contenerizado, si alguno lo usa |
+| Puerto 5173 | Libre | Vite en modo desarrollo, que S-01-F probablemente use |
+| Contenedores ajenos | `reservas-canchas-mysql` en 3307 | De otro proyecto; no interfiere |
+
+Nota de método sobre este inventario: `lsof` reportó el 5432 como libre y la base
+**sí** estaba corriendo y aceptando conexiones. La comprobación válida fue conectarse,
+no consultar un listado de puertos. Es el mismo patrón de configuración divergente
+registrado más arriba, esta vez cometido por el Coordinador al inventariar.
+
+`devops` reprodujo la causa y es peor que un descuido: sin privilegios, `lsof` solo ve
+los sockets de los procesos propios, y en vez de decir "no puedo ver el resto" devuelve
+**salida vacía, sin error y con código de salida normal**. Con `sudo` pediría
+contraseña, así que en un script desatendido el resultado sería el mismo silencio.
+
+**Regla que se deriva, y que gobierna los health checks de S-DO-02:** una herramienta
+que responde "nada" cuando en realidad quiere decir "no puedo ver" es indistinguible de
+una que responde "nada" porque no hay nada. Una comprobación de salud tiene que
+**ejercer el servicio** —conectarse, pedir algo, mirar la respuesta— y nunca consultar
+un registro sobre él. Y si puede fallar por falta de permisos, tiene que distinguir ese
+caso del caso sano, o mentirá exactamente cuando más importa. Es el mismo falso verde
+del healthcheck que devolvía 200 sirviendo una advertencia, con otra cara.
+
+## Decisiones de Arquitectura de la ola 3
+
+**El proyecto no expone una API HTTP entre backend y frontend.** Ya estaba en ADR-0005
+y en `docs/frontend/integracion.md`, pero `docs/contratos/usuarios.md` declaraba
+endpoints JSON para listar, crear y actualizar usuarios, y S-01-B los implementó
+correctamente contra ese contrato. Al llegar S-01-F, la pantalla de usuarios chocó con
+esa ruta: dos frentes reclamando la misma URI, uno para una vista y otro para JSON.
+
+Resuelto enmendando el contrato: esas tres rutas son **pantallas**, no endpoints. Los
+endpoints JSON se retiran junto con sus pruebas, porque no tienen consumidor previsto
+—el frontend invoca `UsuarioService` en el mismo proceso— y una superficie que nadie
+usa no se deja abierta. `POST /login` y `POST /logout` siguen siendo HTTP genuinos.
+
+**`GET /login` se declara accesible sin sesión.** Nunca estuvo en la matriz, solo la
+operación `POST /login`. Bajo deny-by-default eso produce un catch-22: hace falta
+sesión para ver la pantalla donde se obtiene la sesión.
+
+**`GET /panel` en S-01-F es solo el armazón** —layout y menú— sin contenido de negocio.
+El tablero con alertas es S-06-F. UT-02 necesita que `/panel` exista como destino tras
+iniciar sesión, no que muestre datos.
+
+Las tres son la **tercera, cuarta y quinta instancia** del mismo patrón: un RFC pide un
+resultado cuyo artefacto no está declarado, o dos documentos aprobados que no pueden
+cumplirse a la vez. Ver la corrección ya aplicada a `project-continuity` sobre rehacer
+la auditoría de permisos cuando aparecen los RFC.
+
+## Tensión a resolver antes de S-09-B — no urgente, sí anotada
+
+`AGENTS.md` declara para accesibilidad *"recorrido completo de la venta operable solo
+con teclado, verificado de forma automatizada"*. RNF-008, en su sección de cómo se
+mide, pide *"recorrido manual documentado que registra una venta completa sin usar el
+mouse"*. **No dicen lo mismo**, y hoy nadie tiene que elegir.
+
+Lo vuelve concreto una limitación que QA verificó ejecutándola, no deduciéndola: el
+navegador que puede conducir es Chromium 148 embebido en Electron —mismo motor Blink
+que Chrome y Edge, distinto contenedor— y **la tecla `Tab` no mueve el foco**: se
+intercepta antes de llegar a la página, aunque escribir texto sí funciona. Puede leer
+`document.activeElement`, fijar el viewport en 1366x768 y leer el árbol de
+accesibilidad, así que el orden de tabulación es verificable **por estructura**, no por
+ejecución.
+
+Para S-01-F alcanza: su criterio pide que el foco *vuelva* a un campo, no un recorrido
+con teclado. Para S-09-B no: o se decide una herramienta que controle el teclado de
+verdad —lo que reabre la decisión de E2E, hoy pospuesta— o se acepta el recorrido
+manual documentado que el propio RNF-008 describe. Decidirlo con el sprint encima es
+peor que decidirlo ahora.
 
 ## Punto de detención — 2026-08-19
 

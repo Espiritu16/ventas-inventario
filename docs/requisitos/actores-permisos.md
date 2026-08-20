@@ -112,8 +112,24 @@ Decidido por Arquitectura el 2026-08-19, a partir del hallazgo que reportó
 
 ## Matriz de permisos
 
+**Cómo leer las rutas de esta tabla.** Este proyecto no expone una API HTTP entre
+backend y frontend: los componentes Livewire invocan los servicios de dominio en el
+mismo proceso (ADR-0005, `docs/frontend/integracion.md`, `docs/contratos/servicios-de-dominio.md`).
+Por lo tanto, salvo las de infraestructura declaradas arriba y `POST /login` /
+`POST /logout` —que son operaciones HTTP genuinas de sesión—, **cada ruta de esta
+tabla es la pantalla que expone esa operación**, no un endpoint que devuelva datos a
+un cliente. La autorización se aplica igual sobre ella, desde el servidor y con
+deny-by-default: ocultar un ítem del menú no es control de acceso.
+
+`GET /login` es la única pantalla accesible sin sesión. Sin esa fila, deny-by-default
+produce un catch-22 —hace falta sesión para ver la pantalla donde se obtiene la
+sesión—, que es como se detectó: `implementation-frontend` lo reportó al implementar
+S-01-F, y la propia tabla de infraestructura ya exigía esa página al declarar que
+`GET /` redirige ahí. Fila agregada por Arquitectura el 2026-08-19.
+
 | Actor | Rol técnico | Recurso/Operación | Acción | Condición/alcance | Permitido | Deriva de |
 |---|---|---|---|---|---|---|
+| Anónimo | (ninguno) | GET /login | ver la pantalla de acceso | — | Sí | RF-001 |
 | Anónimo | (ninguno) | POST /login | autenticar | — | Sí | RF-001 |
 | Administrador | administrador | POST /logout | cerrar sesión | — | Sí | RF-001 |
 | Vendedor | vendedor | POST /logout | cerrar sesión | — | Sí | RF-001 |
