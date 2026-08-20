@@ -145,7 +145,12 @@ services:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8000/up | grep -q 'Application up'"]
       interval: 10s
       timeout: 5s
-      retries: 12
+      # 3 reintentos y no 12. Los fallos durante `start_period` no cuentan, así
+      # que un arranque lento no corre riesgo de marcarse por error, y a cambio
+      # un entorno que se rompe en caliente —por ejemplo tras cambiar de rama
+      # sin volver a levantar— aparece como `unhealthy` en medio minuto en vez
+      # de en casi dos. Medido: con 12 tardaba 105 s en notarse.
+      retries: 3
       start_period: 180s
     restart: unless-stopped
 
