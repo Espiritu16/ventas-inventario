@@ -104,6 +104,17 @@ final class MatrizDePermisos
         'GET /productos/{id}' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
         'POST /productos' => [Usuario::ROL_ADMINISTRADOR],
         'PATCH /productos/{id}' => [Usuario::ROL_ADMINISTRADOR],
+
+        // Proveedores: solo el administrador; el vendedor no compra.
+        'GET /proveedores' => [Usuario::ROL_ADMINISTRADOR],
+        'POST /proveedores' => [Usuario::ROL_ADMINISTRADOR],
+        'PATCH /proveedores/{id}' => [Usuario::ROL_ADMINISTRADOR],
+
+        // Clientes: el vendedor consulta y da de alta desde la propia caja,
+        // pero editar un cliente ya registrado es del administrador.
+        'GET /clientes' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
+        'POST /clientes' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
+        'PATCH /clientes/{id}' => [Usuario::ROL_ADMINISTRADOR],
     ];
 
     public static function identificar(string $metodo, Route $ruta): string

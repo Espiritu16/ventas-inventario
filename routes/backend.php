@@ -2,6 +2,8 @@
 
 use App\Dominios\Catalogo\Controllers\CategoriaController;
 use App\Dominios\Catalogo\Controllers\ProductoController;
+use App\Dominios\Clientes\Controllers\ClienteController;
+use App\Dominios\Proveedores\Controllers\ProveedorController;
 use App\Dominios\Usuarios\Controllers\SesionController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,3 +33,11 @@ Route::get('/productos', [ProductoController::class, 'listar'])->name('productos
 Route::post('/productos', [ProductoController::class, 'crear'])->name('productos.crear');
 Route::get('/productos/{id}', [ProductoController::class, 'ver'])->name('productos.ver');
 Route::patch('/productos/{id}', [ProductoController::class, 'actualizar'])->name('productos.actualizar');
+
+Route::get('/proveedores', [ProveedorController::class, 'listar'])->name('proveedores.listar');
+Route::post('/proveedores', [ProveedorController::class, 'crear'])->name('proveedores.crear');
+Route::patch('/proveedores/{id}', [ProveedorController::class, 'actualizar'])->name('proveedores.actualizar');
+
+Route::get('/clientes', [ClienteController::class, 'listar'])->name('clientes.listar');
+Route::post('/clientes', [ClienteController::class, 'crear'])->name('clientes.crear');
+Route::patch('/clientes/{id}', [ClienteController::class, 'actualizar'])->name('clientes.actualizar');
