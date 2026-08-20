@@ -31,6 +31,36 @@ mismo tiempo que una contraseña incorrecta: no se revela cuál de los dos fall�
 - Errores: NO_AUTENTICADO
 - Autenticación: requerida, roles `administrador` y `vendedor`
 
+## Enmienda de Arquitectura — 2026-08-19: las tres rutas de abajo son pantallas, no endpoints JSON
+
+`GET /usuarios`, `POST /usuarios` y `PATCH /usuarios/{id}` se declararon como
+endpoints HTTP que devuelven datos. **No corresponde**, y la contradicción la
+detectó `implementation-frontend` al chocar con la ruta ya registrada por S-01-B.
+
+ADR-0005, `docs/frontend/integracion.md` y `docs/contratos/servicios-de-dominio.md`
+son explícitos: **no hay cliente HTTP ni API entre backend y frontend**. Los
+componentes invocan `UsuarioService` en el mismo proceso, y el contrato entre ambos
+frentes son las firmas de esos métodos, no rutas. Un endpoint JSON en `/usuarios` no
+tiene consumidor previsto: el frontend no lo llama, y ningún RF pide una API externa.
+
+Qué queda vigente:
+
+- **`POST /login` y `POST /logout` siguen siendo operaciones HTTP genuinas.** Son
+  transiciones de sesión que el navegador ejecuta como envío de formulario, no
+  lecturas de datos. No cambian.
+- **Las tres rutas de abajo pasan a ser las pantallas** que exponen esas
+  operaciones, servidas desde `routes/web.php` por `implementation-frontend`. Su
+  request/response describe lo que la pantalla acepta y muestra; la operación real la
+  ejecuta `UsuarioService` en el mismo proceso.
+- **Los endpoints JSON que S-01-B registró en `routes/backend.php` se retiran**, junto
+  con sus pruebas. No es trabajo desperdiciado por descuido: el contrato los pedía. Se
+  retiran porque una superficie que nadie consume no se deja abierta — el mismo
+  criterio con el que se rechazaron las rutas de subida de archivos de Livewire.
+
+Consecuencia sobre S-01-B, ya cerrado: su UT-03 se cumplió contra el contrato vigente
+en su momento. Esta enmienda no lo invalida retroactivamente; el retiro se ejecuta como
+corrección puntual y queda registrado en el estado global.
+
 ## GET /usuarios
 - Ruta real: GET /usuarios
 - Query params: `buscar?: string (opcional)`, `pagina?: entero (opcional, default 1)`

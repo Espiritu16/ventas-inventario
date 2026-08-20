@@ -209,6 +209,53 @@ un registro sobre él. Y si puede fallar por falta de permisos, tiene que distin
 caso del caso sano, o mentirá exactamente cuando más importa. Es el mismo falso verde
 del healthcheck que devolvía 200 sirviendo una advertencia, con otra cara.
 
+## Decisiones de Arquitectura de la ola 3
+
+**El proyecto no expone una API HTTP entre backend y frontend.** Ya estaba en ADR-0005
+y en `docs/frontend/integracion.md`, pero `docs/contratos/usuarios.md` declaraba
+endpoints JSON para listar, crear y actualizar usuarios, y S-01-B los implementó
+correctamente contra ese contrato. Al llegar S-01-F, la pantalla de usuarios chocó con
+esa ruta: dos frentes reclamando la misma URI, uno para una vista y otro para JSON.
+
+Resuelto enmendando el contrato: esas tres rutas son **pantallas**, no endpoints. Los
+endpoints JSON se retiran junto con sus pruebas, porque no tienen consumidor previsto
+—el frontend invoca `UsuarioService` en el mismo proceso— y una superficie que nadie
+usa no se deja abierta. `POST /login` y `POST /logout` siguen siendo HTTP genuinos.
+
+**`GET /login` se declara accesible sin sesión.** Nunca estuvo en la matriz, solo la
+operación `POST /login`. Bajo deny-by-default eso produce un catch-22: hace falta
+sesión para ver la pantalla donde se obtiene la sesión.
+
+**`GET /panel` en S-01-F es solo el armazón** —layout y menú— sin contenido de negocio.
+El tablero con alertas es S-06-F. UT-02 necesita que `/panel` exista como destino tras
+iniciar sesión, no que muestre datos.
+
+Las tres son la **tercera, cuarta y quinta instancia** del mismo patrón: un RFC pide un
+resultado cuyo artefacto no está declarado, o dos documentos aprobados que no pueden
+cumplirse a la vez. Ver la corrección ya aplicada a `project-continuity` sobre rehacer
+la auditoría de permisos cuando aparecen los RFC.
+
+## Tensión a resolver antes de S-09-B — no urgente, sí anotada
+
+`AGENTS.md` declara para accesibilidad *"recorrido completo de la venta operable solo
+con teclado, verificado de forma automatizada"*. RNF-008, en su sección de cómo se
+mide, pide *"recorrido manual documentado que registra una venta completa sin usar el
+mouse"*. **No dicen lo mismo**, y hoy nadie tiene que elegir.
+
+Lo vuelve concreto una limitación que QA verificó ejecutándola, no deduciéndola: el
+navegador que puede conducir es Chromium 148 embebido en Electron —mismo motor Blink
+que Chrome y Edge, distinto contenedor— y **la tecla `Tab` no mueve el foco**: se
+intercepta antes de llegar a la página, aunque escribir texto sí funciona. Puede leer
+`document.activeElement`, fijar el viewport en 1366x768 y leer el árbol de
+accesibilidad, así que el orden de tabulación es verificable **por estructura**, no por
+ejecución.
+
+Para S-01-F alcanza: su criterio pide que el foco *vuelva* a un campo, no un recorrido
+con teclado. Para S-09-B no: o se decide una herramienta que controle el teclado de
+verdad —lo que reabre la decisión de E2E, hoy pospuesta— o se acepta el recorrido
+manual documentado que el propio RNF-008 describe. Decidirlo con el sprint encima es
+peor que decidirlo ahora.
+
 ## Punto de detención — 2026-08-19
 
 El trabajo se detuvo acá por decisión del usuario, con todo en estado consistente.
