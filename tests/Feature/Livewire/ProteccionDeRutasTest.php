@@ -86,15 +86,26 @@ final class ProteccionDeRutasTest extends TestCase
 
     /**
      * El vendedor no ve la sección en el menú, pero eso no es lo que lo
-     * protege: comprobamos las dos cosas por separado, y que la segunda siga
+     * protege: se comprueban las dos cosas por separado, y la segunda sigue
      * siendo cierta aunque la primera cambiara.
+     *
+     * La primera mitad mira el enlace dentro del menú y no el texto en toda la
+     * página. Buscar la palabra en la página entera fallaba de las dos formas
+     * a la vez: se ponía roja si "Usuarios" aparecía en cualquier otro punto
+     * del panel, y pasaba sin comprobar nada si el ítem se renombrara a
+     * "Cuentas". Lo que identifica a la sección es su destino, no su etiqueta.
      */
     public function test_el_menu_oculta_y_ademas_el_servidor_rechaza(): void
     {
         $vendedor = Usuario::factory()->create(['rol' => Usuario::ROL_VENDEDOR]);
 
-        // 1) Comodidad: no aparece en el menú del panel.
-        $this->actingAs($vendedor)->get('/panel')->assertDontSee('Usuarios');
+        // 1) Comodidad: el menú no le ofrece el enlace.
+        $menu = $this->actingAs($vendedor)->get('/panel')->getContent();
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/<a\s[^>]*href="\/usuarios"[^>]*data-prueba="menu-item"/',
+            $menu
+        );
 
         // 2) Protección: da igual el menú, la URL directa se rechaza.
         $this->actingAs($vendedor)->get('/usuarios')->assertStatus(403);

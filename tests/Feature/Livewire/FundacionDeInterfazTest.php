@@ -37,28 +37,63 @@ final class FundacionDeInterfazTest extends TestCase
     }
 
     /**
-     * Si alguien quita la comprobación de rol del menú, esta prueba falla:
-     * los ítems aparecerían para todos. Es la que la práctica de mutación
-     * busca.
+     * Si alguien quita la comprobación de rol del menú, esta prueba falla: los
+     * ítems aparecerían para todos. Es la que la práctica de mutación busca.
      *
-     * Se afirma sección por sección y no que el menú esté vacío. Cuando este
-     * proyecto tenía una sola pantalla, "el vendedor no ve nada" y "el
-     * vendedor no ve Usuarios" eran indistinguibles; al aparecer Clientes
-     * —que sí le corresponde— la primera dejó de ser cierta sin que la regla
-     * hubiera cambiado. Afirmar lo incidental hace que la prueba caduque por
-     * algo que no es su tema.
+     * **Comprueba la relación, no el conjunto.** Dos versiones anteriores
+     * fijaron una foto y caducaron por eso: primero "el vendedor no ve nada",
+     * cierta solo mientras hubo una sola pantalla; después una lista escrita a
+     * mano de las secciones ajenas, que habría quedado corta en cuanto
+     * apareciera una nueva. Reparar una prueba que caducó no basta si la
+     * reparación depende de lo mismo.
+     *
+     * Acá el universo de secciones sale de renderizar el menú, y la regla sale
+     * de la matriz. Ninguna lista propia: una sección nueva queda cubierta el
+     * día que se agrega, sin que nadie se acuerde de nada.
+     *
+     * **Su límite, dicho a propósito:** el universo se toma del menú del
+     * administrador, así que comprueba *de las secciones que el menú ofrece,
+     * el vendedor ve exactamente las que la matriz le permite*. No comprueba
+     * que toda pantalla permitida tenga su ítem — una sección que no esté en
+     * el menú para nadie es invisible para esta prueba. Es el recorte correcto
+     * para su tema, que es qué ve el vendedor, y no un descuido.
      */
-    public function test_el_vendedor_solo_ve_las_secciones_que_le_corresponden(): void
+    public function test_el_vendedor_ve_exactamente_las_secciones_que_la_matriz_le_permite(): void
     {
-        $this->actingAs(Usuario::factory()->create(['rol' => Usuario::ROL_VENDEDOR]));
+        $vendedor = Usuario::factory()->create(['rol' => Usuario::ROL_VENDEDOR]);
 
-        $html = $this->renderizar('<x-menu />');
+        $ofrecidas = $this->seccionesDelMenuDe(Usuario::factory()->administrador()->create());
+        $visibles = $this->seccionesDelMenuDe($vendedor);
 
-        foreach (['Usuarios', 'Categorías', 'Productos', 'Proveedores'] as $ajena) {
-            $this->assertStringNotContainsString($ajena, $html, "El vendedor no debería ver «{$ajena}».");
+        $this->assertNotEmpty($ofrecidas, 'El menú no ofreció ninguna sección: el barrido está mirando mal.');
+
+        foreach ($ofrecidas as $ruta) {
+            $permitida = MatrizDePermisos::permiteA('GET '.$ruta, $vendedor);
+
+            $this->assertSame(
+                $permitida,
+                in_array($ruta, $visibles, true),
+                "El menú y la matriz discrepan sobre «{$ruta}» para el vendedor."
+            );
         }
+    }
 
-        $this->assertStringContainsString('Clientes', $html, 'El vendedor sí atiende clientes.');
+    /**
+     * Las rutas que el menú ofrece a esa persona, leídas de lo renderizado.
+     *
+     * @return array<int, string>
+     */
+    private function seccionesDelMenuDe(Usuario $usuario): array
+    {
+        $this->actingAs($usuario);
+
+        preg_match_all(
+            '/<a\s[^>]*href="([^"]+)"[^>]*data-prueba="menu-item"/',
+            $this->renderizar('<x-menu />'),
+            $coincidencias
+        );
+
+        return $coincidencias[1];
     }
 
     /**
