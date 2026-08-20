@@ -193,6 +193,15 @@ final class ProyeccionDeLaVentaTest extends TestCase
         $this->assertSame(0, bccomp($linea['precio_unitario'], '10.0000', 4));
         $this->assertSame(0, bccomp($linea['reparto'][0]['cantidad'], '2.000', 3));
         $this->assertSame('L-001', $linea['reparto'][0]['codigo_lote']);
+
+        // El vencimiento se fija por su valor y no solo por estar en la lista
+        // de claves: fijar la forma cierra qué campos salen, fijar el valor
+        // cierra qué llevan adentro, y un campo permitido cuyo valor no
+        // comprueba nadie puede transportar cualquier cosa.
+        $this->assertSame(
+            now()->addMonths(6)->format('Y-m-d'),
+            $linea['reparto'][0]['fecha_vencimiento']
+        );
     }
 
     /**
