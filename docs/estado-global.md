@@ -13,8 +13,9 @@ updated_at: 2026-08-19
 repositories:
   - name: ventas-inventario
     path: ventas-inventario
-    branch: main
-    current_sha: null
+    branch: develop
+    integration_branch: develop
+    protected_branch: main
 sprints:
   - id: S-00
     repository: ventas-inventario
@@ -155,7 +156,38 @@ sprints:
 - Los 19 RFC redactados y aprobados por el usuario el 2026-08-19. Planificación del horizonte COMPLETA.
 - Repositorio publicado en https://github.com/Espiritu16/ventas-inventario
 - Ejecución iniciada el 2026-08-19. Los cinco chats de rol están abiertos y conectados por canal directo con el Coordinador.
-- S-00 en curso en `sprint/S-00`, desde `main@99cd061`. UT-01, UT-03 y UT-04 verificadas; UT-02 y UT-05 quedaron detenidas por una precondición de entorno (rol y bases de PostgreSQL locales), resuelta por el usuario el mismo día y verificada por el Coordinador conectando con el rol de la aplicación contra `ventas_inventario` y `ventas_inventario_test`.
+- **Tres sprints completados**: S-00 (fundación), S-01-B (acceso, usuarios y control de permisos) y S-DO-01 (entorno reproducible). Los tres fusionados en `develop`. Cada uno fue rechazado una vez por QA y aprobado tras corregir.
+
+## Punto de detención — 2026-08-19
+
+El trabajo se detuvo acá por decisión del usuario, con todo en estado consistente.
+Quien retome **no necesita esta conversación**: todo lo necesario está en este
+documento, en `AGENTS.md` y en Git.
+
+| Qué | Dónde está |
+|---|---|
+| Trabajo completado | `develop`, publicado en `origin` |
+| `main` | Atrás a propósito; la promoción quedó preparada en local, **sin publicar** |
+| Worktrees de S-01-B y S-DO-01 | Vivos, con sus sesiones paradas ahí. Eliminarlos solo tras avisar a esos chats |
+| Ramas de sprint y de gobernanza | Conservadas para auditoría, todas fusionadas |
+
+**Lo primero al retomar, en este orden:**
+
+1. **Publicar la promoción a `main`** si el usuario la confirma — es la única acción
+   pendiente que toca la rama protegida.
+2. **Decidir cómo se ejecuta la ola 3**: S-02-B y S-03-B son del mismo rol y hay un
+   solo chat de Backend. O se abre un segundo chat, o van en secuencia. Sin esa
+   decisión, el paralelismo que el roadmap declara no es realizable. Recomendación
+   registrada del Coordinador: secuencia, porque el tiempo ganado con dos chats de
+   backend no compensa sumar un tercer carril de contención sobre puertos y bases en
+   la primera ola de tres sprints.
+3. **Inventariar el estado externo de la ola 3 mirando la máquina**, no razonando
+   sobre ella: puertos ocupados, con el entorno contenerizado ya en juego. La base ya
+   está resuelta por carril.
+
+**Nada está a medias**: ningún sprint quedó `EN_PROGRESO`, ninguna validación quedó
+sin veredicto y ningún documento gobernado quedó afirmando algo que el árbol no
+respalde.
 
 ## Decisiones tomadas durante la ejecución
 
