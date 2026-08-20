@@ -20,6 +20,7 @@
      * que agrega una pantalla la declara, y recién ahí se vuelve navegable.
      */
     $items = [
+        ['etiqueta' => 'Categorías', 'ruta' => '/categorias', 'identificador' => 'GET /categorias'],
         ['etiqueta' => 'Usuarios', 'ruta' => '/usuarios', 'identificador' => 'GET /usuarios'],
     ];
 
