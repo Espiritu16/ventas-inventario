@@ -1,5 +1,8 @@
 # Contrato — Catálogo (categorías y productos)
 
+> **Enmienda de Arquitectura, 2026-08-20.** Las categorías usaban `DOCUMENTO_DUPLICADO` para un nombre repetido. La taxonomía define ese código como *"ya existe un cliente o proveedor con ese tipo y número de documento"*: una categoría no tiene documento, así que el contrato estaba usando un código fuera de su significado declarado. Se agrega `CATEGORIA_NOMBRE_DUPLICADO`, siguiendo el mismo patrón que `PRODUCTO_CODIGO_DUPLICADO` y `COMPRA_DOCUMENTO_DUPLICADO`. **Es el segundo código de duplicado mal asignado en este contrato** — el primero fue `PRODUCTO_CODIGO_DUPLICADO` respondiendo también a errores de formato. Lo detectó `implementation-frontend` al recorrer los cuatro servicios buscando cuáles nombran el campo del error.
+
+
 > **Gobernado por [ADR-0006](../decisiones/0006-sin-api-http-interna.md)**: los recursos de dominio se sirven como **pantallas**, no como endpoints HTTP. Las rutas que este documento describe son las de esas pantallas; las filas cuyo verbo no es `GET` describen **operaciones** que el componente ejecuta invocando el servicio en el mismo proceso, no rutas que el enrutador atienda. Agregado el 2026-08-19, tras encontrar el mismo choque replicado en cuatro dominios.
 
 
@@ -14,7 +17,7 @@ Autoridad: Arquitectura. Versión del contrato: v1.
 
 ## POST /categorias
 - Request: `{ nombre: string (requerido), descripcion?: string (opcional) }`
-- Errores: CAMPO_REQUERIDO, CAMPO_FUERA_DE_RANGO, DOCUMENTO_DUPLICADO
+- Errores: CAMPO_REQUERIDO, CAMPO_FUERA_DE_RANGO, CATEGORIA_NOMBRE_DUPLICADO
 - Autenticación: requerida, rol `administrador`
 - Idempotencia: deduplicación mediante la unicidad de `nombre`
 
@@ -27,7 +30,7 @@ Autoridad: Arquitectura. Versión del contrato: v1.
 ## PATCH /categorias/{id}
 - Request: subconjunto de `{ nombre, descripcion, activo }`
 - Regla de negocio: desactivar una categoría no afecta a los productos ya asociados (RF-003); una categoría inactiva no se ofrece al crear productos nuevos.
-- Errores: RECURSO_NO_ENCONTRADO, DOCUMENTO_DUPLICADO, NO_AUTORIZADO
+- Errores: RECURSO_NO_ENCONTRADO, CATEGORIA_NOMBRE_DUPLICADO, NO_AUTORIZADO
 - Autenticación: requerida, rol `administrador`
 
 ## GET /productos

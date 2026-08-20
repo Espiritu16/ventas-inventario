@@ -43,6 +43,7 @@ las pruebas verifican, no el texto visible.
 
 | Código | HTTP status | Cuándo se usa |
 |---|---|---|
+| CATEGORIA_NOMBRE_DUPLICADO | 409 | ya existe una categoría con ese nombre, comparado sin distinguir mayúsculas |
 | PRODUCTO_CODIGO_DUPLICADO | 409 | ya existe un producto con ese código interno |
 | PRODUCTO_PRECIO_MAYOR_INVALIDO | 422 | el precio al por mayor es mayor que el precio al por menor |
 | PRODUCTO_INACTIVO | 422 | se intenta comprar o vender un producto desactivado |
