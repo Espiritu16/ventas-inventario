@@ -270,8 +270,8 @@ no `NO_AUTORIZADO`: no se revela que la venta existe.
 | Método | Entrada | Devuelve | Errores | Estado | Deriva de |
 |---|---|---|---|---|---|
 | `SerieComprobanteService::reservarCorrelativo(string $tipoComprobante): array` | tipo de comprobante | el siguiente correlativo, con la fila de la serie bloqueada | SERIE_NO_CONFIGURADA | implementado | RF-014 |
-| `SerieComprobanteService::crear(string $tipo, string $serie)` | tipo y serie | la serie creada | SERIE_DUPLICADA | **sin sprint** | RF-014 |
-| `SerieComprobanteService::listar()` | — | series con su correlativo actual | — | **sin sprint** | RF-014 |
+| `SerieComprobanteService::crear(string $tipo, string $serie)` | tipo y serie | la serie creada | SERIE_DUPLICADA | pendiente S-06-B | RF-014 |
+| `SerieComprobanteService::listar()` | — | series con su correlativo actual | — | pendiente S-06-B | RF-014 |
 | `ComprobanteService::listar(...)` | estado, rango, página | página de comprobantes, con pendientes y rechazados primero | — | pendiente S-06-B | RF-016 |
 | `ComprobanteService::reenviar(int $id)` | identificador | el comprobante encolado de nuevo | COMPROBANTE_NO_REENVIABLE, RECURSO_NO_ENCONTRADO | pendiente S-06-B | RF-016 |
 | `ResumenDiarioService::generar(string $fechaReferencia)` | fecha | el resumen creado y encolado | BOLETA_YA_RESUMIDA | pendiente S-06-B | RF-017 |
@@ -281,14 +281,18 @@ no `NO_AUTORIZADO`: no se revela que la venta existe.
 transacción, y falla con una excepción si se lo llama fuera de una. **El frontend nunca lo
 llama.**
 
-> **Configurar series no tiene sprint, y sin una serie no se puede emitir.** RF-014 tiene dos
-> mitades: asignar el correlativo —hecha en S-05-B— y **que el administrador configure la
-> serie**, que no la implementa ningún RFC, no tiene pantalla en `docs/frontend/experiencia.md`
-> y sí tiene dos filas en la matriz de permisos (`GET`/`POST /series-comprobante`). Hoy no se
-> nota porque las pruebas crean la serie directamente en la base. **Se nota en S-06-B**, que es
-> el primer sprint que emite de verdad: sin una serie configurada, `registrar` rechaza con
-> `SERIE_NO_CONFIGURADA` antes de llegar a SUNAT. Escalado al usuario el 2026-08-20; hasta que
-> se asigne a un sprint, `SERIE_DUPLICADA` tampoco existe en la taxonomía de errores.
+> **Configurar series entró en S-06-B el 2026-08-20, y hasta ese día no estaba en ningún
+> sprint.** RF-014 tiene dos mitades: asignar el correlativo —hecha en S-05-B— y que el
+> administrador configure la serie, que no implementaba ningún RFC, no tenía pantalla en
+> `docs/frontend/experiencia.md` y sí tenía dos filas en la matriz de permisos. No se notaba
+> porque las pruebas insertan la serie directamente en la base; `qa` verificó después que
+> `series_comprobante` es **la única tabla del sistema sin ningún servicio que la cree**, así
+> que ahí la inserción a mano no era comodidad, era el único camino.
+>
+> Se habría notado en S-06-B, el primer sprint que emite de verdad: sin una serie configurada,
+> `registrar` rechaza con `SERIE_NO_CONFIGURADA` antes de llegar a SUNAT. Entró en ese mismo
+> sprint como unidad previa, con la pantalla en S-05-F, y `SERIE_DUPLICADA` se agregó a la
+> taxonomía de errores al mismo tiempo.
 
 ## Emisión electrónica — interfaz `EmisorElectronico`
 
