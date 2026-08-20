@@ -130,6 +130,28 @@ final class IdempotenciaYConsultaTest extends TestCase
         $this->assertSame($primera->id, $segunda->id);
     }
 
+    /**
+     * El orden de las claves de cabecera tampoco cambia la huella: quien arma
+     * la petición no garantiza un orden, y un reintento que solo difiera en
+     * eso se rechazaría como si trajera otros datos.
+     */
+    public function test_el_orden_de_las_claves_de_cabecera_no_cambia_la_huella(): void
+    {
+        $linea = ['producto_id' => $this->producto->id, 'cantidad' => '2.000', 'tipo_precio' => 'menor'];
+
+        $primera = $this->servicio->registrarUnaSolaVez(self::CLAVE, DatosDeEntrada::desde([
+            'cliente_id' => $this->cliente->id, 'tipo_comprobante' => '03',
+            'metodo_pago' => 'efectivo', 'lineas' => [$linea],
+        ]), $this->vendedor);
+
+        $segunda = $this->servicio->registrarUnaSolaVez(self::CLAVE, DatosDeEntrada::desde([
+            'lineas' => [$linea], 'metodo_pago' => 'efectivo',
+            'tipo_comprobante' => '03', 'cliente_id' => $this->cliente->id,
+        ]), $this->vendedor);
+
+        $this->assertSame($primera->id, $segunda->id);
+    }
+
     public static function clavesMalFormadas(): array
     {
         return [
