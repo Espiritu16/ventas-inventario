@@ -33,7 +33,7 @@
                 {{ $editando === null ? 'Nuevo usuario' : 'Editar usuario' }}
             </h2>
 
-            <x-formulario enviar="guardar" etiqueta-enviar="Guardar">
+            <x-formulario :enviar="$editando === null ? 'crear' : 'actualizar'" etiqueta-enviar="Guardar">
                 <x-campo
                     nombre="nombre"
                     etiqueta="Nombre"

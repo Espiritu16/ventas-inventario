@@ -69,7 +69,7 @@ final class EscaladaPorComponenteTest extends TestCase
             ->set('email', 'colado@ejemplo.pe')
             ->set('password', 'contrasena-valida')
             ->set('rol', Usuario::ROL_ADMINISTRADOR)
-            ->call('guardar'));
+            ->call('crear'));
 
         $this->assertSame('NO_AUTORIZADO', $rechazo->codigo->value);
         $this->assertDatabaseMissing('usuarios', ['email' => 'colado@ejemplo.pe']);
@@ -128,7 +128,7 @@ final class EscaladaPorComponenteTest extends TestCase
             ->set('email', 'ana@ejemplo.pe')
             ->set('password', 'contrasena-valida')
             ->set('rol', Usuario::ROL_VENDEDOR)
-            ->call('guardar')
+            ->call('crear')
             ->assertSee('Usuario creado');
 
         $this->assertDatabaseHas('usuarios', ['email' => 'ana@ejemplo.pe']);
