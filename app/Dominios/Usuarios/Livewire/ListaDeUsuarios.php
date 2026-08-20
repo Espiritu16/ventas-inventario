@@ -2,10 +2,13 @@
 
 namespace App\Dominios\Usuarios\Livewire;
 
+use App\Compartido\Autorizacion\MatrizDePermisos;
+use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
 use App\Dominios\Usuarios\Datos\DatosUsuario;
 use App\Dominios\Usuarios\Modelos\Usuario;
 use App\Dominios\Usuarios\Servicios\UsuarioService;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -58,6 +61,11 @@ class ListaDeUsuarios extends Component
 
     public ?string $exito = null;
 
+    public function mount(): void
+    {
+        $this->exigirPermiso('GET /usuarios');
+    }
+
     public function updatedBuscar(): void
     {
         // Al cambiar la búsqueda se vuelve a la primera página: conservar la
@@ -73,6 +81,8 @@ class ListaDeUsuarios extends Component
 
     public function editar(int $id): void
     {
+        $this->exigirPermiso('GET /usuarios');
+
         $usuario = Usuario::query()->find($id);
 
         if ($usuario === null) {
@@ -98,6 +108,8 @@ class ListaDeUsuarios extends Component
 
     public function guardar(UsuarioService $usuarios): void
     {
+        $this->exigirPermiso($this->editando === null ? 'POST /usuarios' : 'PATCH /usuarios/{id}');
+
         $this->limpiarMensajes();
 
         try {
@@ -140,6 +152,8 @@ class ListaDeUsuarios extends Component
      */
     public function cambiarEstado(int $id, bool $activo, UsuarioService $usuarios): void
     {
+        $this->exigirPermiso('PATCH /usuarios/{id}');
+
         $this->limpiarMensajes();
 
         try {
@@ -151,6 +165,36 @@ class ListaDeUsuarios extends Component
         }
 
         $this->exito = $activo ? 'Usuario activado.' : 'Usuario desactivado.';
+    }
+
+    /**
+     * Comprueba el permiso antes de invocar el servicio.
+     *
+     * No es redundante con el middleware. El middleware protege la ruta
+     * `GET /usuarios`, pero los métodos de este componente no viajan por esa
+     * ruta: viajan por el endpoint de actualización de Livewire, que solo
+     * exige sesión activa y no distingue rol. Sin esta comprobación, quien
+     * tuviera cualquier sesión podía invocar `guardar` y darse de alta como
+     * administrador, sin pasar nunca por la pantalla.
+     *
+     * `UsuarioService` tampoco cubre esto, y no debería: es un servicio de
+     * dominio y no sabe quién lo llama. Por eso la matriz declara que el
+     * componente comprueba el permiso y el servicio no confía en el
+     * componente — son dos capas, no la misma dos veces.
+     *
+     * El permiso se deriva de la misma matriz que autoriza las rutas, con el
+     * identificador de la operación que la tabla ya declara.
+     */
+    private function exigirPermiso(string $operacion): void
+    {
+        $usuario = Auth::user();
+
+        if ($usuario === null || ! $usuario->activo || ! MatrizDePermisos::permiteA($operacion, $usuario)) {
+            throw new ErrorDeDominio(
+                CodigoDeError::NO_AUTORIZADO,
+                'Tu rol no tiene permiso para esta operación.'
+            );
+        }
     }
 
     /**
