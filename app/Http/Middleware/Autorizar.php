@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Mechanisms\HandleRequests\EndpointResolver;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -61,11 +62,8 @@ class Autorizar
         // Un usuario desactivado mientras tenía la sesión abierta deja de
         // tener acceso en la petición siguiente: si solo se comprobara al
         // iniciar sesión, desactivar a alguien no lo sacaría del sistema.
-        if ($usuario === null || ! $usuario->activo) {
-            throw new ErrorDeDominio(
-                CodigoDeError::NO_AUTENTICADO,
-                'Necesitas iniciar sesión para continuar.'
-            );
+        if (! $tieneSesion) {
+            return $this->rechazarPorFaltaDeSesion($peticion);
         }
 
         if (! MatrizDePermisos::tieneReglaDeclarada($identificador)
@@ -98,6 +96,46 @@ class Autorizar
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Quien navegaba a una pantalla vuelve a ella después de identificarse;
+     * quien consumía datos recibe el rechazo de la taxonomía.
+     *
+     * La diferencia no es cosmética. Un 401 de texto plano deja al navegador
+     * en un callejón sin salida: la persona pidió una pantalla y recibe un
+     * mensaje suelto, sin forma de llegar al acceso ni de volver a donde iba.
+     * Y a Livewire hay que darle el 401 igual, porque un redirect en respuesta
+     * a una interacción de componente no sabría manejarlo.
+     */
+    private function rechazarPorFaltaDeSesion(Request $peticion): Response
+    {
+        if ($peticion->expectsJson() || $this->esDeLivewire($peticion)) {
+            throw new ErrorDeDominio(
+                CodigoDeError::NO_AUTENTICADO,
+                'Necesitas iniciar sesión para continuar.'
+            );
+        }
+
+        // Se usa el almacén de sesión del contenedor y no `$peticion->session()`:
+        // este middleware es global y la petición todavía no tiene el almacén
+        // asignado, aunque la sesión en sí ya esté disponible.
+        //
+        // Y se guarda a mano en vez de con `redirect()->guest()`, que solo la
+        // guarda si el enrutador ya resolvió la ruta: con `guest()` la persona
+        // volvía siempre a la raíz en lugar de a lo que había pedido.
+        session()->put(
+            'url.intended',
+            $peticion->isMethod('GET') ? $peticion->fullUrl() : url()->previous()
+        );
+
+        return redirect('/login');
+    }
+
+    private function esDeLivewire(Request $peticion): bool
+    {
+        return $peticion->hasHeader('X-Livewire')
+            || str_starts_with('/'.ltrim($peticion->path(), '/'), EndpointResolver::prefix().'/');
     }
 
     private function soloInvocaComponentesAbiertos(Request $peticion): bool

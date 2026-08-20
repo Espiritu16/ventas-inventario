@@ -104,6 +104,35 @@ Decisiones que se derivan, tomadas por Arquitectura:
 4. **`NIU` se mantiene como valor por defecto, con una discrepancia registrada que
    S-06-B debe cerrar empíricamente.**
 
+### Cuántos códigos son — dirimido con el documento oficial
+
+Circulan dos versiones incompatibles en guías de terceros: una habla de "los 62 códigos
+oficiales de SUNAT" y otra presenta un catálogo de ~105 entradas, marcando como
+ausentes códigos que la primera incluye. `qa` las encontró contradiciéndose al validar
+S-02-B y planteó, con razón, que si SUNAT enumerara 62 códigos propios, la lista en
+configuración no sería "un subconjunto razonable" sino una que podría contener códigos
+inexistentes.
+
+**Dirimido leyendo el documento oficial** (el PDF de catálogos 2, 3 y 4 de
+`contenido.app.sunat.gob.pe`, 2026-08-19): el catálogo 03 que publica SUNAT enumera
+**del orden de mil códigos**, no 62. Contiene entradas como `ACR` (acre), `GLI` (gill)
+y `C62` (one), que ninguna lista curada para Perú incluiría. Es la transcripción de
+UN/ECE Rec 20, no una lista propia.
+
+O sea: las dos afirmaciones que parecían incompatibles son ciertas a la vez. SUNAT
+**enumera** el catálogo en su documento de detalle, y lo que enumera **es** Rec 20. Las
+guías de 62 o 105 códigos son subconjuntos curados por terceros, útiles como referencia
+práctica y sin ninguna autoridad.
+
+La consecuencia para el proyecto no cambia: nuestro subconjunto es una decisión nuestra
+y se documenta como tal. Lo que sí cambia es el riesgo: no estamos recortando una lista
+oficial corta, estamos recortando una enorme, y un código de la nuestra que no exista en
+Rec 20 sería un error nuestro y no una omisión de SUNAT.
+
+**Anotado, sin resolver:** `ZZ` —que las guías presentan como la unidad para servicios—
+**no aparece** en el documento oficial que se leyó. Este proyecto vende bienes, así que
+hoy no aplica; si alguna vez se facturara un servicio, hay que verificarlo antes.
+
 ### La discrepancia de `NIU`
 
 En el catálogo enumerado que publica SUNAT
