@@ -301,6 +301,13 @@ alguna prueba falla. Después se restaura el árbol. Once mutaciones costaron mi
 S-01-B porque cada una era una línea. Redactado como "pruebas de mutación" a secas,
 quien lo lea va a pensar en una herramienta y una hora de ejecución, y lo va a saltar.
 
+**Mutar solo sobre árbol limpio.** La restauración es un `git checkout` del archivo
+mutado, y eso se lleva cualquier trabajo sin commitear que hubiera ahí. `implementation-backend`
+lo vivió en S-02-B: mutó antes de commitear la corrección, restauró, y quedó con un
+commit que tenía las pruebas nuevas y el código viejo. Lo detectó al correr la suite
+completa **después** del commit, no antes. El resultado de mutar sobre árbol sucio es
+peor que no mutar, porque deja la falsa confianza de haber verificado algo.
+
 Por qué se adopta: en S-01-B encontró una prueba que pasaba **por accidente** —daba el
 resultado esperado sin que el control se ejecutara— y protegió tres correcciones de
 degradarse en silencio. En la ola 3 hay tres carriles tocando el mismo control de
