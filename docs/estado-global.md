@@ -273,7 +273,23 @@ Las tres reglas que salen, y las tres se pagaron el mismo día:
    exactamente el tipo de condición que alguien borra en seis meses porque parece de más y no
    ve que rompa nada. Ahora cada mitad tiene una prueba que se cae si desaparece.
 
-**El correctivo no es "prestar más atención".** Las cuatro veces el error lo encontró **otro
+**La defensa contra un resultado vacío no es recordar que puede ser falso: es no aceptarlo sin
+una segunda vía que lo confirme.** Es la afinación de `qa` y es lo que vuelve accionable a las
+tres reglas de arriba, porque las tres se sabían y las cuatro veces se incumplieron igual. Lo
+que salvó los dos casos que **no** terminaron en un reporte falso no fue acordarse de la regla:
+
+- Arquitectura repitió el `grep` con otro patrón antes de afirmar que Backend no había
+  commiteado. No sospechó por prudencia; repitió por costumbre.
+- `qa` tenía delante una prueba que pasaba y contradecía su sonda —la del `categoriaId`
+  equivocado—, así que fue a leer cómo lo hacía la que funcionaba en vez de reportar el
+  defecto. **Cuando una sonda propia dice que algo básico está roto y la suite dice que no, la
+  sonda es la sospechosa.**
+
+En los dos casos lo que funcionó fue **una segunda medición**, no tener presente la regla.
+Conocer el patrón no protege de repetirlo: Arquitectura lo repitió media hora después de
+señalárselo a otro rol.
+
+**Y por eso el correctivo tampoco es "prestar más atención".** Las cuatro veces el error lo encontró **otro
 rol**, no quien lo cometió, y ninguno de los cuatro se sentía inseguro al afirmarlo. Lo que
 funcionó fue tener alguien mirando con otra pregunta en la cabeza — y que quien se equivocó lo
 contara en vez de corregirlo en silencio, porque eso cambia qué va a mirar el siguiente.
