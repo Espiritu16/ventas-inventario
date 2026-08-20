@@ -496,6 +496,22 @@ alguna prueba falla. Después se restaura el árbol. Once mutaciones costaron mi
 S-01-B porque cada una era una línea. Redactado como "pruebas de mutación" a secas,
 quien lo lea va a pensar en una herramienta y una hora de ejecución, y lo va a saltar.
 
+**La mutación también compara dos versiones de una prueba, no solo prueba contra código.**
+Es una extensión de la práctica, adoptada el 2026-08-20 a partir de una observación de
+`implementation-frontend`. Cuando se endurece una prueba que ya estaba en verde, **la mejora
+no se ve corriendo la suite**: las dos versiones dan verde, porque el defecto que la nueva
+cubre todavía no existe. Lo único que las distingue es romper algo que la vieja **no** cubría.
+
+Lo demostró al derivar de la matriz la prueba del menú: coló una sección nueva visible para
+todos, y la versión con la lista escrita a mano **habría pasado en verde** porque nadie la
+había agregado a la lista, mientras la derivada falla. Sin esa mutación, "endurecí la prueba"
+habría sido una afirmación sin respaldo — y una que suena bien.
+
+De ahí la regla de método que se lleva al escribir pruebas nuevas: **preguntarse antes qué
+mutación distinguiría la versión buena de la mediocre**, en vez de escribir la prueba y
+después buscar cómo verificarla. Si no se puede nombrar esa mutación, probablemente las dos
+versiones sean la misma.
+
 **Una mutación demasiado destructiva no informa nada.** Si tumba media suite, dice "algo
 se rompió", no "esta regla está protegida". A `implementation-backend` le pasó en S-03-B:
 quitar un `CHECK` rompió la migración entera y cayeron 216 de 252 pruebas. Una mutación
