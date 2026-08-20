@@ -176,6 +176,62 @@ sprints:
     parallelizable_with: []
 ---
 
+# Segunda promoción del día — 2026-08-20
+
+`origin/main` recibe cinco ramas más sobre `develop@bb43001`, las cinco aprobadas por `qa`:
+pruebas del menú derivadas de la matriz, extracción del manejo de rechazos a
+`app/Compartido/Interfaz/`, guardián por vocabulario, mensajes del validador en español con
+mapa de campos, y la comprobación de que ese mensaje llega a la pantalla.
+
+Suite completa sobre la fusión: **529 / 1080 aserciones**, quince migraciones desde base
+limpia, pint verde.
+
+## El riesgo que tenía esta fusión, y cómo se descartó
+
+`refactor/errores-de-pantalla` y `test/mensajes-en-pantalla` **se desarrollaron en paralelo
+desde bases distintas y ninguna contenía a la otra**. La primera reorganizó cómo los cinco
+componentes guardan el error; la segunda afirma sobre esas mismas propiedades.
+
+Arquitectura leyó el trait y la prueba y concluyó que eran compatibles. `qa` no aceptó la
+lectura: **mutó el trait para que `errorDeCampo` se llenara con un texto fijo**, y la prueba
+de pantalla falla. Eso descarta el escenario que la lectura no podía descartar — que la prueba
+estuviera leyendo una propiedad llenada por otra vía y quedándose verde por casualidad.
+
+Confirmó además que ningún componente asigna `errorDeCampo` con contenido: los cinco solo la
+ponen a `null`, y la única vía que la llena es el trait.
+
+## La regla que cierra el día
+
+Salió de un push forzado que **devolvió un mensaje de permiso denegado y sin embargo se había
+ejecutado**. Quedarse con esa respuesta habría producido el reporte contrario al hecho, y
+habría llevado a forzar de nuevo un push ya hecho. Lo resolvió `git ls-remote`, que no pasa
+por ninguna referencia local.
+
+Es la del SHA un nivel más arriba, y `qa` lo formuló mejor de lo que apareció:
+
+> **La respuesta de quien ejecuta no es evidencia de lo ejecutado; la evidencia es el estado
+> consultado aparte.**
+
+Y su observación de por qué es más difícil de sospechar: **uno acepta el resultado de lo que
+acaba de hacer con mucha menos resistencia que un dato de terceros.** El nombre de la rama es
+un dato ajeno del que se desconfía; la respuesta del comando propio se siente como haber
+mirado.
+
+La familia entera, ordenada de menos a más sutil: el nombre de la rama miente porque sobrevive
+a un rebase; la referencia `origin/...` local miente porque es una foto que solo se actualiza
+con un fetch exitoso; y la respuesta de la herramienta miente porque describe el intento, no
+el efecto.
+
+## Una línea suelta, sin urgencia
+
+Los cinco componentes usan `limpiarMensajes()` del trait, **pero dentro de su propio
+`limpiarFormulario()` repiten las dos asignaciones a mano** en vez de llamarlo. Hoy es
+idéntico funcionalmente. Es el modo de fallo clásico de una extracción incompleta: **si mañana
+el trait suma una tercera propiedad de mensaje, `limpiarMensajes()` la limpiará y esos cinco
+`limpiarFormulario()` no.** Lo observó `qa`. Para cuando alguien vuelva a tocar ese archivo.
+
+---
+
 # Promoción a `main` — 2026-08-20
 
 `origin/main` en `ad42599`. Contiene `develop@8ae24d1` entero. Segunda promoción; la
