@@ -19,3 +19,5 @@ Route::get('/login', fn () => Auth::check() ? redirect('/panel') : view('acceso'
     ->name('acceso');
 
 Route::get('/panel', fn () => view('panel'))->name('panel');
+
+Route::get('/usuarios', fn () => view('usuarios'))->name('usuarios');
