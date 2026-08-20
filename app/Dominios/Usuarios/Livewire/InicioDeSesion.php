@@ -2,6 +2,7 @@
 
 namespace App\Dominios\Usuarios\Livewire;
 
+use App\Compartido\Autorizacion\Permiso;
 use App\Compartido\Errores\ErrorDeDominio;
 use App\Dominios\Usuarios\Servicios\UsuarioService;
 use Illuminate\Support\Facades\Auth;
@@ -20,10 +21,15 @@ use Livewire\Component;
  * y el dominio. `POST /login` sigue existiendo como transición de sesión por
  * HTTP y no cambia; esta pantalla no lo reemplaza.
  *
- * Cuatro estados visibles: en reposo, enviando, error de credenciales y
- * éxito. El RFC pide cuatro y experiencia.md enumera los tres primeros; el
- * cuarto es el éxito, que se ve como la redirección al panel.
+ * Tres estados visibles: en reposo, enviando y error de credenciales.
+ *
+ * El atributo nombra la fila `GET /login` de la matriz, que es una de las
+ * anónimas. No está diciendo "soy público": está nombrando una fila que la
+ * matriz declara pública, y por eso este componente no puede autoconcederse
+ * nada. Que además pueda invocarse sin sesión lo permite la lista cerrada de
+ * `MatrizDePermisos`, que es otra cosa y la aprueba Arquitectura.
  */
+#[Permiso('GET /login')]
 class InicioDeSesion extends Component
 {
     public string $email = '';
