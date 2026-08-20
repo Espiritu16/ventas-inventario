@@ -33,10 +33,21 @@ use Tests\TestCase;
 #[Group('concurrencia')]
 final class BloqueoDeLoteTest extends TestCase
 {
-    /** Margen para que los dos kernels estén arrancados antes de competir. */
-    private const SEGUNDOS_DE_BARRERA = 2.0;
+    /** Margen para que todos los kernels estén arrancados antes de competir. */
+    private const SEGUNDOS_DE_BARRERA = 3.0;
 
-    private const RONDAS = 3;
+    private const RONDAS = 2;
+
+    /**
+     * Pares de competidores por ronda: cada par es un ajuste y una venta.
+     *
+     * Con un solo par la prueba pasaba **igual sin bloqueo**: la ventana entre
+     * leer y escribir dura microsegundos, y dos procesos sincronizados al
+     * arrancar rara vez la comparten. Con tres pares la colisión es
+     * consistente — medido: 3 de 3 rondas divergen con el bloqueo quitado, y
+     * 0 de 3 con él puesto.
+     */
+    private const PARES = 3;
 
     /**
      * No usa RefreshDatabase: esa envoltura corre dentro de una transacción y
@@ -83,6 +94,9 @@ final class BloqueoDeLoteTest extends TestCase
                 $escenario['lote_id'],
                 "Ronda {$ronda}: saldo y kardex divergen. Respuestas: ".json_encode($respuestas)
             );
+
+            $this->assertCorrelativosSinRepetir($ronda);
+            $this->assertNingunaOperacionSeCayo($respuestas, $ronda);
         }
 
         $this->assertGreaterThan(0, $rondasContadas, 'Ninguna ronda pudo medirse: revisá la preparación del escenario.');
@@ -128,10 +142,23 @@ final class BloqueoDeLoteTest extends TestCase
         $competidor = __DIR__.'/../../Soporte/Concurrencia/competidor.php';
         $barrera = microtime(true) + self::SEGUNDOS_DE_BARRERA;
 
-        $ordenes = [
-            sprintf('%s %s %s ajustar %F %d 150.000 %d', PHP_BINARY, escapeshellarg($competidor), escapeshellarg($base), $barrera, $escenario['lote_id'], $escenario['usuario_id']),
-            sprintf('%s %s %s vender %F %d %d 50.000 %d', PHP_BINARY, escapeshellarg($competidor), escapeshellarg($base), $barrera, $escenario['cliente_id'], $escenario['producto_id'], $escenario['usuario_id']),
-        ];
+        $ordenes = [];
+
+        for ($par = 1; $par <= self::PARES; $par++) {
+            // Cada ajuste apunta a una cantidad distinta para que el orden en
+            // que terminen sea visible en el resultado.
+            $ordenes[] = sprintf(
+                '%s %s %s ajustar %F %d 1%d00.000 %d',
+                PHP_BINARY, escapeshellarg($competidor), escapeshellarg($base),
+                $barrera, $escenario['lote_id'], $par, $escenario['usuario_id']
+            );
+
+            $ordenes[] = sprintf(
+                '%s %s %s vender %F %d %d 10.000 %d',
+                PHP_BINARY, escapeshellarg($competidor), escapeshellarg($base),
+                $barrera, $escenario['cliente_id'], $escenario['producto_id'], $escenario['usuario_id']
+            );
+        }
 
         $procesos = [];
         foreach ($ordenes as $orden) {
@@ -154,7 +181,7 @@ final class BloqueoDeLoteTest extends TestCase
      */
     private function assertCompitieronDeVerdad(array $respuestas, array $escenario, int $ronda): void
     {
-        $this->assertCount(2, $respuestas, "Ronda {$ronda}: no respondieron los dos competidores.");
+        $this->assertCount(self::PARES * 2, $respuestas, "Ronda {$ronda}: no respondieron todos los competidores.");
 
         foreach ($respuestas as $respuesta) {
             $this->assertArrayHasKey('operacion', $respuesta, "Ronda {$ronda}: un competidor no arrancó. Salida: ".json_encode($respuesta));
@@ -172,6 +199,57 @@ final class BloqueoDeLoteTest extends TestCase
             1,
             MovimientoInventario::query()->where('lote_id', $escenario['lote_id'])->count(),
             "Ronda {$ronda}: ninguna operación llegó a escribir en el kardex."
+        );
+    }
+
+    /**
+     * Ninguna operación puede fallar por competir con otra.
+     *
+     * Es la aserción que distingue el bloqueo de la restricción de la base, y
+     * protegen cosas distintas: la unicidad de `(tipo, serie, correlativo)`
+     * impide el **dato** inválido, y el bloqueo impide que la **operación**
+     * falle. Sin bloqueo en la serie, medido: tres de cada cuatro ventas
+     * simultáneas mueren con violación de unicidad. El dato queda íntegro y
+     * tres clientes se quedaron sin comprobante después de cobrarles.
+     *
+     * En este escenario ninguna tiene motivo legítimo para fallar: hay stock
+     * de sobra y los ajustes son válidos.
+     *
+     * @param  array<int, array<string, string>>  $respuestas
+     */
+    private function assertNingunaOperacionSeCayo(array $respuestas, int $ronda): void
+    {
+        $caidas = array_values(array_filter(
+            $respuestas,
+            fn (array $r) => ($r['respuesta'] ?? '') !== 'ok'
+        ));
+
+        $this->assertSame(
+            [],
+            $caidas,
+            "Ronda {$ronda}: operaciones que murieron al competir — ".json_encode($caidas)
+        );
+    }
+
+    /**
+     * Dos ventas simultáneas no pueden obtener el mismo correlativo (RF-014).
+     *
+     * Ante SUNAT, dos comprobantes con el mismo número son dos documentos con
+     * la misma identidad: uno de los dos se rechaza y esa venta queda sin
+     * documento válido, después de cobrada.
+     */
+    private function assertCorrelativosSinRepetir(int $ronda): void
+    {
+        $emitidos = DB::table('comprobantes')
+            ->select('tipo_comprobante', 'serie', 'correlativo')
+            ->get()
+            ->map(fn ($c) => $c->tipo_comprobante.'-'.$c->serie.'-'.$c->correlativo)
+            ->all();
+
+        $this->assertSame(
+            count($emitidos),
+            count(array_unique($emitidos)),
+            "Ronda {$ronda}: se emitieron correlativos repetidos — ".implode(', ', $emitidos)
         );
     }
 
