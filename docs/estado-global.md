@@ -809,7 +809,7 @@ ahí, y no cuando el archivo es ajeno, es lo que hace que la regla sirva.
 
 ## Patrón recurrente — dos valores que hay que mantener iguales
 
-Siete veces ya. Las que se pudieron cerrar se cerraron igual: **reemplazar dos fuentes que
+Ocho veces ya. Las que se pudieron cerrar se cerraron igual: **reemplazar dos fuentes que
 alguien debe mantener sincronizadas por una sola, derivada de donde nace el dato.** Cuando la
 duplicación no se puede eliminar —porque una de las dos fuentes es un documento que la gente
 lee— se cierra con lo segundo mejor: **una prueba que falla cuando divergen.**
@@ -874,6 +874,25 @@ lee— se cierra con lo segundo mejor: **una prueba que falla cuando divergen.**
    producción**, no entre código y documento — y por eso es la que menos excusa tiene: acá la
    duplicación sí se puede eliminar del todo. Pendiente de despacho a `implementation-backend`
    junto con el retiro del código por defecto de `'Unique'` (`c8e9771`).
+
+8. **La lista de secciones del menú en su prueba, contra la matriz de permisos.**
+   `FundacionDeInterfazTest::test_el_vendedor_solo_ve_las_secciones_que_le_corresponden`
+   recorre `['Usuarios', 'Categorías', 'Productos', 'Proveedores']` **escrita a mano**. Cuando
+   aparezca una sección que el vendedor no deba ver, alguien tiene que acordarse de agregarla
+   ahí; si no lo hace, **la prueba sigue verde sin cubrirla**.
+
+   Lo encontró `qa` al validar S-02-F, y tiene un origen que vale registrar: nació de reparar
+   otra prueba que había caducado por el mismo motivo —afirmaba que el menú del vendedor está
+   vacío, y dejó de ser cierto al aparecer Clientes—. **La reparación cambió una foto por otra
+   foto**: en vez de "no ve nada" quedó "no ve estas cuatro". Más precisa, igual de perecedera.
+
+   Lo cierra hacer lo que el menú ya hace: derivar las secciones esperadas de
+   `MatrizDePermisos` en vez de enumerarlas. Entonces la prueba comprueba la regla y no la foto
+   de las pantallas de hoy, y una sección nueva queda cubierta el día que se declara.
+
+   **La lección de método es la que menos se ve:** reparar una prueba que caducó no garantiza
+   haber quitado lo que la hacía caducar. Hay que preguntar de qué depende la afirmación nueva,
+   no solo si hoy es cierta.
 
 Sobre la cuarta, el argumento que la cierra es de `qa` y es más fuerte que "no agregaba
 mucha cobertura": **`mount()` corre una vez y siempre antes de un `render()`, así que su
