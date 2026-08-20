@@ -176,6 +176,71 @@ sprints:
     parallelizable_with: []
 ---
 
+# Promoción a `main` — 2026-08-20
+
+`origin/main` en `ad42599`. Contiene `develop@8ae24d1` entero. Segunda promoción; la
+anterior dejó `main` en `2e735c7` con las olas 1–3.
+
+| Sprint | Qué entra | Validación |
+|---|---|---|
+| S-02-B | catálogo: categorías y productos | APROBADO |
+| S-03-B | lotes, kardex y puerta única de escritura del stock | APROBADO |
+| S-04-B | compras, consulta de inventario y kardex | APROBADO |
+| S-05-B | venta con descuento FEFO, idempotencia y comprobante | APROBADO |
+| S-01-F | acceso, menú y pantalla de usuarios | APROBADO |
+| S-02-F | catálogo, productos, proveedores y clientes | APROBADO |
+
+**Lo que hace válida esta promoción no es que las seis ramas estuvieran aprobadas.** Cada
+una se validó por separado y las seis estaban verdes, pero `develop@8ae24d1` es un séptimo
+artefacto que nadie había corrido. `qa` corrió la suite completa sobre un checkout limpio de
+ese SHA antes de promover: Feature 493/976, Unit 12/17, quince migraciones desde base limpia,
+pint y build en verde.
+
+El riesgo concreto era real y estaba acotado: S-02-F escribió sus pruebas cuando un código de
+producto mal formado devolvía `PRODUCTO_CODIGO_DUPLICADO`, y el fix de unicidad lo cambió. Se
+dedujo leyendo que no las tocaba —las pruebas de pantalla afirman el campo, no el código— y
+`qa` lo comprobó **ejecutando la pantalla real**: el campo señalado es `codigo` en los cuatro
+casos y el duplicado legítimo conserva su mensaje de dominio. **Una suite verde no distingue
+"las pruebas no dependen de eso" de "las pruebas no ejercitan ese camino"**; solo mirar la
+interacción lo distingue.
+
+## Dos líneas sueltas que quedaron de la validación, ninguna bloqueante
+
+- **La rendija de `fecha_vencimiento`.** La lista de claves exactas de la proyección de la
+  venta cierra la forma; lo que detiene un costo escondido *dentro* de un campo permitido son
+  las aserciones de **valor**. `codigo_lote` y `cantidad` tienen su valor fijado;
+  `fecha_vencimiento` no, y por ahí pasa un costo redondeado concatenado. Es artificial y
+  nadie lo haría, pero la lección es transferible y quedó como regla: **las listas de claves
+  cierran la forma, las aserciones de valor cierran el contenido, y hacen falta las dos.**
+  Cierre de una línea, asignado a `implementation-backend`.
+- **`UnaSolaTraduccionDeReglasTest` resiste el renombrado y no el cambio de forma.** Detecta
+  una copia con `match` y otro nombre de método; **no** detecta una escrita con `if/elseif`. Y
+  ese es el caso más probable de los dos: **quien copia se lleva el `match`, quien se hace el
+  suyo escribe lo que le sale.** Un guardián que solo atrapa al que copia no protege del que
+  reinventa. Propuesta de `qa`, adoptada: buscar la **conjunción de vocabularios** —códigos
+  genéricos junto a nombres de reglas de validación— en vez de la sintaxis.
+
+## Un hallazgo abierto: el usuario lee mensajes en inglés
+
+`config/app.php` tiene `'locale' => env('APP_LOCALE', 'en')`, **no existe directorio `lang/`**,
+y `docs/frontend/experiencia.md` declara que el texto mostrado es *"el mensaje en español de la
+taxonomía"*. Las tres cosas verificadas. En la pantalla real de productos, un código con
+espacio muestra `"The codigo field format is invalid."`
+
+Es preexistente y **no lo introduce ningún sprint de hoy**. Pero el fix de unicidad amplió su
+alcance en la dirección buena: ese caso antes respondía "Ya existe un producto con ese código"
+—en español y **mentiroso**—, y ahora responde un mensaje veraz en inglés. Cambió una mentira
+en castellano por una verdad en otro idioma, y al hacerlo **destapó una capa que el defecto
+anterior tapaba**. Por eso no se rechazó: revertir reintroduce códigos que mienten, que es peor.
+
+`qa` acotó la superficie ejecutando: el mensaje sale **en español donde hay mensaje de dominio
+y en inglés donde cae al validador genérico**. No hay que traducir el framework entero; basta
+con que los genéricos tengan traducción o con que cada servicio dé el suyo.
+
+Escalado al usuario como decisión de alcance: es transversal y no cae en un solo sprint.
+
+---
+
 # Estado del proyecto
 
 ## Progreso
