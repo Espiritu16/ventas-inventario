@@ -26,9 +26,44 @@ final class ProteccionDeRutasTest extends TestCase
             ->assertStatus(403);
     }
 
-    public function test_un_anonimo_que_escribe_la_url_de_usuarios_es_rechazado(): void
+    /**
+     * Un navegador sin sesión no recibe la pantalla: va al acceso. Rechazar no
+     * es lo mismo que dejar a la persona en un callejón sin salida, y lo que
+     * importa comprobar es que no ve el contenido.
+     */
+    public function test_un_anonimo_que_escribe_la_url_de_usuarios_va_al_acceso(): void
     {
-        $this->get('/usuarios')->assertStatus(401);
+        $respuesta = $this->get('/usuarios');
+
+        $respuesta->assertRedirect('/login');
+        $respuesta->assertDontSee('Nuevo usuario');
+    }
+
+    /**
+     * A un cliente que espera datos se le responde con el código, no con un
+     * redirect que no sabría seguir. La distinción la hace el middleware y acá
+     * se sostiene desde el lado que la consume.
+     */
+    public function test_a_un_cliente_de_datos_se_le_responde_con_el_codigo(): void
+    {
+        $this->getJson('/usuarios')
+            ->assertStatus(401)
+            ->assertJsonPath('error.codigo', 'NO_AUTENTICADO');
+    }
+
+    /**
+     * Livewire también recibe el código y no un redirect: un componente no
+     * sabría qué hacer con un 302 en respuesta a una interacción.
+     *
+     * Esta prueba existe porque hoy nada más la sostiene. Si alguien quitara
+     * la rama de Livewire del middleware, el componente recibiría un redirect
+     * donde espera un 401 y la suite seguiría en verde.
+     */
+    public function test_livewire_recibe_el_codigo_y_no_un_redirect(): void
+    {
+        $this->withHeader('X-Livewire', 'true')
+            ->get('/usuarios')
+            ->assertStatus(401);
     }
 
     public function test_el_panel_admite_a_los_dos_roles_por_url_directa(): void
@@ -43,7 +78,10 @@ final class ProteccionDeRutasTest extends TestCase
 
     public function test_el_panel_no_se_sirve_sin_sesion(): void
     {
-        $this->get('/panel')->assertStatus(401);
+        $respuesta = $this->get('/panel');
+
+        $respuesta->assertRedirect('/login');
+        $respuesta->assertDontSee('Elige una sección');
     }
 
     /**
@@ -82,6 +120,9 @@ final class ProteccionDeRutasTest extends TestCase
 
         $admin->update(['activo' => false]);
 
-        $this->actingAs($admin)->get('/usuarios')->assertStatus(401);
+        $respuesta = $this->actingAs($admin)->get('/usuarios');
+
+        $respuesta->assertRedirect('/login');
+        $respuesta->assertDontSee('Nuevo usuario');
     }
 }

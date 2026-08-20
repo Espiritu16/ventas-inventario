@@ -172,4 +172,69 @@ final class InicioDeSesionTest extends TestCase
 
         $this->assertStringNotContainsString('CREDENCIALES_INVALIDAS', $componente->html());
     }
+
+    // --- Recuperación de la URL pedida sin sesión ---
+
+    /**
+     * Criterio de cierre de UT-02, y regla transversal de experiencia.md.
+     *
+     * Recorre las dos capas: el middleware guarda la intención al rechazar, y
+     * este componente la consume con `redirectIntended`. Ninguna de las dos
+     * sirve sola, así que se prueban juntas y de punta a punta.
+     */
+    public function test_la_url_pedida_sin_sesion_se_recupera_tras_iniciar_sesion(): void
+    {
+        Usuario::factory()->administrador()->create([
+            'email' => 'ada@ejemplo.pe',
+            'password' => 'contrasena-valida',
+        ]);
+
+        // Sin sesión se pide una pantalla protegida: no es un callejón sin
+        // salida, lleva al acceso.
+        $this->get('/usuarios')->assertRedirect('/login');
+
+        // Tras entrar se vuelve a lo que se había pedido, no al panel.
+        Livewire::test(InicioDeSesion::class)
+            ->set('email', 'ada@ejemplo.pe')
+            ->set('password', 'contrasena-valida')
+            ->call('iniciar')
+            ->assertRedirect('/usuarios');
+
+        $this->assertAuthenticated();
+    }
+
+    /** Sin URL pedida previa, el destino por defecto sigue siendo el panel. */
+    public function test_sin_url_pedida_previa_va_al_panel(): void
+    {
+        Usuario::factory()->create(['email' => 'ana@ejemplo.pe', 'password' => 'contrasena-valida']);
+
+        Livewire::test(InicioDeSesion::class)
+            ->set('email', 'ana@ejemplo.pe')
+            ->set('password', 'contrasena-valida')
+            ->call('iniciar')
+            ->assertRedirect('/panel');
+    }
+
+    /**
+     * Un intento fallido no puede perder la intención guardada: si se borrara,
+     * equivocarse una vez mandaría al panel en vez de a donde se iba.
+     */
+    public function test_un_intento_fallido_no_pierde_la_url_pedida(): void
+    {
+        Usuario::factory()->administrador()->create([
+            'email' => 'ada@ejemplo.pe',
+            'password' => 'contrasena-valida',
+        ]);
+
+        $this->get('/usuarios')->assertRedirect('/login');
+
+        Livewire::test(InicioDeSesion::class)
+            ->set('email', 'ada@ejemplo.pe')
+            ->set('password', 'equivocada')
+            ->call('iniciar')
+            ->assertNoRedirect()
+            ->set('password', 'contrasena-valida')
+            ->call('iniciar')
+            ->assertRedirect('/usuarios');
+    }
 }
