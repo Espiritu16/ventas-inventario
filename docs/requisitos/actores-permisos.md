@@ -121,6 +121,17 @@ tabla es la pantalla que expone esa operación**, no un endpoint que devuelva da
 un cliente. La autorización se aplica igual sobre ella, desde el servidor y con
 deny-by-default: ocultar un ítem del menú no es control de acceso.
 
+**Las filas cuyo verbo no es `GET` describen operaciones, no rutas HTTP.** Crear y
+actualizar ocurren dentro de la pantalla, invocando el servicio de dominio en el mismo
+proceso; no existe una ruta `POST /usuarios` ni `PATCH /usuarios/{id}` que atender. La
+autorización se aplica igual —el componente comprueba el permiso antes de invocar el
+servicio, y el servicio no confía en el componente— pero **no esperes encontrar esas
+rutas en el enrutador**. Se conservan en la tabla porque expresan quién puede hacer
+qué, que es lo que esta matriz declara; lo que cambió es dónde se ejecuta, no quién
+está autorizado. Precisado por Arquitectura el 2026-08-19 a partir de la observación de
+`implementation-frontend` al cerrar S-01-F: las filas estaban declaradas y las rutas no
+existían, y sin esta nota alguien las buscaría.
+
 `GET /login` es la única pantalla accesible sin sesión. Sin esa fila, deny-by-default
 produce un catch-22 —hace falta sesión para ver la pantalla donde se obtiene la
 sesión—, que es como se detectó: `implementation-frontend` lo reportó al implementar
