@@ -906,13 +906,69 @@ Lo que deja la ola, más allá de sus entregables:
   motivo del índice parcial, el código de error del campo `codigo`, y el tamaño del
   catálogo 03 de SUNAT.
 
+## Regla de barrido — un cero no es evidencia de ausencia
+
+**Un barrido encuentra lo que su patrón sabe mirar, y devuelve cero sin distinguirlo de
+"no existe".** Antes de concluir que algo falta, hay que saber que el barrido miró donde
+debía.
+
+Tres veces en dos días, y las tres por causas distintas:
+
+- El guardián de arquitectura de S-00 buscaba sufijos en inglés y no veía `VentaServicio`
+  ni `ProductoRepositorio`. Devolvía lista vacía.
+- Un inventario de directorios de prueba filtró por archivos `.php` y contó cuatro
+  directorios sin dueño cuando eran cinco: `tests/recursos/` tiene un `.blade.php`.
+- Coordinación buscó un componente en `app/Dominios/Interfaz/Livewire/` cuando vive en
+  `Usuarios/Livewire/`, obtuvo cero coincidencias y estuvo a punto de reportar que no
+  estaba anotado.
+
+La formulación es de `implementation-frontend`, que cometió la segunda y nombró la
+tercera. Es hermana de la regla de mutación "confirmá que la mutación se aplicó": las dos
+distinguen *no encontré nada* de *no hay nada*.
+
+## Una prueba sin aserciones pasa siempre
+
+`implementation-frontend` vació la lista de pendientes de su propia prueba guardiana y
+PHPUnit la marcó como **arriesgada**: con la lista vacía, el bucle no ejecutaba ninguna
+aserción. **Su prueba contra las listas que envejecen se estaba convirtiendo en lo que
+vigila** — la que hoy no tiene nada que mirar es indistinguible de la que dejó de mirar.
+
+Corregida afirmando sobre el conjunto y no dentro del bucle, así hace siempre una
+aserción, con lista vacía o no. Verificada por mutación en las dos direcciones.
+
+Vale registrar quién lo detectó: **la herramienta, no el criterio de quien la escribió**.
+Es el argumento que este proyecto viene acumulando a favor del mecanismo sobre la
+disciplina, esta vez a favor de una herramienta que nadie eligió por ese motivo.
+
 ## Siguiente fase — ola 4
 
 **S-04-B** (compras, lotes, kardex y ajustes) y **S-02-F** (pantallas de catálogo,
 proveedores, clientes y usuarios). Dependencias satisfechas: los dos dependen de S-02-B
 y S-03-B, y S-02-F además de S-01-F.
 
-**Hay una dependencia cruzada que impide arrancarlos en paralelo de inmediato.** La
+**HABILITADA el 2026-08-20.** La dependencia cruzada se resolvió: el mecanismo está
+implementado, aprobado y fusionado en `develop@e87aded`, junto con el retiro de endpoints
+de ADR-0006 y las doce pruebas reparadas.
+
+| Carril | Sprint | Rol | Rama | Base de carril |
+|---|---|---|---|---|
+| 1 | **S-04-B** — compras, lotes, kardex y ajustes | `implementation-backend` | `sprint/S-04-B` | `ventas_inventario_s04b_test` |
+| 2 | **S-02-F** — pantallas de catálogo, proveedores, clientes y usuarios | `implementation-frontend` | `sprint/S-02-F` | `ventas_inventario_s02f_test` |
+
+Ambos parten de `develop@e87aded`, cada uno con su worktree fuera del árbol compartido.
+
+### Inventario de estado externo — hecho ejerciendo, no consultando
+
+| Recurso | Estado real | Decisión |
+|---|---|---|
+| PostgreSQL | **Conecta** con el rol de la aplicación. Comprobado conectándose, no mirando el puerto — `lsof` ya mintió una vez | Base por carril, creada por cada uno |
+| Puertos 8000, 8080, 5173 | **Sin respuesta**, comprobado con petición real y no con listado | Libres. Si los dos carriles quieren el 8000, coordina el Coordinador |
+| Contenedores | Solo `reservas-canchas-mysql` en 3307, de otro proyecto | No interfiere |
+| Bases acumuladas | Siete: la de aplicación, la genérica y cinco de carril de sprints cerrados | No se borran; su nombre dice a qué sprint pertenecen y `RefreshDatabase` las recompone |
+
+### Dependencia que se resolvió y por qué se registra
+
+**Historial anterior de esta sección:** La
 enmienda de S-02-F exige el mecanismo que hace fallar a un componente que escribe sin
 declarar permiso, y ese mecanismo vive en `app/Compartido/`, que es ruta de
 `implementation-backend`. Si S-02-F lo necesitara mientras S-04-B corre, dos sesiones
