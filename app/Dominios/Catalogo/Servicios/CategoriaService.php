@@ -91,6 +91,13 @@ class CategoriaService
      * Se comprueba aparte de la validación de formato para que el rechazo
      * lleve su propio código: un nombre repetido y uno demasiado corto son
      * problemas distintos y quien los recibe necesita distinguirlos.
+     *
+     * El código es propio de la categoría y no `DOCUMENTO_DUPLICADO`, que la
+     * taxonomía reserva para el documento de un cliente o proveedor: una
+     * categoría no tiene documento, y el mismo código significando dos cosas
+     * obligaría a la pantalla a saber en qué servicio está para traducirlo al
+     * campo correcto. Y nombra su campo, porque el mensaje se muestra al lado
+     * de él.
      */
     private function garantizarNombreUnico(string $nombre, ?int $exceptoId = null): void
     {
@@ -101,8 +108,9 @@ class CategoriaService
 
         if ($existe) {
             throw new ErrorDeDominio(
-                CodigoDeError::DOCUMENTO_DUPLICADO,
-                'Ya existe una categoría con ese nombre.'
+                CodigoDeError::CATEGORIA_NOMBRE_DUPLICADO,
+                'Ya existe una categoría con ese nombre.',
+                ['campo' => 'nombre']
             );
         }
     }

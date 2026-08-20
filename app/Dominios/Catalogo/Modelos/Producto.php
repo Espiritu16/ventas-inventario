@@ -2,10 +2,12 @@
 
 namespace App\Dominios\Catalogo\Modelos;
 
+use App\Dominios\Inventario\Modelos\Lote;
 use Database\Factories\ProductoFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Artículo del catálogo, con su precio al por menor y al por mayor.
@@ -35,6 +37,12 @@ class Producto extends Model
             'stock_minimo' => 'string',
             'activo' => 'boolean',
         ];
+    }
+
+    /** @return HasMany<Lote, $this> */
+    public function lotes(): HasMany
+    {
+        return $this->hasMany(Lote::class);
     }
 
     /** @return BelongsTo<Categoria, $this> */
