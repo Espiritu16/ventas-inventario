@@ -1,0 +1,189 @@
+# Entorno local reproducible (S-DO-01).
+#
+# Tres servicios: la aplicación, PostgreSQL y el proceso trabajador de la cola,
+# que es el que envía los comprobantes a SUNAT fuera de la petición (ADR-0003).
+# Se levanta con `docker compose up`; las instrucciones completas están en el
+# README, sección "Cómo correrlo".
+#
+# Esto es un entorno de DESARROLLO en la máquina de quien programa. No sirve
+# como base para un despliegue: no hay HTTPS, ni respaldos, ni gestión de
+# secretos, y la aplicación corre sobre el servidor de desarrollo de PHP. El
+# entorno servido lo define S-DO-02.
+
+# Sin `name:` a propósito. Con un nombre de proyecto fijo, dos copias del
+# repositorio en la misma máquina —un worktree de otro sprint, el checkout que
+# usa QA para validar— compartirían contenedores y volúmenes: la segunda que
+# levantara el entorno se llevaría por delante la de la primera sin avisar.
+# Compose deriva el nombre del directorio, así que cada copia queda aislada.
+
+services:
+  db:
+    image: postgres:18.3-alpine
+    environment:
+      # Este es el superusuario del clúster y solo se usa para administrarlo.
+      # La aplicación NO se conecta con él: el script de inicialización crea un
+      # rol aparte, sin privilegios de superusuario, porque un superusuario se
+      # salta las revocaciones de privilegios en las que se apoya la bitácora de
+      # auditoría (MIG-009, RNF-004).
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      # Credencial LOCAL Y DESECHABLE, igual que la del rol de la aplicación. No
+      # es un secreto y no da acceso a nada que exista fuera de esta red: el
+      # puerto no se publica, y el clúster entero se recrea con
+      # `docker compose down -v`.
+      #
+      # Un entorno servido NO puede heredar este patrón. Ahí la credencial sí es
+      # un secreto y se inyecta por fuera del repositorio (S-DO-02).
+      POSTGRES_PASSWORD: administracion_local
+    volumes:
+      # En /var/lib/postgresql y no en /var/lib/postgresql/data: a partir de la
+      # versión 18 estas imágenes guardan los datos en un subdirectorio con el
+      # número de versión mayor, para que una actualización futura pueda usar
+      # `pg_upgrade` sin cruzar el límite del punto de montaje. Montar la ruta
+      # vieja hace que el contenedor se niegue a arrancar.
+      - datos_postgres:/var/lib/postgresql
+      - ./docker/postgres/10-crear-rol-y-bases.sh:/docker-entrypoint-initdb.d/10-crear-rol-y-bases.sh:ro
+    # El puerto NO se publica al host, a propósito y por dos razones:
+    #
+    # 1. La máquina ya tiene una instalación local de PostgreSQL ocupando el
+    #    5432. Publicar ahí rompería una de las dos.
+    # 2. Que el contenedor no termine escribiendo en la base de la instalación
+    #    local por una configuración equivocada.
+    #
+    # Sobre lo segundo, con precisión, porque la diferencia importa: **no es una
+    # imposibilidad de red**. Docker Desktop le da al contenedor una ruta hacia
+    # el host (`host.docker.internal`), así que alcanzarlo es posible. Lo que
+    # garantiza que no ocurra es la configuración —la aplicación apunta a `db`,
+    # que resuelve dentro de esta red— más la guardia de DB_URL del entrypoint,
+    # que corta el arranque si el .env intenta redirigir la conexión. No
+    # publicar el puerto elimina el choque y quita la ruta más probable al
+    # accidente; no cierra la red.
+    #
+    # Para abrir una sesión psql contra esta base, ver el README.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=postgres --dbname=ventas_inventario"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+    environment: &entorno_aplicacion
+      # APP_ENV y QUEUE_CONNECTION NO se definen acá, y no es un olvido.
+      #
+      # Una variable de entorno real gana sobre lo que phpunit.xml declara en su
+      # bloque <env>, salvo que ese bloque lleve force="true". Con APP_ENV=local
+      # fijado desde acá, la suite no corría como `testing`, Laravel no omitía la
+      # verificación CSRF y 17 pruebas de S-01-B respondían 419 en vez de su
+      # código esperado. Con QUEUE_CONNECTION pasaba lo mismo en silencio: las
+      # pruebas quedaban encolando de verdad en vez de ejecutar en el acto.
+      #
+      # Los dos valores llegan igual desde el .env, que sale de .env.example.
+      # La regla que queda: este archivo define DÓNDE está el servidor de base
+      # de datos; phpunit define CUÁL base y en qué modo corre la aplicación.
+      APP_DEBUG: "true"
+      APP_NAME: ventas-inventario
+      APP_URL: http://localhost:8080
+      APP_TIMEZONE: America/Lima
+
+      # Conexión al PostgreSQL de este compose, no al del host. `db` es el
+      # nombre del servicio y la red interna lo resuelve.
+      #
+      # Estas llegan como variables de entorno reales, que en Laravel tienen
+      # prioridad sobre el archivo .env: el .env del repositorio se ve dentro del
+      # contenedor porque el proyecto está montado, y apunta a la instalación
+      # local. La única excepción era `php artisan serve`, que reinyectaba el
+      # .env y pisaba esta configuración; por eso el servidor se levanta con
+      # `php -S` (ver el CMD del Dockerfile). DB_URL no se define acá a
+      # propósito — ver el entrypoint.
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: ventas_inventario
+      DB_USERNAME: ventas_inventario
+      DB_PASSWORD: desarrollo_local
+
+      # DB_DATABASE sí se define acá, a diferencia de las dos de arriba, porque
+      # es el nombre que la aplicación usa al correr y phpunit lo reemplaza a
+      # propósito con `-e` al probar. Eso además es lo que permite que cada
+      # carril paralelo de la ola 3 use su propia base.
+
+      # Solo beta. Cambiarlo a produccion exige autorización explícita del dueño
+      # del negocio, según AGENTS.md.
+      SUNAT_AMBIENTE: beta
+
+      # El servidor de desarrollo de PHP atiende una petición a la vez si no se
+      # le dice otra cosa, y una vista que pide sus assets al mismo servidor se
+      # quedaría esperándose a sí misma.
+      PHP_CLI_SERVER_WORKERS: "4"
+
+      # Este servicio es el que instala dependencias, compila assets y migra.
+      PREPARAR_ENTORNO: "1"
+    volumes:
+      - .:/app
+      # node_modules vive en un volumen propio y no en el proyecto montado:
+      # trae binarios compilados para Linux que pisarían los que el host
+      # instaló para macOS, y al revés.
+      - node_modules:/app/node_modules
+    ports:
+      # 8080 y no 8000: el 8000 es el que usa `php artisan serve` en la
+      # instalación local, y este entorno no tiene por qué quitárselo.
+      # Escucha solo en la interfaz local, no en la red.
+      - "127.0.0.1:8080:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # Comprueba el CONTENIDO, no solo el código de respuesta. El servidor
+      # embebido de PHP devuelve 200 con una advertencia en el cuerpo cuando no
+      # logra cargar la aplicación, así que un healthcheck que solo mirara el
+      # código daría por sano un contenedor que no sirve la aplicación. Pasó de
+      # verdad durante este sprint.
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/up | grep -q 'Application up'"]
+      interval: 10s
+      timeout: 5s
+      # 3 reintentos y no 12. Los fallos durante `start_period` no cuentan, así
+      # que un arranque lento no corre riesgo de marcarse por error, y a cambio
+      # un entorno que se rompe en caliente —por ejemplo tras cambiar de rama
+      # sin volver a levantar— aparece como `unhealthy` en medio minuto en vez
+      # de en casi dos. Medido: con 12 tardaba 105 s en notarse.
+      retries: 3
+      start_period: 180s
+    restart: unless-stopped
+
+  trabajador:
+    build:
+      context: .
+    environment:
+      <<: *entorno_aplicacion
+      # Solo `app` prepara el entorno; este servicio arranca cuando ya está
+      # todo instalado y migrado, y así no compiten por los mismos archivos.
+      PREPARAR_ENTORNO: "0"
+    # --tries y --backoff implementan el reintento con espera creciente ante
+    # fallas transitorias de SUNAT que pide ADR-0003.
+    command: ["php", "artisan", "queue:work", "--tries=3", "--backoff=10,60,300"]
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    depends_on:
+      app:
+        condition: service_healthy
+    # Si el trabajador se cae, los comprobantes se acumulan en PENDIENTE sin que
+    # la venta se entere (ADR-0003): que vuelva solo es parte de lo que este
+    # servicio garantiza. `always` en vez del `unless-stopped` de los otros dos,
+    # porque este proceso no tiene un motivo legítimo para quedarse abajo.
+    #
+    # Con una advertencia comprobada, para que nadie la verifique mal: ninguna
+    # política de reinicio revive un contenedor que se mató desde fuera con
+    # `docker kill` o `docker compose stop`. Docker lo trata como una decisión
+    # deliberada de quien opera y deja de aplicar la política hasta el próximo
+    # arranque del demonio. Lo que sí revive —y es el caso real— es que el
+    # proceso muera por su cuenta dentro del contenedor.
+    restart: always
+
+volumes:
+  datos_postgres:
+  node_modules:

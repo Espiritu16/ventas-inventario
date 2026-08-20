@@ -9,15 +9,15 @@
 - Identificador canónico del repositorio: ventas-inventario
 - Tipo de repositorio: fullstack (backend Laravel + UI Blade/Livewire en el mismo repositorio)
 - Stack/framework: PHP + Laravel + Livewire + Tailwind CSS; Greenter para emisión electrónica SUNAT — fuente: decisión del usuario en la sesión de diseño (2026-08-19)
-- Runtime y versión: previsto en sprint de fundación (S-00): PHP 8.5.x (verificado en el entorno local: 8.5.9) y la última versión estable de Laravel compatible, verificada contra la fuente oficial al fundar
-- Gestor de paquetes/build: Composer 2.10.2 (PHP) verificado en el entorno local; pnpm para los assets de frontend vía Vite — previsto en S-00
-- Persistencia/motor: PostgreSQL, versión estable vigente verificada al fundar — decidido en ADR-0001; la instalación concreta se materializa en S-00
+- Runtime y versión: PHP 8.5.9 y Laravel v13.26.1 (esqueleto `laravel/laravel` v13.10.0) — verificados al fundar en S-00 contra la fuente oficial y `composer.lock`, no recordados
+- Gestor de paquetes/build: Composer 2.10.2 (PHP) y pnpm 11.22.0 sobre Node 24.19.0 para los assets vía Vite 8.2.1 — verificados al fundar en S-00
+- Persistencia/motor: PostgreSQL 18.3, verificado al fundar en S-00 — decidido en ADR-0001
 - Estado global / roadmap: docs/estado-global.md
 - Handoffs de sprint: docs/handoffs/<id-sprint>.md — el primero se crea al cerrar S-00; lo produce el proceso de cierre de sprint, no una unidad de trabajo del RFC
 
 ## Vigencia de gobernanza
 - Estado de gobernanza: APROBADO
-- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-19 tras separar el rol de implementación en backend y frontend
+- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-19 tras asignar `routes/backend.php` a `implementation-backend`, manteniendo `routes/web.php` exclusivo de `implementation-frontend`
 - Fecha de aprobación: 2026-08-19
 
 ## Roles activos en este repositorio
@@ -41,6 +41,7 @@ que se ejecuta solo, sin nada en paralelo.
 - Puede escribir código y pruebas: `app/Dominios/*/` **excepto** la subcarpeta `Livewire/` de cada dominio, `app/Compartido/`, `app/Http/Middleware/`, `app/Providers/`, `app/Jobs/`, `app/Console/`, `database/`, `config/`, `tests/Unit/`, `tests/Feature/Dominios/`
 - Puede escribir bootstrap/configuración cuando el RFC lo autoriza: `composer.json`, `composer.lock`, `.env.example` (sin secretos), `database/migrations/`, y el andamiaje que el framework exige y ningún otro rol cubre: `bootstrap/`, `public/index.php`, `artisan`, `phpunit.xml`, `routes/console.php`, `.gitignore`
 - Es el dueño de las firmas declaradas en `docs/contratos/servicios-de-dominio.md`: puede proponer cambios, pero la aprobación es de Arquitectura
+- Puede escribir las rutas HTTP del servidor en `routes/backend.php`, registrado desde `bootstrap/app.php`. `routes/web.php` sigue siendo exclusivo de `implementation-frontend`: los dos frentes nunca escriben el mismo archivo de rutas, que es lo que permite que trabajen a la vez. El control de acceso deny-by-default de RNF-013 se aplica por igual a los dos grupos de rutas; una ruta sin declaración en `docs/requisitos/actores-permisos.md` se rechaza, venga del archivo que venga
 - No puede escribir: `resources/views/`, `resources/css/`, `resources/js/`, `routes/web.php`, ni ninguna subcarpeta `Livewire/` — **salvo en S-00**, donde crea el andamiaje inicial de esas rutas (entry points de Vite, layout base vacío y `routes/web.php` con la ruta raíz), tal como declara la excepción del encabezado de este rol. A partir de S-01-F, esas rutas pasan a ser exclusivas de `implementation-frontend`
 
 #### implementation-frontend (sprints con sufijo `-F`)
@@ -76,14 +77,18 @@ que se ejecuta solo, sin nada en paralelo.
 
 ## Política de ramas
 - protegida: `main`
-- integración: ninguna, se integra directo a la protegida
-- trabajo: `sprint/<id>`, `feature/<nombre>`, `fix/<nombre>`
+- integración: `develop` — nace de `main`; es la rama de la que todo rol parte y contra la que se integra
+- trabajo: `sprint/<id>`, `feature/<nombre>`, `fix/<nombre>`; gobernanza: `gobernanza/<tema>`
 - Remoto: `origin` → https://github.com/Espiritu16/ventas-inventario (público)
-- Entrega de Implementación: pull request desde la rama de trabajo hacia `main`, con el `final_sha` y el handoff referenciados en su descripción
-- Gate antes de integrar: QA APROBADO sobre ese `final_sha` cuando el sprint requiere QA; solo el Coordinador integra y cierra
+- Entrega de Implementación: pull request desde la rama de trabajo hacia `develop`, con el `final_sha` y el handoff referenciados en su descripción. Ningún pull request de sprint apunta a `main`
+- Gate antes de integrar a `develop`: QA APROBADO sobre ese `final_sha` cuando el sprint requiere QA; solo el Coordinador integra y cierra
+- Promoción `develop` → `main`: paso separado y explícito, en lote, nunca automático por sprint. Exige que los checks obligatorios de `main` pasen
+- Ramas de gobernanza: las integra el Coordinador directo a `develop`, sin esperar un sprint; son el mecanismo por el que una enmienda de `AGENTS.md` se vuelve visible antes de despachar
+- Despacho con dos anclas: todo despacho de implementación o validación indica el `final_sha` del código **y** `gobierna: develop@<sha>`, el commit donde vive la gobernanza vigente. Una rama de sprint creada antes de una enmienda lleva el `AGENTS.md` viejo en su árbol; el segundo ancla es lo que evita que quien valide derive la política obsoleta
 
 ## CI por rama
-- `main`: previsto en S-DO-02: workflow de GitHub Actions que corre lint, pruebas unitarias, pruebas de integración y build en cada pull request.
+- `develop`: previsto en S-DO-02: workflow de GitHub Actions que corre lint, pruebas unitarias, pruebas de integración y build en cada pull request hacia esta rama.
+- `main`: previsto en S-DO-02: los mismos checks, obligatorios antes de promover `develop` a `main`.
 - Hasta que ese sprint se ejecute, la verificación es local y obligatoria antes de abrir el pull request: los comandos declarados abajo deben pasar y su resultado se registra en el handoff.
 
 ## Convención de commits
@@ -97,12 +102,12 @@ que se ejecuta solo, sin nada en paralelo.
 - Prohibido: `--force` push a `main` sin autorización explícita
 
 ## Comandos de verificación
-- Lint: previsto en S-00: `./vendor/bin/pint --test`
-- Tests unitarios/componentes: previsto en S-00: `php artisan test --testsuite=Unit`
-- Integración/contrato: previsto en S-00: `php artisan test --testsuite=Feature`
+- Lint: `./vendor/bin/pint --test` — real y en verde desde S-00
+- Tests unitarios/componentes: `php artisan test --testsuite=Unit` — real y en verde desde S-00
+- Integración/contrato: `php artisan test --testsuite=Feature` — real y en verde desde S-00. La suite **aborta antes de tocar nada** si la base a la que efectivamente se conectó no termina en `_test`, y lo determina preguntándole el nombre al motor (`select current_database()`), no leyendo la configuración. Eso importa: el campo de configuración y la conexión real pueden divergir, por ejemplo cuando `DB_URL` pisa los campos sueltos, que es como un CI o un contenedor suelen inyectar la conexión. Verificado por QA en los tres sentidos durante S-00 — base correcta, nombre fuera de `_test`, y `DB_URL` divergente. El mensaje de aborto nombra la base efectiva y la declarada, para que una divergencia futura se diagnostique sin investigar
 - E2E: no aplica — sin herramienta E2E decidida; se reevalúa cuando exista la pantalla de caja
 - Accesibilidad: previsto en S-09-B: recorrido completo de la venta operable solo con teclado, verificado de forma automatizada (RNF-008)
-- Build: previsto en S-00: `pnpm build`
+- Build: `pnpm build` — real y en verde desde S-00
 - Otros RNF: previsto en S-06-B: envío de comprobante contra el ambiente **beta** de SUNAT con verificación de CDR. Rendimiento (RNF-001) y operación con teclado (RNF-008): previsto en S-09-B
 
 ## Validación QA

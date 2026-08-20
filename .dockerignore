@@ -1,0 +1,8 @@
+# El contexto de build es mínimo: la imagen no copia el código de la aplicación
+# (docker-compose.yml monta el repositorio), así que lo único que necesita del
+# contexto es docker/entrypoint.sh. Todo lo demás solo haría más lento el build.
+
+*
+
+!docker/
+!docker/entrypoint.sh

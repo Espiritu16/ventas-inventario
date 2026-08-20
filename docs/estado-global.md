@@ -2,10 +2,10 @@
 project: ventas-inventario
 source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
-active_phase: S-00
-active_status: LISTO
-last_completed_phase: null
-bootstrap_status: PENDIENTE
+active_phase: ola-3
+active_status: EN_PROGRESO
+last_completed_phase: ola-2 (S-01-B, S-DO-01)
+bootstrap_status: EN_PROGRESO
 planning_horizon_status: COMPLETA
 current_rfc_batch: []
 planning_scope: [RF-001, RF-002, RF-003, RF-004, RF-005, RF-006, RF-007, RF-008, RF-009, RF-010, RF-011, RF-012, RF-013, RF-014, RF-015, RF-016, RF-017, RF-018, RF-019, RF-020, RF-021, RNF-001, RNF-002, RNF-003, RNF-004, RNF-005, RNF-006, RNF-007, RNF-008, RNF-010, RNF-011, RNF-012, RNF-013, RNF-014]
@@ -13,31 +13,50 @@ updated_at: 2026-08-19
 repositories:
   - name: ventas-inventario
     path: ventas-inventario
-    branch: main
-    current_sha: null
+    branch: develop
+    integration_branch: develop
+    protected_branch: main
 sprints:
   - id: S-00
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: LISTO
+    execution_status: COMPLETADO
+    branch: sprint/S-00
+    base_sha: 99cd0618ec05f8386202813a2efa232724ec0bd8
+    final_sha: ae2b0f73804c8b383dd970d91c1be379e305bc94
+    merge_sha: 4e6af0e
+    qa: APROBADO sobre f65efca con gobernanza c5c5389
     depends_on: []
     parallelizable_with: []
   - id: S-01-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: COMPLETADO
+    branch: sprint/S-01-B
+    base_sha: b99b936
+    final_sha: 4156f116103cdf843bfeef84ab72798ca012760b
+    merge_sha: db8ec3e
+    qa: APROBADO sobre 31b84fa con gobernanza 20ef754
     depends_on: [S-00]
     parallelizable_with: [S-DO-01]
   - id: S-02-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: COMPLETADO
+    branch: sprint/S-02-B
+    base_sha: b1c7b13
+    final_sha: 9c5c605105eade23f5b4e5ff250fa740f7efebc1
+    merge_sha: 64d21e4
+    qa: APROBADO sobre 67bd7d5 con gobernanza 92c1d1c
     depends_on: [S-01-B]
     parallelizable_with: [S-03-B, S-01-F]
   - id: S-03-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: EN_PROGRESO
+    branch: sprint/S-03-B
+    base_sha: 9304925
+    nota_de_ejecucion: en secuencia tras S-02-B pese a ser paralelizable — comparten database/migrations/ y config/
     depends_on: [S-01-B]
     parallelizable_with: [S-02-B, S-01-F]
   - id: S-04-B
@@ -73,7 +92,12 @@ sprints:
   - id: S-01-F
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: COMPLETADO
+    branch: sprint/S-01-F
+    base_sha: b1c7b13
+    final_sha: 2b26c193654d19d97a753b46afccb0c2a7a48294
+    merge_sha: c6f7add
+    qa: APROBADO sobre 0450853 con gobernanza 9304925
     depends_on: [S-01-B]
     parallelizable_with: [S-02-B, S-03-B]
   - id: S-02-F
@@ -115,7 +139,12 @@ sprints:
   - id: S-DO-01
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: COMPLETADO
+    branch: sprint/S-DO-01
+    base_sha: b99b936
+    final_sha: 3fc99a7bf8e1615b66a54d0f54b5bacc9749106e
+    merge_sha: 24320bd
+    qa: APROBADO sobre 605c240 con gobernanza c917aec
     depends_on: [S-00]
     parallelizable_with: [S-01-B]
   - id: S-QA-01
@@ -139,21 +168,616 @@ sprints:
 - Roadmap del horizonte aprobado: 19 sprints en 9 olas, con matriz de cobertura completa.
 - Los 19 RFC redactados y aprobados por el usuario el 2026-08-19. Planificación del horizonte COMPLETA.
 - Repositorio publicado en https://github.com/Espiritu16/ventas-inventario
+- Ejecución iniciada el 2026-08-19. Los cinco chats de rol están abiertos y conectados por canal directo con el Coordinador.
+- **Tres sprints completados**: S-00 (fundación), S-01-B (acceso, usuarios y control de permisos) y S-DO-01 (entorno reproducible). Los tres fusionados en `develop`. Cada uno fue rechazado una vez por QA y aprobado tras corregir.
+
+## Ola 3 — habilitada el 2026-08-19 (reanudación)
+
+**Decisión: S-02-B y S-03-B van en SECUENCIA, no en paralelo.** El roadmap los declara
+paralelizables y sigue siendo cierto a nivel de dependencias funcionales, pero
+comparten `database/migrations/` y `config/`, así que dos sesiones simultáneas
+chocarían en el árbol. Renunciar al paralelo por una razón operativa real es una salida
+válida y no contradice el roadmap. Decisión del Coordinador sobre la recomendación
+registrada, autorizada por el usuario al ordenar la reanudación.
+
+Habilitados ahora, en dos carriles:
+
+| Carril | Sprint | Rol | Rama | Worktree |
+|---|---|---|---|---|
+| 1 | **S-02-B** — catálogo: categorías y productos | `implementation-backend` | `sprint/S-02-B` | scratchpad de sesión |
+| 2 | **S-01-F** — base de la interfaz y pantalla de acceso | `implementation-frontend` | `sprint/S-01-F` | scratchpad de sesión |
+
+Ambos parten de `develop@b1c7b13`. **S-03-B queda en `PLANIFICADO`** y se habilita al
+cerrar S-02-B, en el mismo carril.
+
+### Inventario de estado externo — hecho mirando la máquina
+
+| Recurso | Estado real | Decisión |
+|---|---|---|
+| PostgreSQL local | Corriendo, conecta con el rol de la aplicación | Base por carril: `ventas_inventario_s02b_test` y `ventas_inventario_s01f_test` |
+| Puerto 8000 | Libre | Para quien levante `artisan serve`; se coordina si los dos lo quieren a la vez |
+| Puerto 8080 | Libre | Entorno contenerizado, si alguno lo usa |
+| Puerto 5173 | Libre | Vite en modo desarrollo, que S-01-F probablemente use |
+| Contenedores ajenos | `reservas-canchas-mysql` en 3307 | De otro proyecto; no interfiere |
+
+Nota de método sobre este inventario: `lsof` reportó el 5432 como libre y la base
+**sí** estaba corriendo y aceptando conexiones. La comprobación válida fue conectarse,
+no consultar un listado de puertos. Es el mismo patrón de configuración divergente
+registrado más arriba, esta vez cometido por el Coordinador al inventariar.
+
+`devops` reprodujo la causa y es peor que un descuido: sin privilegios, `lsof` solo ve
+los sockets de los procesos propios, y en vez de decir "no puedo ver el resto" devuelve
+**salida vacía, sin error y con código de salida normal**. Con `sudo` pediría
+contraseña, así que en un script desatendido el resultado sería el mismo silencio.
+
+**Regla que se deriva, y que gobierna los health checks de S-DO-02:** una herramienta
+que responde "nada" cuando en realidad quiere decir "no puedo ver" es indistinguible de
+una que responde "nada" porque no hay nada. Una comprobación de salud tiene que
+**ejercer el servicio** —conectarse, pedir algo, mirar la respuesta— y nunca consultar
+un registro sobre él. Y si puede fallar por falta de permisos, tiene que distinguir ese
+caso del caso sano, o mentirá exactamente cuando más importa. Es el mismo falso verde
+del healthcheck que devolvía 200 sirviendo una advertencia, con otra cara.
+
+## Nota para cuando el barrido de escape bloquee un uso legítimo
+
+`qa` verificó que el barrido de las seis vías de salida cruda **es completo para el
+contexto JavaScript**, y por una razón que conviene tener escrita: dentro de un bloque
+`<script>` un `{{ }}` no es explotable, porque las entidades HTML no se decodifican ahí
+—una carga sale inerte, corrompiendo el dato sin ejecutar—. La única forma de meter
+JavaScript ejecutable desde un dato es desactivar el escape explícitamente, y esas seis
+vías son exactamente ese conjunto.
+
+**Pero una de ellas, `@js()` / `Js::from()`, es la forma correcta de pasar datos a
+JavaScript.** El día que alguien la necesite legítimamente, la prueba lo va a bloquear.
+Es defendible —obliga a que ese uso pase por revisión— pero **no es un falso positivo**:
+si ocurre, la respuesta es revisar el caso y decidir, no relajar el barrido por reflejo.
+
+## Huecos de cobertura abiertos — S-02-B, aprobados con ellos a la vista
+
+QA aprobó S-02-B y reportó dos huecos que ninguna prueba sostiene. **No son defectos:
+el comportamiento hoy es correcto y está verificado.** Lo que falta es lo que impediría
+que se rompa sin que nadie se entere.
+
+| # | Qué no está fijado | Consecuencia si se rompe | Propietario |
+|---|---|---|---|
+| ~~H-1~~ | ~~La rama de Livewire en el middleware de acceso.~~ **CERRADO en S-01-F.** `implementation-frontend` escribió `test_livewire_recibe_el_codigo_y_no_un_redirect` en `tests/Feature/Livewire/`, que es su ruta declarada, y verificó por mutación que es la única de 233 que falla al quitar la rama | — | cerrado |
+| H-2 | La clave foránea de categoría en `RESTRICT`. Cambiarla a `CASCADE` no lo detecta nadie | Borrar una categoría arrastraría sus productos. Hoy **ninguna ruta ni método borra categorías**, así que protege contra algo que aún no se puede hacer | `implementation-backend` |
+
+**H-1 quedó cerrado sin necesitar la enmienda**, y el cómo importa: yo lo di por
+bloqueado porque supuse que la prueba tenía que vivir en `tests/Feature/Autorizacion/`,
+un directorio sin dueño. `implementation-frontend` notó que lo que se protege es el
+comportamiento observable **desde el lado de Livewire**, y eso cae en
+`tests/Feature/Livewire/`, que sí es su ruta declarada. No hizo falta tocar nada de
+backend.
+
+La lección es sobre el bloqueo, no sobre la prueba: **antes de declarar algo bloqueado
+por permisos, conviene preguntarse desde qué lado se observa la garantía**, no solo
+dónde vive el código que la implementa. Puede haber un dueño legítimo que la suposición
+inicial descarta.
+
+**H-2 sigue bloqueado por la enmienda de permisos por área**, junto con la corrección de
+la raíz.
+
+QA consideró rechazar por H-1 y explicó por qué no lo hizo, en vez de decidirlo por
+omisión: `RECHAZADO` está definido como no conformidad reproducida, regresión,
+divergencia de contrato o alcance no aprobado, y un hueco de cobertura no es ninguna de
+las cuatro. Estirar la definición para forzar el resultado habría sido peor que
+reportarlo y dejar la decisión donde corresponde.
+
+## Decisiones de Arquitectura de la ola 3
+
+**El proyecto no expone una API HTTP entre backend y frontend.** Ya estaba en ADR-0005
+y en `docs/frontend/integracion.md`, pero `docs/contratos/usuarios.md` declaraba
+endpoints JSON para listar, crear y actualizar usuarios, y S-01-B los implementó
+correctamente contra ese contrato. Al llegar S-01-F, la pantalla de usuarios chocó con
+esa ruta: dos frentes reclamando la misma URI, uno para una vista y otro para JSON.
+
+Resuelto enmendando el contrato: esas tres rutas son **pantallas**, no endpoints. Los
+endpoints JSON se retiran junto con sus pruebas, porque no tienen consumidor previsto
+—el frontend invoca `UsuarioService` en el mismo proceso— y una superficie que nadie
+usa no se deja abierta. `POST /login` y `POST /logout` siguen siendo HTTP genuinos.
+
+**`GET /login` se declara accesible sin sesión.** Nunca estuvo en la matriz, solo la
+operación `POST /login`. Bajo deny-by-default eso produce un catch-22: hace falta
+sesión para ver la pantalla donde se obtiene la sesión.
+
+**`GET /panel` en S-01-F es solo el armazón** —layout y menú— sin contenido de negocio.
+El tablero con alertas es S-06-F. UT-02 necesita que `/panel` exista como destino tras
+iniciar sesión, no que muestre datos.
+
+Las tres son la **tercera, cuarta y quinta instancia** del mismo patrón: un RFC pide un
+resultado cuyo artefacto no está declarado, o dos documentos aprobados que no pueden
+cumplirse a la vez. Ver la corrección ya aplicada a `project-continuity` sobre rehacer
+la auditoría de permisos cuando aparecen los RFC.
+
+## Tensión a resolver antes de S-09-B — no urgente, sí anotada
+
+`AGENTS.md` declara para accesibilidad *"recorrido completo de la venta operable solo
+con teclado, verificado de forma automatizada"*. RNF-008, en su sección de cómo se
+mide, pide *"recorrido manual documentado que registra una venta completa sin usar el
+mouse"*. **No dicen lo mismo**, y hoy nadie tiene que elegir.
+
+Lo vuelve concreto una limitación que QA verificó ejecutándola, no deduciéndola: el
+navegador que puede conducir es Chromium 148 embebido en Electron —mismo motor Blink
+que Chrome y Edge, distinto contenedor— y **la tecla `Tab` no mueve el foco**: se
+intercepta antes de llegar a la página, aunque escribir texto sí funciona. Puede leer
+`document.activeElement`, fijar el viewport en 1366x768 y leer el árbol de
+accesibilidad, así que el orden de tabulación es verificable **por estructura**, no por
+ejecución.
+
+Para S-01-F alcanza: su criterio pide que el foco *vuelva* a un campo, no un recorrido
+con teclado. Para S-09-B no: o se decide una herramienta que controle el teclado de
+verdad —lo que reabre la decisión de E2E, hoy pospuesta— o se acepta el recorrido
+manual documentado que el propio RNF-008 describe. Decidirlo con el sprint encima es
+peor que decidirlo ahora.
+
+## Punto de detención — 2026-08-19
+
+El trabajo se detuvo acá por decisión del usuario, con todo en estado consistente.
+Quien retome **no necesita esta conversación**: todo lo necesario está en este
+documento, en `AGENTS.md` y en Git.
+
+| Qué | Dónde está |
+|---|---|
+| Trabajo completado | `develop`, publicado en `origin` |
+| `main` | Atrás a propósito; la promoción quedó preparada en local, **sin publicar** |
+| Worktrees de S-01-B y S-DO-01 | Vivos, con sus sesiones paradas ahí. Eliminarlos solo tras avisar a esos chats |
+| Ramas de sprint y de gobernanza | Conservadas para auditoría, todas fusionadas |
+
+**Lo primero al retomar, en este orden:**
+
+1. **Publicar la promoción a `main`** si el usuario la confirma — es la única acción
+   pendiente que toca la rama protegida.
+2. **Decidir cómo se ejecuta la ola 3**: S-02-B y S-03-B son del mismo rol y hay un
+   solo chat de Backend. O se abre un segundo chat, o van en secuencia. Sin esa
+   decisión, el paralelismo que el roadmap declara no es realizable. Recomendación
+   registrada del Coordinador: secuencia, porque el tiempo ganado con dos chats de
+   backend no compensa sumar un tercer carril de contención sobre puertos y bases en
+   la primera ola de tres sprints.
+3. **Inventariar el estado externo de la ola 3 mirando la máquina**, no razonando
+   sobre ella: puertos ocupados, con el entorno contenerizado ya en juego. La base ya
+   está resuelta por carril.
+
+**Nada está a medias**: ningún sprint quedó `EN_PROGRESO`, ninguna validación quedó
+sin veredicto y ningún documento gobernado quedó afirmando algo que el árbol no
+respalde.
+
+### Práctica adoptada — mutación del mecanismo en la validación
+
+**Decisión del Coordinador, 2026-08-19.** En todo sprint que toque autorización,
+persistencia o configuración, QA no se limita a comprobar que el mecanismo funciona:
+comprueba que **la suite detecta su ausencia**.
+
+Alcance exacto, porque es lo que la hace barata y lo que evita que se lea como otra
+cosa: **no es "hacer pruebas de mutación" con una herramienta**. Es romper a mano, una
+línea por vez, el mecanismo que ese sprint dice garantizar —quitar una entrada de una
+lista de permisos, desactivar un control, invertir una comprobación— y verificar que
+alguna prueba falla. Después se restaura el árbol. Once mutaciones costaron minutos en
+S-01-B porque cada una era una línea. Redactado como "pruebas de mutación" a secas,
+quien lo lea va a pensar en una herramienta y una hora de ejecución, y lo va a saltar.
+
+**Una mutación demasiado destructiva no informa nada.** Si tumba media suite, dice "algo
+se rompió", no "esta regla está protegida". A `implementation-backend` le pasó en S-03-B:
+quitar un `CHECK` rompió la migración entera y cayeron 216 de 252 pruebas. Una mutación
+útil hace fallar las pruebas que cubren esa regla y pocas más; un número enorme es
+señal de que la mutación estaba mal elegida, no de que la cobertura sea excelente.
+
+**Si la mutación no hace fallar nada, averiguá por qué antes de darlo por cubierto o por
+descubierto.** Puede ser un hueco de cobertura, pero también puede ser que la garantía
+la sostenga otra cosa y el documento diga un motivo equivocado. En S-03-B mutar un
+índice único no hizo fallar ninguna prueba, y la causa no era falta de cobertura: el
+comportamiento se cumplía por una propiedad del motor, no por la decisión del modelo. El
+resultado fue corregir el documento y agregar una prueba **estructural**, porque ninguna
+de comportamiento podía distinguir las dos cosas.
+
+**Confirmar que la mutación se aplicó antes de correr la suite.** Una mutación que no
+llegó a tocar el archivo se lee como cobertura ausente, y el resultado es un hueco
+inventado. Le pasó a `qa` en S-02-B: intentó anular un `CHECK` buscando `->check()`
+cuando la migración lo declara con `DB::statement`, el patrón no coincidió, el archivo
+quedó igual y la suite pasó — lo que parecía decir que nadie protegía esa regla. Lo
+detectó verificando el archivo. Es el reverso exacto de la regla de abajo: una deja
+falsa confianza, la otra deja falsa alarma, y las dos se evitan mirando el árbol.
+
+**Mutar solo sobre árbol limpio.** La restauración es un `git checkout` del archivo
+mutado, y eso se lleva cualquier trabajo sin commitear que hubiera ahí. `implementation-backend`
+lo vivió en S-02-B: mutó antes de commitear la corrección, restauró, y quedó con un
+commit que tenía las pruebas nuevas y el código viejo. Lo detectó al correr la suite
+completa **después** del commit, no antes. El resultado de mutar sobre árbol sucio es
+peor que no mutar, porque deja la falsa confianza de haber verificado algo.
+
+Por qué se adopta: en S-01-B encontró una prueba que pasaba **por accidente** —daba el
+resultado esperado sin que el control se ejecutara— y protegió tres correcciones de
+degradarse en silencio. En la ola 3 hay tres carriles tocando el mismo control de
+acceso, que es justo donde una prueba que ya no comprueba nada pasa inadvertida.
+
+Queda escrito acá, y no solo en los despachos, porque un despacho vive en un canal
+entre chats y el canal desaparece. Que la práctica dependiera de que el Coordinador se
+acuerde de pedirla o de que QA la aplique por criterio propio es exactamente lo que
+esta sesión rechazó dos veces. Lo señaló `qa` al verificar que la decisión no estaba en
+el repositorio.
+
+Pendiente asociado: incorporarla también al bloque `qa` de `AGENTS.md`, para que sea
+obligación del rol y no una decisión registrada. Va junto con la enmienda de abajo, en
+la misma aprobación del usuario.
+
+### Inconsistencia conocida, con su causa — pendiente de una decisión del usuario
+
+Los tres handoffs (`S-00`, `S-01-B`, `S-DO-01`) declaran `status: EN_VALIDACION`
+mientras este documento los registra como `COMPLETADO`. **No es un descuido: es un
+hueco de gobernanza.**
+
+Cada implementador dejó ese campo en `EN_VALIDACION`, que era lo correcto en su
+momento — la skill le prohíbe declararse `COMPLETADO` a sí mismo. Cerrar un sprint es
+atribución exclusiva del Coordinador. Pero `AGENTS.md` le permite al rol `coordinacion`
+escribir en `docs/handoffs/` **solo las secciones de resultados QA/DevOps**, y el
+`status` es cabecera del handoff, no esa sección.
+
+Resultado: nadie tiene autoridad para mover ese campo a `COMPLETADO`. El implementador
+no puede porque no cierra sprints; el Coordinador no puede porque no es su ruta. El
+campo queda congelado en el último valor legítimo que alguien pudo escribir.
+
+Hoy no engaña a nadie porque este documento manda y lo dice claro, pero quien mañana
+reconstruya y abra primero el handoff —lo natural para entender un sprint— leerá que
+sigue en validación.
+
+**Enmienda propuesta a `AGENTS.md`, pendiente de aprobación del usuario**, en el bloque
+`coordinacion`, reemplazando la restricción actual sobre handoffs:
+
+```
+- Puede escribir en `docs/handoffs/`: las secciones de resultados QA/DevOps y el
+  campo `status` de la cabecera al cerrar el sprint. El resto del handoff es del rol
+  que lo ejecutó. Cerrar un sprint es atribución del Coordinador, así que registrar
+  ese cierre en el handoff también lo es.
+```
+
+Es la corrección mínima: no le abre al Coordinador el handoff entero, solo el campo
+que su propia autoridad de cierre ya implica. Detectado por `devops` al verificar el
+cierre de S-DO-01, y confirmado por el Coordinador en los tres handoffs.
+
+### Volúmenes de Docker atados a la decisión de los worktrees
+
+Quedan `s-do-01_datos_postgres` y `s-do-01_node_modules`. **Hoy no son huérfanos**: los
+reclama el compose si se levanta desde ese worktree. Si mañana se elimina el worktree,
+se vuelven huérfanos y con un nombre que ya no corresponde a ningún directorio, así que
+nadie los reconocerá — el mismo caso de los tres que se barrieron en S-DO-01. Van
+atados a esa decisión, no aparte: si el worktree se va, `docker volume rm
+s-do-01_datos_postgres s-do-01_node_modules` va con él.
+
+QA también dejó montados su checkout y la base `ventas_inventario_qa_test` en el
+scratchpad de sesión. Son desechables; quien los necesite limpios puede borrarlos sin
+consultar.
+
+## Decisiones tomadas durante la ejecución
+
+| # | Fecha | Qué se decidió | Quién lo aprobó | Dónde quedó |
+|---|---|---|---|---|
+| 1 | 2026-08-19 | Política de ramas de dos niveles: `sprint/<id>` → `develop` → `main`. Antes se integraba directo a la protegida | Kevin Espíritu | `AGENTS.md`, secciones "Política de ramas" y "CI por rama" |
+| 2 | 2026-08-19 | La instalación de Livewire se ubica en S-01-B como UT-06. Ningún RFC del horizonte la declaraba, pese a que la gobernanza, ADR-0005 y los contratos la dan por existente | Kevin Espíritu | `docs/rfcs/S-01-B.md`, enmienda y UT-06 |
+
+## S-00 — COMPLETADO (2026-08-19)
+
+QA emitió **APROBADO** sobre `ventas-inventario@f65efca` con gobernanza
+`develop@c5c5389`, tras un rechazo previo y su corrección. Fusionado a `develop` en
+`4e6af0e`. Rama `sprint/S-00` conservada para auditoría.
+
+Los cuatro comandos de verificación, las cifras y las versiones fueron reproducidos
+por QA desde un checkout aislado, no aceptados del handoff.
+
+Lo que este sprint deja, más allá del andamiaje: **dos mecanismos que nacieron de
+fallos reales, encontrados por pruebas y no por revisión.**
+
+1. Los instantes se escriben con su desplazamiento horario. La configuración de la
+   conexión en UTC era necesaria pero no suficiente: Laravel enviaba las fechas sin
+   zona y PostgreSQL las interpretaba como si ya fueran UTC, corriendo cada instante
+   cinco horas. Nada fallaba; solo quedaba mal. QA lo confirmó por contrafáctico,
+   revirtiendo el mecanismo y viendo reaparecer el corrimiento exacto. RNF-006 se
+   cumple por mecanismo, no por una prueba que lo compense.
+2. La suite aborta si la base a la que **efectivamente** se conectó no termina en
+   `_test`, preguntándole el nombre al motor. La primera versión leía la
+   configuración y se eludía por completo vía `DB_URL` — el caso que un CI o un
+   contenedor producen de forma natural. Habría permitido destruir la base de
+   aplicación con `migrate:fresh` y quedar en verde.
+
+Observaciones informativas registradas por QA, ninguna accionable hoy:
+
+- **OBS-A**: el guardián de arquitectura es una heurística por nombre y no ve
+  `VentaRepositorioInterface` ni una clase sin sufijo como `CalculadoraDeIgv`. Es un
+  límite inherente, no un defecto. No leerlo como garantía total.
+- **OBS-B**: si `DB_CONNECTION` apuntara a un motor sin `current_database()`, la
+  salvaguarda muere con error SQL en vez de su mensaje. Falla cerrado, que es lo
+  correcto; solo el diagnóstico sería menos claro.
+- **QA-05 confirmado empíricamente**: el tamaño del CSS depende del caché de vistas
+  compiladas (`storage/framework/views`), no del código. Un build limpio da la cifra
+  menor. Que nadie lo lea como regresión en S-DO-02.
+- Sin verificar de forma independiente: el esqueleto `laravel/laravel v13.10.0`. El
+  framework v13.26.1 sí. Es dato de proceso, no de producto.
+
+**Riesgo residual para S-DO-01/S-DO-02, no para S-00**: `APP_DEBUG=true`,
+`APP_ENV=local`, `SESSION_SECURE_COOKIE` sin definir y `SESSION_ENCRYPT=false` son
+defaults del esqueleto. Deben endurecerse antes de que exista un entorno servido.
+
+## Validación de S-00 — primer intento, RECHAZADO (2026-08-19)
+
+QA validó `ventas-inventario@58a4c54` contra `develop@b746373`, en checkout aislado
+fuera del árbol compartido, con `seguridad-validacion` activada en modo dirigido.
+Veredicto **RECHAZADO** por un único defecto bloqueante. Las cinco unidades del RFC
+cumplen su criterio literal y RNF-006 quedó confirmado por mecanismo: QA leyó el
+instante desde el motor en cinco zonas horarias y comprobó por contrafáctico que,
+al revertir la grammar, el corrimiento de cinco horas reaparece exacto.
+
+| ID | Qué falla | Severidad | Propietario |
+|---|---|---|---|
+| QA-01 / SEG-01 | La salvaguarda de `tests/TestCase.php` se elude vía `DB_URL`: examina el campo de configuración, no el nombre efectivo que resuelve el driver. Con `DB_URL` presente valida un nombre y conecta a otro, así que `migrate:fresh` podría destruir la base de aplicación con la suite en verde. `phpunit.xml` intenta neutralizarlo pero PHPUnit no pisa una variable ya presente sin `force="true"` | **Bloqueante**, alta | `implementation-backend` |
+| QA-02 | La prueba de migrate/rollback deja la base de pruebas desmantelada al terminar la suite | No bloqueante | `implementation-backend` |
+| QA-03 | El detector de arquitectura de UT-04 reconoce los sufijos `Service`/`Repository` en inglés; con la nomenclatura española del proyecto no ve `VentaServicio` ni `ProductoRepositorio`. Queda ciego cuando S-01-B cree los primeros servicios | No bloqueante | `implementation-backend` |
+| QA-04 | El README no menciona `pnpm build`; seguirlo al pie de la letra da 500 por falta de manifiesto de Vite | No bloqueante | Coordinación — **corregido** en esta misma enmienda |
+| QA-05 | Diferencia de tamaño del CSS entre el handoff y un build limpio. No es defecto: `@source` sobre un caché no versionado del esqueleto | Informativo | — |
+
+Riesgo residual anotado para S-DO-01/S-DO-02, no para S-00: `APP_DEBUG=true`,
+`APP_ENV=local`, `SESSION_SECURE_COOKIE` sin definir y `SESSION_ENCRYPT=false` son
+defaults del esqueleto y deben endurecerse antes de que exista un entorno servido.
+
+Higiene de secretos verificada como buena: ningún `.env`, certificado ni clave
+versionado en todo el rango del sprint; `composer audit` y `pnpm audit` sin
+advisories.
+
+## Aislamiento de base por carril — decidido antes de la ola 3
+
+El usuario otorgó `CREATEDB` al rol `ventas_inventario` el 2026-08-19 (verificado:
+`rolcreatedb = t`). Con eso, cada carril paralelo puede crear su propia base de
+pruebas y la serialización por turnos deja de ser necesaria. Los turnos manuales
+funcionaron con un carril; con tres no escalan.
+
+**Convención de nombre — el orden de las partes no es estético:**
+
+```
+ventas_inventario_<carril>_test
+```
+
+Ejemplos: `ventas_inventario_s01f_test`, `ventas_inventario_s02b_test`,
+`ventas_inventario_s03b_test`.
+
+El sufijo `_test` va **al final, siempre**. La salvaguarda que S-00 dejó en
+`tests/TestCase.php` aborta si el nombre efectivo de la base no termina en `_test`,
+así que un nombre como `ventas_inventario_test_s02b` —que es el orden que sale
+natural al escribirlo— sería rechazado por la propia protección y el carril no
+podría correr sus pruebas. La protección funcionaría exactamente como debe; lo que
+estaría mal es el nombre.
+
+Reglas de uso:
+
+- Cada carril fija su base en el `.env` de **su propio worktree**, que no se versiona.
+  Ningún carril toca la base de otro.
+- `ventas_inventario_test` queda como la base por defecto de quien trabaje sin
+  paralelismo. No es de nadie en particular.
+- `ventas_inventario` es la base de aplicación y ninguna suite la toca jamás. Esa es
+  precisamente la garantía que la salvaguarda existe para dar.
+- El carril crea su base al empezar y puede dejarla al terminar; no se exige
+  limpiarla, porque `RefreshDatabase` la recompone y su nombre dice a qué sprint
+  pertenece.
+
+Esto no reemplaza el inventario de estado externo que hay que hacer en cada ola: la
+base era un recurso compartido, no el único. Puertos, caché y directorios temporales
+se siguen inventariando por ola, mirando la máquina y no razonando sobre ella.
+
+**Dentro del entorno contenerizado esta convención no hace falta**: el usuario del
+contenedor es dueño de su propio clúster y puede crear y borrar bases, y cada copia
+del repositorio levanta su propio Compose con volúmenes separados, así que dos
+carriles en contenedores no comparten base ni aunque usaran el mismo nombre.
+Verificado por `devops` creando y eliminando una base de carril, no deducido. La
+convención de arriba sigue rigiendo para quien trabaje contra la instalación local.
+
+**Un puerto publicado es estado externo compartido, y ningún aislamiento de Compose
+lo cubre.** El nombre de proyecto derivado del directorio separa contenedores,
+redes y volúmenes; el puerto del host queda fuera de ese perímetro por definición,
+porque publicar es exactamente exponerlo a la máquina. En S-DO-01 esto aplica solo
+al 8080 —la base no publica ninguno, por decisión—, y el riesgo grave no es que un
+segundo entorno falle al levantar, que sería ruidoso: es que el puerto responda con
+**otro** entorno mientras quien prueba cree estar viendo el suyo. Eso no falla,
+aprueba, y aprueba lo que no era. Si alguna vez hacen falta dos entornos a la vez en
+la misma máquina, la salida conocida es parametrizar el puerto publicado
+(`${PUERTO_APP:-8080}:8000`); no se implementó porque hoy ningún caso lo pide.
+
+## Patrón recurrente — dos valores que hay que mantener iguales
+
+Cuatro veces, y las cuatro se resolvieron igual: **reemplazar dos fuentes que alguien
+debe mantener sincronizadas por una sola, derivada de donde nace el dato.**
+
+1. **El prefijo de Livewire.** Se iba a fijar por configuración y declarar la cadena en
+   la gobernanza. Se deriva de `APP_KEY`, así que la declaración habría sido correcta en
+   una máquina y falsa en todas las demás. Se resolvió leyéndolo de la misma fuente que
+   registra las rutas.
+2. **El nombre del componente de acceso.** Se declara por la clase y el nombre de
+   invocación se deriva del registro de componentes, no de una cadena escrita a mano.
+3. **El coste del señuelo de bcrypt.** Es una constante precalculada con coste 12
+   mientras los hashes reales usan el configurado; hoy coinciden por casualidad.
+   Pendiente en S-08-B: derivarlo del coste vigente.
+4. **La comprobación de permiso en `mount()` y en `render()`.** Se retiró la del montaje
+   en lugar de dejar ambas.
+
+Sobre la cuarta, el argumento que la cierra es de `qa` y es más fuerte que "no agregaba
+mucha cobertura": **`mount()` corre una vez y siempre antes de un `render()`, así que su
+conjunto de casos es un subconjunto estricto del de `render()`**. No agrega ninguno.
+Dejarla sería un segundo lugar que mantener a cambio de cero casos nuevos.
+
+**Cuándo sí vale tener dos capas:** cuando son independientes y fallan por causas
+distintas. Eso ya existe acá — el componente comprueba el permiso y el servicio no
+confía en el componente. Dos comprobaciones idénticas dentro del mismo objeto, una
+contenida en la otra, no son dos capas: son una escrita dos veces.
+
+## Patrón recurrente — la configuración declarada y la conexión real divergen
+
+Ha aparecido **tres veces, por caminos distintos**, y se registra como patrón para
+que la cuarta se reconozca antes de costar una validación:
+
+1. **S-00** — la salvaguarda de la suite leía `config(...database)`, pero `DB_URL`
+   pisa los campos sueltos. Validaba un nombre y conectaba a otro.
+2. **S-DO-01** — `php artisan serve` reinyecta el `.env` en el proceso servido y
+   pisaba la configuración del contenedor. `tinker` conectaba bien mientras el
+   navegador fallaba.
+3. **S-01-B** — `validated()` devuelve el valor tal como llegó, sin castear, así que
+   la guarda comparaba contra una forma del dato y el modelo persistía otra.
+
+4. **S-DO-01, dos veces más** — el compose definía `APP_ENV` y `QUEUE_CONNECTION`
+   como variables reales del entorno, y esas ganan sobre el bloque `<env>` de
+   `phpunit.xml`. Sin `APP_ENV=testing` fallaban 17 pruebas por verificación CSRF;
+   con `QUEUE_CONNECTION` pisado el efecto era **silencioso**: las pruebas encolaban
+   de verdad en lugar de ejecutar en el acto. Es el mismo mecanismo que ya se
+   conocía por `DB_DATABASE`, en dos variables que nadie había mirado.
+
+La forma común: **existe un valor declarado y un valor efectivo, y el código
+confía en el declarado.** El síntoma siempre aparece lejos de la causa, y en todos
+los casos hubo una prueba en verde que no lo detectaba.
+
+Frontera que quedó escrita en el compose a raíz del cuarto caso, y que conviene
+respetar en cualquier entorno futuro: **el compose define dónde está el servidor de
+base; `phpunit.xml` define cuál base y en qué modo corre la aplicación.** Una
+variable que cruce esa frontera pisa a la otra sin avisar.
+
+Regla que se deriva de esto, aplicable a cualquier sprint: cuando una decisión
+dependa de un valor de configuración, preguntar por el valor **efectivo** a quien
+realmente lo determina —el motor, el driver, el modelo— en vez de leer el declarado.
+La corrección de S-00 con `select current_database()` es el ejemplo de referencia.
+
+## Ola 2 en curso — S-01-B rechazado en su primera validación (2026-08-19)
+
+QA rechazó `b4fbc35` por dos defectos bloqueantes, ambos acotados y ninguno
+estructural. El mecanismo de control de acceso quedó verificado a fondo: QA corrió
+ocho mutaciones sobre él —quitar rutas de las listas, quitar el middleware global,
+hacer que la autorización acepte siempre, abrir el patrón de assets a cualquier
+método— y la suite detectó las ocho.
+
+| ID | Qué falla | Severidad |
+|---|---|---|
+| QA-01 | Un administrador puede desactivarse a sí mismo enviando `activo: 0` o `"0"`. La guarda compara en estricto contra booleano y `validated()` devuelve el valor sin castear. Deja el sistema **sin administrador activo y sin forma de recuperarlo desde la aplicación**. `"0"` es lo que envía un checkbox de HTML, o sea el camino normal de la pantalla que construirá S-01-F | **Bloqueante**, alto |
+| QA-02 / SEG-01 | El login distingue por tiempo un correo inexistente: 392 ms contra 191 ms, razón 2.05x, medible por red. La mitigación introdujo la señal que quería borrar, porque genera el hash señuelo dentro de la petición y ejecuta dos bcrypt en vez de uno. Permite enumerar usuarios | **Bloqueante**, medio |
+| QA-03 | La lista de componentes accesibles sin sesión quedó vacía. **Error de secuencia mío**: fijé el nombre de la clase después de que Backend fijara su `final_sha` | No bloqueante |
+| QA-04 | Un comentario del código repite el dato sobre `livewire.min.js` que ya se corrigió en la gobernanza | No bloqueante |
+
+**SEG-02** — ver la enmienda de `docs/rfcs/S-08-B.md`.
+
+Método a tener en cuenta en S-DO-02: la suite Feature exige que `pnpm build` haya
+corrido antes, o cuatro pruebas fallan por falta del manifiesto de Vite. El orden de
+los pasos del workflow importa.
+
+## Entradas obligatorias para S-DO-02
+
+Se registran acá, y no solo en el handoff de S-DO-01, porque son condiciones que
+S-DO-02 debe cumplir y su RFC todavía no las declara.
+
+- **Endurecimiento de configuración para el entorno servido**: `APP_ENV`,
+  `APP_DEBUG`, `SESSION_SECURE_COOKIE` y `SESSION_ENCRYPT`. Lo levantó QA como riesgo
+  residual al validar S-00. DevOps lo ubicó en S-DO-02 y no en S-DO-01, con este
+  razonamiento, que acepto: en un entorno local de desarrollo `APP_DEBUG=true` y
+  `APP_ENV=local` son lo correcto, no un defecto — forzarlos a `production` dentro
+  del compose de desarrollo empeoraría el entorno sin proteger nada. `SESSION_SECURE_COOKIE`
+  exige HTTPS y `SESSION_ENCRYPT` supone sesiones reales de usuarios; ninguna de las
+  dos condiciones existe hoy. Lo que vuelve exigible el endurecimiento es
+  precisamente el despliegue, que el RFC de S-DO-01 declara fuera de alcance.
+- **No heredar la credencial local del compose.** La contraseña de la base
+  contenerizada de S-DO-01 es un literal en `docker-compose.yml`, aceptable ahí
+  porque el puerto no se publica y no da acceso a nada real. El compose de un entorno
+  servido no puede heredar ese patrón.
+
+## Pendientes de planificación
+
+- ~~**Estado externo compartido en la ola 3.**~~ **RESUELTO el 2026-08-19** — ver "Aislamiento de base por carril" abajo. Lo detectó el chat de Frontend antes de que costara nada.
+- **Árbol de trabajo único.** Las cinco sesiones comparten `/Users/sankef/ventas-inventario`. Hoy funciona porque S-00 corre solo, pero cualquier ola con dos sprints simultáneos exige worktrees dedicados por carril, acordados antes del despacho.
 
 ## Bloqueantes
 - Ninguno para planificar ni para ejecutar. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
 - Condición futura, no bloqueante: el RUC real, la razón social, la dirección fiscal, el usuario SOL real y el certificado digital comprado se necesitan solo para el paso a producción, que exige autorización explícita del usuario. Ver `docs/integraciones/sunat.md`.
 
-## Siguiente fase habilitada
-- S-00 (fundación técnica): `Planificación: LISTO` y `Ejecución: LISTO`. Todos los demás sprints quedan en `PLANIFICADO` hasta que sus dependencias se completen.
-- La ejecución no ha comenzado y requiere una instrucción explícita del usuario.
+## Ola 2 — CERRADA (2026-08-19)
+
+S-01-B y S-DO-01 completados y fusionados. Los dos fueron rechazados en su primera
+validación y aprobados tras corregir; ningún defecto era estructural.
+
+Lo que la ola deja, más allá de sus entregables: **cinco casos del mismo patrón de
+configuración divergente** (ver arriba), y una garantía que resultó cierta en un
+entorno y falsa en el otro — la revocación de `update`/`delete` sobre `auditorias`
+funcionaba contra la instalación local y no existía dentro del contenedor, porque la
+aplicación se conectaba como superusuario. QA verificó al cerrar que ahora los dos
+entornos coinciden **tanto en lo que protegen como en lo que dejan abierto**: SEG-02
+es el mismo hueco en ambos, con la misma causa.
+
+Regla que se deriva, aplicable a S-DO-02 y a cualquier ambiente futuro: **una
+garantía verificada en un entorno no está verificada en el otro.** Cada ambiente
+nuevo revalida las garantías que dice sostener, no las hereda.
+
+Dos cosas que QA declaró explícitamente como NO verificadas, y que no se dan por
+buenas: el tiempo de detección de ~30 s del healthcheck (coherente con la
+configuración leída, pero no medido de forma independiente), y el comportamiento de
+`/up` al retroceder a un commit intermedio, donde responde 500 en HTML y 200 en JSON.
+Esto último no se reprodujo en el código entregado y no pide acción; queda anotado
+porque revela que el healthcheck depende del render HTML de esa ruta, y esa ruta
+puede responder distinto según el `Accept`. Sirve si alguna vez aparece un contenedor
+`unhealthy` con la aplicación aparentemente sana.
+
+## Siguiente fase — ola 3
+
+**S-02-B, S-03-B y S-01-F**, declarados paralelizables entre sí en el roadmap.
+
+Antes de habilitarla hay que resolver una limitación que no es técnica: los dos
+sprints `-B` corresponden al mismo rol y hoy existe **un solo chat de Backend**. El
+roadmap declara que pueden correr en paralelo, pero el paralelismo entre sprints
+exige una sesión por carril; un chat no atiende dos sprints a la vez. Las opciones
+son abrir un segundo chat de Backend o ejecutar S-02-B y S-03-B en secuencia dentro
+del mismo. Es decisión del usuario y está pendiente.
+
+**Dato que pesa sobre esa decisión, aportado por `implementation-backend`:** S-02-B y
+S-03-B comparten `database/migrations/` y `config/`. O sea que dos chats de backend en
+paralelo tendrían **contención real de archivos**, no solo de puertos y bases. El
+roadmap los declara paralelizables, y esa declaración sigue siendo válida a nivel de
+dependencias funcionales —ninguno necesita el resultado del otro—, pero materializarla
+en dos sesiones simultáneas chocaría en el árbol. Es exactamente el caso que la Fase 3
+de la skill describe: buckets que se creían disjuntos y no lo son. Ejecutarlos en
+secuencia no contradice el roadmap: renuncia al paralelo por una razón operativa real,
+que es una salida explícitamente válida.
+
+Aislamiento ya resuelto para cuando se habilite: un worktree por carril fuera del
+árbol compartido, y una base por carril según la convención de arriba
+(`ventas_inventario_<carril>_test`), que el `CREATEDB` otorgado el 2026-08-19 hace
+posible. Falta inventariar los puertos **mirando la máquina**, no razonando sobre
+ella, con el entorno contenerizado ya en juego.
+
+## Ola 2 — inventario que se usó
+
+**S-01-B** (`implementation-backend`) y **S-DO-01** (`devops`) en paralelo, ambos
+`LISTO`, ambos partiendo de `develop@<sha de cierre de S-00>`. Es el primer
+paralelismo real del proyecto y el primer turno del chat de DevOps.
+
+Inventario de estado externo compartido, hecho antes de despachar (el worktree
+aísla archivos y ramas, no lo de afuera):
+
+| Recurso | ¿Colisiona? | Decisión |
+|---|---|---|
+| Árbol de trabajo | Sí | **Separar**: un `git worktree` por carril, ninguno en `/Users/sankef/ventas-inventario` |
+| Base `ventas_inventario_test` | No | Solo S-01-B la usa. S-DO-01 levanta su propio PostgreSQL en contenedor |
+| Puerto 5432 | **Sí** | Lo ocupa el PostgreSQL del host. S-DO-01 **no publica** el suyo: los servicios del compose se hablan por su red interna. Además de evitar la colisión, vuelve imposible que el contenedor escriba por error en las bases del host |
+| Puerto 8000 | **Sí** | Es el que el README documenta para `php artisan serve`, así que lo va a usar Backend al verificar S-01-B a mano. S-DO-01 publica su aplicación en **8080** y deja 8000 libre |
+| Puerto 5173 | No | Libre, verificado |
+| `vendor/`, `node_modules/` | No | Cada worktree instala lo suyo |
+
+El conflicto del puerto 8000 lo detectó DevOps al verificar la máquina: mi inventario
+inicial daba el 5432 como el único de la ola y era incorrecto. Un inventario de
+estado externo no se completa razonando sobre la topología — se completa mirando qué
+está ocupado.
+
+No hace falta serializar en esta ola: solo un carril toca la base local. En la
+**ola 3** eso deja de ser cierto — tres carriles simultáneos contra una sola base
+de pruebas — y ahí sí hace falta el arreglo estructural, ver "Pendientes de
+planificación".
+
+Frontend sigue esperando: S-01-F depende de S-01-B, no de S-00. Los demás sprints
+quedan en `PLANIFICADO` hasta que sus dependencias se completen.
 
 ## Referencias
 - Roadmap: este documento, sección "Roadmap del horizonte"
 - Prompts de apertura de los chats de rol: docs/chats-de-rol.md
 - Contrato entre backend y frontend: docs/contratos/servicios-de-dominio.md
 - Handoffs de sprint: docs/handoffs/
-- Handoff activo: ninguno — no hay ejecución iniciada
+- Handoff activo: docs/handoffs/S-00.md, en la rama `sprint/S-00`
 - Decisiones y contratos: docs/decisiones/, docs/contratos/, docs/persistencia/modelo.md
 
 ---
