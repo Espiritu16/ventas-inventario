@@ -79,8 +79,19 @@ Una distinción que costó separarlas y conviene recordar: un usuario **desactiv
 lo frena el middleware, que comprueba `activo`. Un usuario **degradado de rol** no lo
 frena nadie. Parecían el mismo agujero y son dos, y solo uno existe.
 
-Esto es el tercer piso de la misma lección, y conviene verlos juntos porque cada uno
-parecía suficiente hasta que apareció el siguiente:
+**La forma del error, que es lo que conviene reconocer y no la lista de casos:**
+confundir el lugar donde algo se decide **una vez** con el lugar donde se usa **cada
+vez**. El menú se arma una vez y la ruta se pide cada vez. La ruta se autoriza al
+navegar y el componente se invoca cada vez. El montaje corre una vez y el render corre
+cada vez.
+
+Quien lea "comprobá donde se sirven los datos" va a pensar que es obvio. No lo es: las
+tres veces que se equivocó, a quien lo implementaba le pareció que ya estaba cubierto, y
+las tres veces **había una prueba en verde respaldándolo**. La formulación es de
+`implementation-frontend`, que cometió los tres en orden y los reconoció como uno solo.
+
+Los tres pisos, que conviene ver juntos porque cada uno parecía suficiente hasta que
+apareció el siguiente:
 
 1. Ocultar un ítem del menú no es control de acceso. Protege la vista, no la ruta.
 2. Proteger la ruta no es proteger el componente. Protege la navegación, no la
