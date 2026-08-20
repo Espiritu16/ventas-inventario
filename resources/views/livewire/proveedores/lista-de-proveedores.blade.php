@@ -42,7 +42,7 @@
                         wire:model.live.debounce.300ms="numeroDocumento"
                         inputmode="numeric"
                         ayuda="11 dígitos."
-                        :error="$campoConError === 'numero_documento' ? $errorDeCampo : null"
+                        :error="$this->errorDe('numero_documento')"
                     />
 
                     @if ($avisoDeDocumento)
@@ -59,7 +59,7 @@
                     nombre="razon_social"
                     etiqueta="Razón social"
                     wire:model="razonSocial"
-                    :error="$campoConError === 'razon_social' ? $errorDeCampo : null"
+                    :error="$this->errorDe('razon_social')"
                 />
 
                 <x-campo
@@ -67,7 +67,7 @@
                     etiqueta="Dirección"
                     wire:model="direccion"
                     ayuda="Opcional."
-                    :error="$campoConError === 'direccion' ? $errorDeCampo : null"
+                    :error="$this->errorDe('direccion')"
                 />
 
                 <div class="grid gap-4 sm:grid-cols-2">
@@ -76,7 +76,7 @@
                         etiqueta="Teléfono"
                         wire:model="telefono"
                         ayuda="Opcional."
-                        :error="$campoConError === 'telefono' ? $errorDeCampo : null"
+                        :error="$this->errorDe('telefono')"
                     />
 
                     <x-campo
@@ -85,7 +85,7 @@
                         tipo="email"
                         wire:model="email"
                         ayuda="Opcional."
-                        :error="$campoConError === 'email' ? $errorDeCampo : null"
+                        :error="$this->errorDe('email')"
                     />
                 </div>
 

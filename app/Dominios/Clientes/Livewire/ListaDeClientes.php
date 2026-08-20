@@ -7,6 +7,7 @@ use App\Compartido\Autorizacion\Permiso;
 use App\Compartido\Datos\DatosDeEntrada;
 use App\Compartido\Documentos\TipoDeDocumento;
 use App\Compartido\Errores\ErrorDeDominio;
+use App\Compartido\Interfaz\MuestraRechazosDeDominio;
 use App\Dominios\Clientes\Servicios\ClienteService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
@@ -23,6 +24,8 @@ use Livewire\Component;
 #[Permiso('GET /clientes')]
 class ListaDeClientes extends Component
 {
+    use MuestraRechazosDeDominio;
+
     #[Url]
     public string $buscar = '';
 
@@ -56,14 +59,6 @@ class ListaDeClientes extends Component
      * copian acá. Es comodidad — el servicio vuelve a validar igual.
      */
     public ?string $avisoDeDocumento = null;
-
-    public ?string $error = null;
-
-    public ?string $errorDeCampo = null;
-
-    public ?string $campoConError = null;
-
-    public ?string $exito = null;
 
     public function mount(bool $comoDialogo = false): void
     {
@@ -217,28 +212,6 @@ class ListaDeClientes extends Component
     private function opcional(string $valor): ?string
     {
         return $valor === '' ? null : $valor;
-    }
-
-    private function mostrar(ErrorDeDominio $fallo): void
-    {
-        $campo = $fallo->detalle['campo'] ?? null;
-
-        if (is_string($campo)) {
-            $this->campoConError = $campo;
-            $this->errorDeCampo = $fallo->getMessage();
-
-            return;
-        }
-
-        $this->error = $fallo->getMessage();
-    }
-
-    private function limpiarMensajes(): void
-    {
-        $this->error = null;
-        $this->errorDeCampo = null;
-        $this->campoConError = null;
-        $this->exito = null;
     }
 
     private function limpiarFormulario(): void

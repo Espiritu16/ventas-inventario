@@ -4,6 +4,7 @@ namespace App\Dominios\Usuarios\Livewire;
 
 use App\Compartido\Autorizacion\Permiso;
 use App\Compartido\Errores\ErrorDeDominio;
+use App\Compartido\Interfaz\MuestraRechazosDeDominio;
 use App\Dominios\Usuarios\Datos\DatosUsuario;
 use App\Dominios\Usuarios\Modelos\Usuario;
 use App\Dominios\Usuarios\Servicios\UsuarioService;
@@ -31,6 +32,8 @@ use Livewire\Component;
 #[Permiso('GET /usuarios')]
 class ListaDeUsuarios extends Component
 {
+    use MuestraRechazosDeDominio;
+
     /**
      * La búsqueda y la página viven en la URL, para que recargar, compartir
      * el enlace y usar atrás/adelante devuelvan lo mismo
@@ -54,16 +57,6 @@ class ListaDeUsuarios extends Component
     public string $password = '';
 
     public string $rol = Usuario::ROL_VENDEDOR;
-
-    /** Error de negocio: se muestra como aviso de la operación. */
-    public ?string $error = null;
-
-    /** Error de validación: se muestra junto al campo que lo produjo. */
-    public ?string $errorDeCampo = null;
-
-    public ?string $campoConError = null;
-
-    public ?string $exito = null;
 
     public function updatedBuscar(): void
     {
@@ -184,33 +177,6 @@ class ListaDeUsuarios extends Component
         }
 
         $this->exito = $activo ? 'Usuario activado.' : 'Usuario desactivado.';
-    }
-
-    /**
-     * Un rechazo con campo señalado es de validación y va junto al campo; uno
-     * sin campo es de negocio y va como aviso de la operación
-     * (docs/frontend/experiencia.md). El código nunca se muestra.
-     */
-    private function mostrar(ErrorDeDominio $fallo): void
-    {
-        $campo = $fallo->detalle['campo'] ?? null;
-
-        if (is_string($campo)) {
-            $this->campoConError = $campo;
-            $this->errorDeCampo = $fallo->getMessage();
-
-            return;
-        }
-
-        $this->error = $fallo->getMessage();
-    }
-
-    private function limpiarMensajes(): void
-    {
-        $this->error = null;
-        $this->errorDeCampo = null;
-        $this->campoConError = null;
-        $this->exito = null;
     }
 
     private function limpiarFormulario(): void

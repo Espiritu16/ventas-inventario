@@ -4,6 +4,7 @@ namespace App\Dominios\Catalogo\Livewire;
 
 use App\Compartido\Autorizacion\Permiso;
 use App\Compartido\Errores\ErrorDeDominio;
+use App\Compartido\Interfaz\MuestraRechazosDeDominio;
 use App\Dominios\Catalogo\Datos\DatosDeCatalogo;
 use App\Dominios\Catalogo\Servicios\CategoriaService;
 use App\Dominios\Catalogo\Servicios\ProductoService;
@@ -24,6 +25,8 @@ use Livewire\Component;
 #[Permiso('GET /productos')]
 class ListaDeProductos extends Component
 {
+    use MuestraRechazosDeDominio;
+
     /** Precisión decimal con la que el dominio compara precios. */
     private const DECIMALES = 4;
 
@@ -63,14 +66,6 @@ class ListaDeProductos extends Component
      * que ocultar un ítem del menú no es control de acceso.
      */
     public ?string $avisoDePrecios = null;
-
-    public ?string $error = null;
-
-    public ?string $errorDeCampo = null;
-
-    public ?string $campoConError = null;
-
-    public ?string $exito = null;
 
     public function updatedBuscar(): void
     {
@@ -216,28 +211,6 @@ class ListaDeProductos extends Component
         }
 
         $this->exito = $activo ? 'Producto activado.' : 'Producto desactivado.';
-    }
-
-    private function mostrar(ErrorDeDominio $fallo): void
-    {
-        $campo = $fallo->detalle['campo'] ?? null;
-
-        if (is_string($campo)) {
-            $this->campoConError = $campo;
-            $this->errorDeCampo = $fallo->getMessage();
-
-            return;
-        }
-
-        $this->error = $fallo->getMessage();
-    }
-
-    private function limpiarMensajes(): void
-    {
-        $this->error = null;
-        $this->errorDeCampo = null;
-        $this->campoConError = null;
-        $this->exito = null;
     }
 
     private function limpiarFormulario(): void
