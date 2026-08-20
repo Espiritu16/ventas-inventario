@@ -594,6 +594,29 @@ aprueba, y aprueba lo que no era. Si alguna vez hacen falta dos entornos a la ve
 la misma máquina, la salida conocida es parametrizar el puerto publicado
 (`${PUERTO_APP:-8080}:8000`); no se implementó porque hoy ningún caso lo pide.
 
+## Regla de despacho — un trabajo ajeno se referencia por SHA fusionado, nunca por "ya está hecho"
+
+Cuando el Coordinador despacha una tarea que depende del trabajo de otro rol, **indica el
+SHA donde ese trabajo está fusionado en la rama compartida**. No alcanza con trasladar que
+el otro rol dijo haberlo hecho.
+
+Entre "lo hice" y "está en `develop`" hay una distancia que nadie mide si no se nombra: el
+trabajo puede estar en una rama sin fusionar, en un commit posterior al que se citó, o sin
+commitear. Un "ya está hecho" sin SHA es una afirmación sin evidencia, exactamente igual
+que un handoff que declara `COMPLETADO` sin `final_sha`.
+
+Ocurrió dos veces, las dos por el mismo canal y las dos las atrapó
+`implementation-frontend` verificando antes de tocar:
+
+1. Se le indicó traer `77fed0f` como "ya corregido"; la corrección estaba en `03a54ae`,
+   posterior. Su rama quedó cargando el defecto sin haber tocado nada.
+2. Se le pidió actualizar una lista porque un componente "ya estaba anotado"; la anotación
+   vivía en una rama sin fusionar. Hacer el cambio habría roto `develop`.
+
+Lo notable es dónde nace el defecto: **no en el código sino en el canal entre sesiones**,
+que es la única parte del sistema que no tiene pruebas. La regla es del Coordinador porque
+el SHA es un dato que él tiene a mano y quien recibe la tarea no.
+
 ## Regla de permisos — "lo escribí yo" no es "es mi ruta"
 
 Un rol es dueño de las rutas que `AGENTS.md` le declara, **no de los archivos que
