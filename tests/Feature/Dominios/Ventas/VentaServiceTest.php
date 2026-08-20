@@ -186,6 +186,45 @@ final class VentaServiceTest extends TestCase
     }
 
     /** Un precio enviado desde fuera dejaría que la caja venda a cualquier valor. */
+    /**
+     * No haber elegido el tipo de precio y haber elegido uno que no existe son
+     * problemas distintos: al primero le falta un dato, el segundo trae uno
+     * equivocado, y la pantalla no puede decir lo mismo en los dos casos.
+     *
+     * El servicio declaraba `TIPO_PRECIO_INVALIDO` como código del campo, y
+     * eso alcanzaba también al campo ausente: respondía «el tipo de precio
+     * debe ser menor o mayor» a quien no había enviado ninguno.
+     */
+    public function test_el_tipo_de_precio_ausente_no_se_confunde_con_uno_inexistente(): void
+    {
+        $this->ingresar('10.000', '5.0000', now()->addMonths(3)->format('Y-m-d'), 'L-001');
+
+        $sinTipo = $this->errorAlVender(['producto_id' => $this->producto->id, 'cantidad' => '1.000']);
+        $conTipoRaro = $this->errorAlVender([
+            'producto_id' => $this->producto->id, 'cantidad' => '1.000', 'tipo_precio' => 'caro',
+        ]);
+
+        $this->assertSame(CodigoDeError::CAMPO_REQUERIDO, $sinTipo->codigo);
+        $this->assertSame(CodigoDeError::TIPO_PRECIO_INVALIDO, $conTipoRaro->codigo);
+    }
+
+    /** @param  array<string, mixed>  $linea */
+    private function errorAlVender(array $linea): ErrorDeDominio
+    {
+        try {
+            $this->servicio->registrar(DatosDeEntrada::desde([
+                'cliente_id' => $this->cliente->id,
+                'tipo_comprobante' => '03',
+                'metodo_pago' => 'efectivo',
+                'lineas' => [$linea],
+            ]), $this->vendedor);
+        } catch (ErrorDeDominio $error) {
+            return $error;
+        }
+
+        $this->fail('Se aceptó una línea que el contrato rechaza.');
+    }
+
     public function test_un_precio_enviado_se_ignora(): void
     {
         $this->ingresar('100.000');
