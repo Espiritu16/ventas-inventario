@@ -54,7 +54,24 @@ transacción.
 - Soporte de índices: `fecha` y `usuario_id`
 
 ## GET /ventas/{id}
-- Response éxito: la venta con sus líneas, el reparto por lote de cada línea y el estado de su comprobante
+- Response éxito: la venta con sus líneas, el reparto por lote de cada línea y el estado de su comprobante. **Para el rol `vendedor` el reparto no incluye el costo unitario, ni del reparto ni del lote** (proyección acotada, igual que en `GET /productos` y `GET /inventario`)
+
+> **Enmienda de Arquitectura, 2026-08-20 — el vendedor no ve el costo tampoco en sus propias ventas.**
+> El sistema ya declaraba tres veces que el costo no es del vendedor: acotado en `GET /productos` ("sin columna de costo ni de margen"),
+> acotado en `GET /inventario` ("sin costo unitario del lote"), y `GET /reportes/utilidad` —que existe precisamente para el costo real
+> tomado del reparto— es solo de administrador. Esta ruta abría una **cuarta superficie sobre el mismo dato** y era la única sin acotar,
+> con el costo literal junto al precio de venta en la misma respuesta y el margen derivable por resta.
+>
+> No era divergencia: el contrato no tenía cláusula de proyección, así que `implementation-backend` implementó lo que decía. La omisión era del contrato.
+>
+> **Se resuelve proyectando y no ampliando el permiso.** La alternativa —declarar que el vendedor sí ve el costo de las ventas que él hizo—
+> obligaría a justificar por qué ahí sí y en catálogo e inventario no, y el margen es información del negocio, no dato que quien vende necesite
+> para su trabajo: lo que necesita de su propia venta es qué vendió, a qué precio y en qué estado quedó el comprobante.
+>
+> **Hoy no es explotable** —ADR-0006 retiró el endpoint y ninguna pantalla consume ese método—, así que este es el mejor momento para cerrarlo.
+> Debe estar implementado y fijado con una prueba **antes de que S-05-F pinte esa pantalla**. Lo detectó `qa` al validar S-05-B, y fue al contrato
+> antes de calificarlo en vez de reportarlo como defecto de implementación.
+
 - Condición de alcance: el rol `vendedor` solo accede a las propias; una venta ajena responde igual que una inexistente, para no revelar su existencia
 - Errores: RECURSO_NO_ENCONTRADO, NO_AUTORIZADO
 - Autenticación: requerida, roles `administrador` y `vendedor`
