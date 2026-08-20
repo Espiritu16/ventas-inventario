@@ -56,6 +56,22 @@ como `pendiente` esconde un método que sí existe.
 Por eso la primera columna es un bloque de código con la firma completa y nada más. Si mañana
 alguien la reescribe en prosa, la prueba se vuelve frágil y se pone roja sin que nada esté mal.
 
+**Cómo reconoce la prueba una tabla de servicios: por su encabezado, no por su forma.** Busca
+exactamente la fila `| Método | Entrada | Devuelve | Errores | Estado | Deriva de |` y lee las
+filas que vienen debajo hasta la línea en blanco. La tabla de arriba —la que explica los
+valores de `Estado`— queda fuera **por lo que es**, no por cuántas columnas tiene.
+
+La diferencia no es de estilo. Contar columnas funciona hoy y se rompe el día que una tabla de
+servicios gane una, sin que nada lo anuncie y **en la dirección peligrosa**: una tabla que deja
+de ser reconocida desaparece de la comparación en silencio, y sus métodos pasan a estar sin
+verificar mientras la prueba sigue en verde.
+
+Por eso la prueba además **afirma cuántas tablas de servicio encontró**. Si un día son cinco en
+vez de las que hay, se pone roja por la razón correcta en lugar de comparar menos cosas sin
+decirlo. Es la misma exigencia que este proyecto ya le hace a la sonda de concurrencia: que el
+instrumento verifique que midió lo que cree haber medido. Lo observó `qa`, corrigiendo un
+criterio que yo había dado por suficiente.
+
 ---
 
 ## Usuarios — `UsuarioService`

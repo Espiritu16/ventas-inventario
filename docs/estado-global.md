@@ -858,6 +858,15 @@ lee— se cierra con lo segundo mejor: **una prueba que falla cuando divergen.**
    la mitad. Lo observó `qa`. Para que esa prueba no sea frágil, el documento pasó a declarar
    cada firma en una fila con formato fijo y una columna de estado; el aviso de que una prueba
    sobre prosa se pone roja sin que nada esté mal también es de `qa`.
+
+   Y una segunda corrección de `qa`, sobre un criterio que yo ya había dado por bueno:
+   reconocer las tablas de servicio **por su encabezado**, no por contar sus columnas. Contar
+   columnas funciona hoy y falla en silencio el día que una tabla gane una — la tabla deja de
+   ser reconocida, sus métodos salen de la comparación y **la prueba sigue en verde**. Se suma
+   una guarda que afirma cuántas tablas encontró, por el mismo principio que la comprobación
+   de coherencia de la sonda de concurrencia: el instrumento verifica que midió lo que cree
+   haber medido. **Un criterio que funciona por una propiedad accidental del documento no es
+   más seguro que no tener criterio; es menos, porque parece que lo tiene.**
 7. **La traducción de reglas de validación a códigos de error.** `ValidadorDeDominio` la hace
    para todos los dominios y `UsuarioService` **tiene su propia copia privada**, escrita en
    S-01-B antes de que existiera la compartida. Las dos ya divergieron: la compartida trata
