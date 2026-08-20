@@ -1,5 +1,8 @@
 # Contrato — Clientes
 
+> **Gobernado por [ADR-0006](../decisiones/0006-sin-api-http-interna.md)**: los recursos de dominio se sirven como **pantallas**, no como endpoints HTTP. Las rutas que este documento describe son las de esas pantallas; las filas cuyo verbo no es `GET` describen **operaciones** que el componente ejecuta invocando el servicio en el mismo proceso, no rutas que el enrutador atienda. Agregado el 2026-08-19, tras encontrar el mismo choque replicado en cuatro dominios.
+
+
 Autoridad: Arquitectura. Versión del contrato: v1.
 
 ## GET /clientes
