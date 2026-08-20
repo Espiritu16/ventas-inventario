@@ -356,6 +356,20 @@ alguna prueba falla. Después se restaura el árbol. Once mutaciones costaron mi
 S-01-B porque cada una era una línea. Redactado como "pruebas de mutación" a secas,
 quien lo lea va a pensar en una herramienta y una hora de ejecución, y lo va a saltar.
 
+**Una mutación demasiado destructiva no informa nada.** Si tumba media suite, dice "algo
+se rompió", no "esta regla está protegida". A `implementation-backend` le pasó en S-03-B:
+quitar un `CHECK` rompió la migración entera y cayeron 216 de 252 pruebas. Una mutación
+útil hace fallar las pruebas que cubren esa regla y pocas más; un número enorme es
+señal de que la mutación estaba mal elegida, no de que la cobertura sea excelente.
+
+**Si la mutación no hace fallar nada, averiguá por qué antes de darlo por cubierto o por
+descubierto.** Puede ser un hueco de cobertura, pero también puede ser que la garantía
+la sostenga otra cosa y el documento diga un motivo equivocado. En S-03-B mutar un
+índice único no hizo fallar ninguna prueba, y la causa no era falta de cobertura: el
+comportamiento se cumplía por una propiedad del motor, no por la decisión del modelo. El
+resultado fue corregir el documento y agregar una prueba **estructural**, porque ninguna
+de comportamiento podía distinguir las dos cosas.
+
 **Confirmar que la mutación se aplicó antes de correr la suite.** Una mutación que no
 llegó a tocar el archivo se lee como cobertura ausente, y el resultado es un hueco
 inventado. Le pasó a `qa` en S-02-B: intentó anular un `CHECK` buscando `->check()`
