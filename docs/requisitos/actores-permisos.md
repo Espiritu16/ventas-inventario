@@ -110,6 +110,43 @@ el middleware de la página donde se montó—. Se corrige igual porque hacer de
 control de acceso del comportamiento interno de un paquete de terceros es exactamente
 lo que esta matriz existe para evitar.
 
+### El mecanismo — aprobado por Arquitectura el 2026-08-19
+
+Propuesto en conjunto por `implementation-backend` e `implementation-frontend`.
+Se implementa antes de abrir S-04-B y S-02-F.
+
+- **Un `ComponentHook` global de Livewire**, que intercepta `render()` para la lectura y
+  `call()` para la escritura. Global y no opt-in: un mecanismo que cada componente deba
+  acordarse de invocar protege solo los componentes que alguien recordó. El precedente es
+  propio — el middleware de acceso estuvo en el grupo `web` y tres rutas quedaron fuera
+  del control **sin que ninguna prueba fallara**. El fallo no fue de detección sino de
+  alcance: funcionaba perfecto sobre lo que cubría, y lo que no cubría era invisible.
+- **El permiso se declara con un atributo PHP sobre la clase**, y sobre el método cuando
+  difiere. Atributo y no clase base: una clase base solo ayuda si alguien se acuerda de
+  extenderla, o sea que protege en el caso en que ya se acordó. Lo que hace cumplir la
+  regla es el hook; la clase base ataría la herencia a cambio de un recordatorio del
+  editor, y el recordatorio no es lo que falta.
+- **Un componente que no declara nada falla.** Deny-by-default aplicado al componente, el
+  mismo principio que ya gobierna las rutas.
+- **Los métodos de interfaz heredan el permiso de la clase, sin atributo de escape.**
+  Abrir un modal, cambiar de pestaña o limpiar un filtro no son operaciones distintas de
+  la pantalla: son esa pantalla. Si no podés ver la pantalla, tampoco su modal. Que
+  además evite el ruido es señal de que está bien planteado, no el motivo. **No se agrega
+  un escape para "métodos que no tocan datos"**: existiría para esos y terminaría usándose
+  en alguno que sí los toca, porque desde afuera se parecen. Si algún día aparece un caso
+  que de verdad lo necesite, que lo pida ese caso.
+- **El atributo NO puede expresar acceso sin sesión.** Eso lo declara únicamente la lista
+  cerrada de arriba, que aprueba Arquitectura. Si el atributo pudiera decirlo, cualquier
+  sprint futuro se autoconcedería acceso anónimo escribiendo una línea en su propio
+  componente. El hook consulta las dos fuentes: la lista para saber si exige sesión, el
+  atributo para saber qué permiso pide una vez que hay sesión.
+
+**Condición de aceptación, no opcional:** el rechazo que nace en `render()` llega hoy
+envuelto en `ViewException`. Si por HTTP eso se tradujera en un **500** en vez del código
+de la taxonomía con su estado, el mecanismo estaría incumpliendo RNF-014 justo en el
+camino que existe para proteger. Se resuelve antes de darlo por terminado, y se prueba
+por HTTP y no solo por componente.
+
 **Pendiente estructural, asignado a S-02-F:** hoy la regla depende de que quien escriba
 cada componente se acuerde. Eso no escala — S-02-F, S-03-F y S-04-F traen muchas
 pantallas, y la de caja mueve stock y correlativos. La comprobación debe pasar a
