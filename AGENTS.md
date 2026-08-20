@@ -16,8 +16,9 @@
 - Handoffs de sprint: docs/handoffs/<id-sprint>.md — el primero se crea al cerrar S-00; lo produce el proceso de cierre de sprint, no una unidad de trabajo del RFC
 
 ## Vigencia de gobernanza
-- Estado de gobernanza: **BORRADOR** — cuatro enmiendas pendientes de aprobación del usuario, ver "Permisos por área"
-- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-19 tras asignar `routes/backend.php` a `implementation-backend`, manteniendo `routes/web.php` exclusivo de `implementation-frontend`
+- Estado de gobernanza: APROBADO
+- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-20 al fusionar el PR #2, que declara los permisos por área en vez de por lista de rutas
+- Fecha de la reaprobación: 2026-08-20
 - Fecha de aprobación: 2026-08-19
 
 ## Roles activos en este repositorio
@@ -168,11 +169,9 @@ apertura ya están redactados en `docs/chats-de-rol.md`.
 Ningún chat se abre por adelantado: se abre cuando su primer sprint está
 habilitado. Hoy solo lo está el de Backend, para S-00.
 
-## Permisos por área — enmienda pendiente de aprobación
+## Permisos por área
 
-**Estado: BORRADOR. Redactado por Coordinación el 2026-08-19; espera la aprobación del
-usuario.** Hasta entonces, las cuatro enmiendas que este documento ya incorpora **no
-están vigentes** y el archivo no debe usarse como autoridad sobre esos puntos.
+**APROBADO el 2026-08-20**, al fusionar el PR #2. Las cuatro enmiendas están vigentes.
 
 ### Por qué
 
