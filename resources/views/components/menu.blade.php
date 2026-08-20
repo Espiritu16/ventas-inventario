@@ -21,6 +21,7 @@
      */
     $items = [
         ['etiqueta' => 'Categorías', 'ruta' => '/categorias', 'identificador' => 'GET /categorias'],
+        ['etiqueta' => 'Productos', 'ruta' => '/productos', 'identificador' => 'GET /productos'],
         ['etiqueta' => 'Usuarios', 'ruta' => '/usuarios', 'identificador' => 'GET /usuarios'],
     ];
 

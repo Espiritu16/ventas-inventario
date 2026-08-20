@@ -23,3 +23,5 @@ Route::get('/panel', fn () => view('panel'))->name('panel');
 Route::get('/usuarios', fn () => view('usuarios'))->name('usuarios');
 
 Route::get('/categorias', fn () => view('categorias'))->name('categorias');
+
+Route::get('/productos', fn () => view('productos'))->name('productos');
