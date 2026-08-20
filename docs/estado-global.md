@@ -1197,6 +1197,26 @@ Lo que deja la ola, más allá de sus entregables:
 
 ## Cómo se comprueba que algo está publicado — y por qué el comando obvio miente
 
+> **Ampliación del 2026-08-20 — el nombre de la rama no es la unidad de verificación; el SHA
+> sí.** Apareció midiendo, no buscando: `fix/pruebas-de-menu-derivadas` figuraba en `origin`
+> y **lo publicado no era lo aprobado**. `qa` validó `6ae351f`; en `origin` estaba `cf0523d`,
+> la versión previa a un rebase. Cualquier comprobación por nombre —"¿existe la rama en
+> origin?"— la daba por publicada.
+>
+> Es la forma del día: **la respuesta era cierta y contestaba otra pregunta.** Un nombre de
+> rama sobrevive a un rebase, a un amend y a un force-push, y esa persistencia es justo lo que
+> lo vuelve inútil para decidir si algo está publicado.
+>
+> **Al fusionar, la comprobación se hace con el SHA que consta en el veredicto**, no con el
+> nombre de la rama: `git branch -r --contains <sha>`. Si no devuelve ningún ref del remoto,
+> ese SHA no está publicado, sin importar qué diga la lista de ramas. Es de `qa`.
+>
+> Y sirve como recuento honesto de la exposición: de 78 ramas locales sin publicar, solo seis
+> refs tenían contenido fuera de `main` — las demás eran punteros de gobernanza ya fusionados.
+> **Contar ramas exagera el riesgo; contar archivos que no existen en ningún otro lado lo
+> mide.** Ese día eran siete.
+
+
 **Al cerrar una jornada, verificar que el remoto tenga lo que el local tiene.** No alcanza
 con que los `push` hayan parecido entrar: fallaron dos veces por caída de red y se reportó
 "publicado" sin comprobar. Durante un rato real, S-05-B entero y una decisión de
