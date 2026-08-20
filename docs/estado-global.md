@@ -196,6 +196,19 @@ Nota de método sobre este inventario: `lsof` reportó el 5432 como libre y la b
 no consultar un listado de puertos. Es el mismo patrón de configuración divergente
 registrado más arriba, esta vez cometido por el Coordinador al inventariar.
 
+`devops` reprodujo la causa y es peor que un descuido: sin privilegios, `lsof` solo ve
+los sockets de los procesos propios, y en vez de decir "no puedo ver el resto" devuelve
+**salida vacía, sin error y con código de salida normal**. Con `sudo` pediría
+contraseña, así que en un script desatendido el resultado sería el mismo silencio.
+
+**Regla que se deriva, y que gobierna los health checks de S-DO-02:** una herramienta
+que responde "nada" cuando en realidad quiere decir "no puedo ver" es indistinguible de
+una que responde "nada" porque no hay nada. Una comprobación de salud tiene que
+**ejercer el servicio** —conectarse, pedir algo, mirar la respuesta— y nunca consultar
+un registro sobre él. Y si puede fallar por falta de permisos, tiene que distinguir ese
+caso del caso sano, o mentirá exactamente cuando más importa. Es el mismo falso verde
+del healthcheck que devolvía 200 sirviendo una advertencia, con otra cara.
+
 ## Punto de detención — 2026-08-19
 
 El trabajo se detuvo acá por decisión del usuario, con todo en estado consistente.

@@ -30,7 +30,8 @@ Autoridad: Arquitectura. Versión del contrato: v1.
 ## GET /productos
 - Ruta real: GET /productos
 - Query params: `buscar?: string (opcional — coincide contra código y nombre)`, `categoriaId?: entero (opcional)`, `soloActivos?: boolean (opcional, default true)`, `pagina?: entero (opcional, default 1)`
-- Response éxito: listado paginado de 20 por página, ordenado por nombre y desempatado por `id`. Incluye el stock disponible calculado. **Para el rol `vendedor` no incluye costo ni margen** (proyección acotada, según la matriz de permisos)
+- Response éxito: listado paginado de 20 por página, ordenado por nombre y desempatado por `id`. **Para el rol `vendedor` no incluye costo ni margen** (proyección acotada, según la matriz de permisos)
+- **Campo `stockDisponible`: ausente hasta S-04-B, presente desde entonces.** Se calcula sobre los lotes, que crea la compra en S-04-B; hasta ese sprint no existe la tabla de la que derivarlo. **El campo se omite, no se devuelve en cero.** Un cero que significa "todavía no se sabe" es indistinguible de uno que significa "no hay existencias", y quien consuma este contrato —S-02-F construye la pantalla de catálogo antes de que exista el stock— no tendría forma de diferenciarlos y podría mostrar "sin stock" sobre un producto que nunca se compró. La ausencia del campo es explícita y verificable; un cero falso no lo es. Enmienda de Arquitectura del 2026-08-19, a partir de la contradicción que reportó `implementation-backend` al implementar S-02-B: el contrato describía el estado final del recurso y el alcance de S-02-B excluye las existencias, así que ambos documentos aprobados no podían cumplirse a la vez
 - Errores: NO_AUTENTICADO, NO_AUTORIZADO
 - Autenticación: requerida, roles `administrador` y `vendedor`
 - Soporte de índices: `buscar` se apoya en el índice de `nombre` y en el único de `codigo`; `categoriaId` en el índice de `categoria_id` (ver docs/persistencia/modelo.md)
