@@ -4,13 +4,17 @@ namespace Tests\Feature\Autorizacion;
 
 use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * Contrato docs/contratos/usuarios.md v1 sobre HTTP, y la matriz de permisos
- * aplicada a cada ruta: sin autenticar, autenticado con permiso y
- * autenticado sin permiso (RNF-013).
+ * Las dos operaciones de sesión que sí son HTTP: el navegador las ejecuta como
+ * envío de formulario contra el servidor.
+ *
+ * La gestión de usuarios no está acá. Se declaró como endpoints JSON y la
+ * enmienda de Arquitectura del 2026-08-19 la corrigió: son pantallas, y la
+ * operación la ejecuta `UsuarioService` en el mismo proceso, sin HTTP de por
+ * medio. Sus pruebas de servicio siguen cubriendo el comportamiento; lo que se
+ * retiró es la superficie que nadie consumía.
  */
 final class RutasDeUsuariosTest extends TestCase
 {
@@ -82,173 +86,5 @@ final class RutasDeUsuariosTest extends TestCase
         $this->postJson('/logout')
             ->assertStatus(401)
             ->assertJsonPath('error.codigo', 'NO_AUTENTICADO');
-    }
-
-    // --- GET /usuarios ---
-
-    public function test_el_administrador_lista_usuarios_paginados_sin_contrasenas(): void
-    {
-        Usuario::factory()->count(3)->create();
-
-        $respuesta = $this->actingAs(Usuario::factory()->administrador()->create())
-            ->getJson('/usuarios');
-
-        $respuesta->assertOk()->assertJsonPath('por_pagina', 20);
-        $this->assertStringNotContainsString('password', $respuesta->getContent());
-    }
-
-    public function test_el_vendedor_no_puede_listar_usuarios(): void
-    {
-        $this->actingAs(Usuario::factory()->create())
-            ->getJson('/usuarios')
-            ->assertStatus(403)
-            ->assertJsonPath('error.codigo', 'NO_AUTORIZADO');
-    }
-
-    public function test_listar_usuarios_sin_sesion_rechaza(): void
-    {
-        $this->getJson('/usuarios')
-            ->assertStatus(401)
-            ->assertJsonPath('error.codigo', 'NO_AUTENTICADO');
-    }
-
-    // --- POST /usuarios ---
-
-    public function test_el_administrador_crea_un_usuario(): void
-    {
-        $this->actingAs(Usuario::factory()->administrador()->create())
-            ->postJson('/usuarios', [
-                'nombre' => 'Ana Quispe',
-                'email' => 'ana@ejemplo.pe',
-                'password' => 'contrasena-valida',
-                'rol' => Usuario::ROL_VENDEDOR,
-            ])
-            ->assertStatus(201)
-            ->assertJsonMissingPath('password');
-
-        $this->assertDatabaseHas('usuarios', ['email' => 'ana@ejemplo.pe']);
-    }
-
-    public function test_el_vendedor_no_puede_crear_usuarios(): void
-    {
-        $this->actingAs(Usuario::factory()->create())
-            ->postJson('/usuarios', [
-                'nombre' => 'Ana Quispe',
-                'email' => 'ana@ejemplo.pe',
-                'password' => 'contrasena-valida',
-                'rol' => Usuario::ROL_VENDEDOR,
-            ])
-            ->assertStatus(403);
-
-        $this->assertDatabaseMissing('usuarios', ['email' => 'ana@ejemplo.pe']);
-    }
-
-    /** RNF-010: el input inválido se rechaza con su código, no se corrige. */
-    public function test_el_input_invalido_se_rechaza_con_su_codigo(): void
-    {
-        $this->actingAs(Usuario::factory()->administrador()->create())
-            ->postJson('/usuarios', [
-                'nombre' => 'Ana Quispe',
-                'email' => 'no-es-un-correo',
-                'password' => 'contrasena-valida',
-                'rol' => Usuario::ROL_VENDEDOR,
-            ])
-            ->assertStatus(422)
-            ->assertJsonPath('error.codigo', 'CAMPO_FORMATO_INVALIDO');
-    }
-
-    public function test_un_correo_repetido_devuelve_conflicto(): void
-    {
-        Usuario::factory()->create(['email' => 'ana@ejemplo.pe']);
-
-        $this->actingAs(Usuario::factory()->administrador()->create())
-            ->postJson('/usuarios', [
-                'nombre' => 'Otra Ana',
-                'email' => 'ana@ejemplo.pe',
-                'password' => 'contrasena-valida',
-                'rol' => Usuario::ROL_VENDEDOR,
-            ])
-            ->assertStatus(409)
-            ->assertJsonPath('error.codigo', 'DOCUMENTO_DUPLICADO');
-    }
-
-    // --- PATCH /usuarios/{id} ---
-
-    public function test_el_administrador_edita_un_usuario(): void
-    {
-        $usuario = Usuario::factory()->create(['nombre' => 'Ana Quispe']);
-
-        $this->actingAs(Usuario::factory()->administrador()->create())
-            ->patchJson("/usuarios/{$usuario->id}", ['nombre' => 'Ana Quispe Rojas'])
-            ->assertOk();
-
-        $this->assertSame('Ana Quispe Rojas', $usuario->refresh()->nombre);
-    }
-
-    public function test_editar_un_usuario_inexistente_devuelve_no_encontrado(): void
-    {
-        $this->actingAs(Usuario::factory()->administrador()->create())
-            ->patchJson('/usuarios/9999', ['nombre' => 'Quien Sea'])
-            ->assertStatus(404)
-            ->assertJsonPath('error.codigo', 'RECURSO_NO_ENCONTRADO');
-    }
-
-    public function test_el_administrador_no_puede_quitarse_su_propio_rol_por_http(): void
-    {
-        $admin = Usuario::factory()->administrador()->create();
-
-        $this->actingAs($admin)
-            ->patchJson("/usuarios/{$admin->id}", ['rol' => Usuario::ROL_VENDEDOR])
-            ->assertStatus(403);
-
-        $this->assertSame(Usuario::ROL_ADMINISTRADOR, $admin->refresh()->rol);
-    }
-
-    public static function formasDeFalso(): array
-    {
-        return [
-            'booleano' => [false],
-            'entero' => [0],
-            'cadena, que es lo que envía un formulario' => ['0'],
-        ];
-    }
-
-    /**
-     * Por HTTP y con las tres formas que la regla `boolean` admite. Con `0` y
-     * `"0"` el administrador llegaba a desactivarse, y ahí el sistema se queda
-     * sin nadie que pueda autenticarse para reactivar a nadie: no hay vuelta
-     * atrás desde la aplicación.
-     */
-    #[DataProvider('formasDeFalso')]
-    public function test_el_administrador_no_puede_desactivarse_por_http(mixed $falso): void
-    {
-        $admin = Usuario::factory()->administrador()->create();
-
-        $this->actingAs($admin)
-            ->patchJson("/usuarios/{$admin->id}", ['activo' => $falso])
-            ->assertStatus(403)
-            ->assertJsonPath('error.codigo', 'NO_AUTORIZADO');
-
-        $this->assertTrue($admin->refresh()->activo);
-    }
-
-    public function test_el_administrador_si_puede_desactivar_a_otro_por_http(): void
-    {
-        $otro = Usuario::factory()->administrador()->create();
-
-        $this->actingAs(Usuario::factory()->administrador()->create())
-            ->patchJson("/usuarios/{$otro->id}", ['activo' => '0'])
-            ->assertOk();
-
-        $this->assertFalse($otro->refresh()->activo);
-    }
-
-    public function test_el_vendedor_no_puede_editar_usuarios(): void
-    {
-        $usuario = Usuario::factory()->create();
-
-        $this->actingAs(Usuario::factory()->create())
-            ->patchJson("/usuarios/{$usuario->id}", ['nombre' => 'Nombre Cambiado'])
-            ->assertStatus(403);
     }
 }
