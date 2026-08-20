@@ -189,6 +189,35 @@ documento, en `AGENTS.md` y en Git.
 sin veredicto y ningún documento gobernado quedó afirmando algo que el árbol no
 respalde.
 
+### Práctica adoptada — mutación del mecanismo en la validación
+
+**Decisión del Coordinador, 2026-08-19.** En todo sprint que toque autorización,
+persistencia o configuración, QA no se limita a comprobar que el mecanismo funciona:
+comprueba que **la suite detecta su ausencia**.
+
+Alcance exacto, porque es lo que la hace barata y lo que evita que se lea como otra
+cosa: **no es "hacer pruebas de mutación" con una herramienta**. Es romper a mano, una
+línea por vez, el mecanismo que ese sprint dice garantizar —quitar una entrada de una
+lista de permisos, desactivar un control, invertir una comprobación— y verificar que
+alguna prueba falla. Después se restaura el árbol. Once mutaciones costaron minutos en
+S-01-B porque cada una era una línea. Redactado como "pruebas de mutación" a secas,
+quien lo lea va a pensar en una herramienta y una hora de ejecución, y lo va a saltar.
+
+Por qué se adopta: en S-01-B encontró una prueba que pasaba **por accidente** —daba el
+resultado esperado sin que el control se ejecutara— y protegió tres correcciones de
+degradarse en silencio. En la ola 3 hay tres carriles tocando el mismo control de
+acceso, que es justo donde una prueba que ya no comprueba nada pasa inadvertida.
+
+Queda escrito acá, y no solo en los despachos, porque un despacho vive en un canal
+entre chats y el canal desaparece. Que la práctica dependiera de que el Coordinador se
+acuerde de pedirla o de que QA la aplique por criterio propio es exactamente lo que
+esta sesión rechazó dos veces. Lo señaló `qa` al verificar que la decisión no estaba en
+el repositorio.
+
+Pendiente asociado: incorporarla también al bloque `qa` de `AGENTS.md`, para que sea
+obligación del rol y no una decisión registrada. Va junto con la enmienda de abajo, en
+la misma aprobación del usuario.
+
 ### Inconsistencia conocida, con su causa — pendiente de una decisión del usuario
 
 Los tres handoffs (`S-00`, `S-01-B`, `S-DO-01`) declaran `status: EN_VALIDACION`
