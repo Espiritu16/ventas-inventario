@@ -109,9 +109,10 @@ sprints:
   - id: S-02-F
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: EN_PROGRESO
+    execution_status: LISTO
     branch: sprint/S-02-F
     base_sha: e87aded
+    nota_de_ejecucion: despachado y con entorno listo, sin código escrito todavía
     depends_on: [S-02-B, S-03-B, S-01-F]
     parallelizable_with: [S-04-B]
   - id: S-03-F
@@ -326,7 +327,7 @@ Se para con la **ola 4 a mitad de camino y nada roto**.
 | Carril | Estado |
 |---|---|
 | **S-04-B** | **EN_VALIDACION.** `sprint/S-04-B`, HEAD `5aa956f`, final_sha `4ddac6f`. Sin validar todavía |
-| **S-02-F** | **EN_PROGRESO.** `sprint/S-02-F`, construyendo las cuatro pantallas |
+| **S-02-F** | Rama `sprint/S-02-F` en `e87aded`, **sin commits propios y sin código escrito**. Entorno instalado y carril `ventas_inventario_s02f_test` creado. El tiempo del sprint se fue en leer antes de implementar — de ahí salió el hallazgo de `CategoriaService` |
 | QA | Sin trabajo asignado. S-04-B la espera |
 | DevOps | Sin turno |
 
@@ -943,6 +944,39 @@ Lo que deja la ola, más allá de sus entregables:
 - **Tres documentos aprobados corregidos porque afirmaban cosas que no se sostenían**: el
   motivo del índice parcial, el código de error del campo `codigo`, y el tamaño del
   catálogo 03 de SUNAT.
+
+## Por qué existen las reglas de verificación — un hallazgo grande se siente como un buen resultado
+
+Las cuatro reglas de la práctica de mutación nacieron de casos donde **el resultado
+engañoso era más cómodo que el correcto**. Vale tener escrito el mecanismo, porque es lo
+que se repite:
+
+`implementation-backend` obtuvo "DIVERGEN" en su primera prueba de concurrencia de S-04-B,
+con el bloqueo de fila puesto. La lectura inmediata era *encontré un defecto grave en el
+mecanismo más importante del sprint* — una lectura atractiva, que confirmaba que la
+mutación servía y que valía la pena mirar. Investigar antes de reportar significaba
+arriesgarse a que el hallazgo se desinflara. Se desinfló: el defecto estaba en su
+escenario, que creaba el lote con una factory que no escribe el movimiento de ingreso.
+
+Su formulación, que es la que importa: **la tentación no es reportar rápido por descuido,
+es que un hallazgo grande se siente como un buen resultado.** Por eso las reglas no piden
+más atención, piden un paso concreto antes de concluir.
+
+## Un mensaje de error describe el mecanismo que falló, no la causa
+
+Dos casos opuestos, misma suposición rota:
+
+- **`lsof`** devolvió salida vacía sin error cuando no podía ver los sockets ajenos. La
+  herramienta **calló** lo que no podía ver.
+- **PostgreSQL** dice "permiso denegado sobre `movimientos_inventario`" al intentar borrar
+  un lote, porque necesita bloquear la fila hija para verificar la clave foránea y ese
+  bloqueo exige privilegio de escritura. El motor **dice la verdad** sobre el mecanismo que
+  falló, y esa verdad apunta lejos de la causa: quien lo lea sale a revisar `GRANT`s
+  cuando lo que ocurre es una clave foránea haciendo su trabajo.
+
+Los dos rompen la suposición de que el mensaje describe el problema, y los dos se
+resuelven igual: **comprobando, no leyendo**. Consecuencia directa para S-DO-02, señalada
+por `devops`: un error de permisos en producción no se diagnostica por su texto.
 
 ## Regla de barrido — un cero no es evidencia de ausencia
 
