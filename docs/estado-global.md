@@ -65,16 +65,20 @@ sprints:
   - id: S-04-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: EN_VALIDACION
+    execution_status: COMPLETADO
     branch: sprint/S-04-B
     base_sha: e87aded
     final_sha: 4ddac6f1ee83f7782354a2953a0e4f47cb37b48c
+    merge_sha: a2d2f48
+    qa: APROBADO sobre 5aa956f con gobernanza 492b784
     depends_on: [S-02-B, S-03-B]
     parallelizable_with: [S-02-F]
   - id: S-05-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: LISTO
+    branch: sprint/S-05-B
+    base_sha: a2d2f48
     depends_on: [S-04-B]
     parallelizable_with: [S-03-F]
   - id: S-06-B
