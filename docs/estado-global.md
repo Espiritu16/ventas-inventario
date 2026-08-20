@@ -237,7 +237,16 @@ anterior tapaba**. Por eso no se rechazó: revertir reintroduce códigos que mie
 y en inglés donde cae al validador genérico**. No hay que traducir el framework entero; basta
 con que los genéricos tengan traducción o con que cada servicio dé el suyo.
 
-Escalado al usuario como decisión de alcance: es transversal y no cae en un solo sprint.
+**RESUELTO el 2026-08-20.** El usuario decidió **traducir el validador con mapa de campos**.
+Va como corrección en rama de fix y no como sprint nuevo: es una divergencia contra un
+documento aprobado, no alcance nuevo — el mismo tratamiento que los dos defectos que destapó
+el fix de unicidad. Despachado a `implementation-backend`; el detalle y sus dos condiciones
+quedan en `docs/errores/manejo-errores.md`.
+
+Lo que la decisión incorpora y no estaba a la vista al escalarla: **traducir no alcanza solo**,
+porque los mensajes por defecto nombran el campo por su identificador técnico y la taxonomía
+prohíbe la jerga técnica. El mapa que hace falta es la **novena instancia** del patrón de dos
+fuentes, y se cierra con la misma prueba de consistencia que la matriz de permisos.
 
 ---
 
