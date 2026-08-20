@@ -809,8 +809,10 @@ ahí, y no cuando el archivo es ajeno, es lo que hace que la regla sirva.
 
 ## Patrón recurrente — dos valores que hay que mantener iguales
 
-Cuatro veces, y las cuatro se resolvieron igual: **reemplazar dos fuentes que alguien
-debe mantener sincronizadas por una sola, derivada de donde nace el dato.**
+Siete veces ya. Las que se pudieron cerrar se cerraron igual: **reemplazar dos fuentes que
+alguien debe mantener sincronizadas por una sola, derivada de donde nace el dato.** Cuando la
+duplicación no se puede eliminar —porque una de las dos fuentes es un documento que la gente
+lee— se cierra con lo segundo mejor: **una prueba que falla cuando divergen.**
 
 1. **El prefijo de Livewire.** Se iba a fijar por configuración y declarar la cadena en
    la gobernanza. Se deriva de `APP_KEY`, así que la declaración habría sido correcta en
@@ -840,6 +842,29 @@ debe mantener sincronizadas por una sola, derivada de donde nace el dato.**
    al documento en generador —sigue escribiéndose a mano— pero **la divergencia deja de ser
    silenciosa**, que es lo único que hacía falta. Es el mismo criterio con el que se
    resolvieron las cuatro anteriores, aplicado al caso donde más costaba.
+
+6. **El contrato de servicios de dominio y las firmas reales.** `docs/contratos/servicios-de-dominio.md`
+   es la interfaz completa entre los dos frentes y **nadie lo actualizó en cinco sprints**.
+   Declaraba siete métodos que no existen y omitía cuatro servicios enteros. Sobrevivió tanto
+   porque hasta S-02-F ningún sprint de frontend consumió un servicio: QA validó cada sprint
+   contra su RFC y su contrato por dominio, y este documento no entraba en ninguna de esas
+   comparaciones. **Ninguna divergencia se detecta por casualidad; se detecta porque algo la
+   compara.**
+
+   Sincronizado hacia el código el 2026-08-20 en `a188e74`. Cerrado con el mismo criterio que
+   la quinta: una prueba de consistencia asignada a S-02-F que compara documento y métodos
+   públicos reales **en las dos direcciones** —método sin declarar y declaración sin método—,
+   porque acá el problema es de los dos tipos a la vez y mirar una sola dirección deja pasar
+   la mitad. Lo observó `qa`. Para que esa prueba no sea frágil, el documento pasó a declarar
+   cada firma en una fila con formato fijo y una columna de estado; el aviso de que una prueba
+   sobre prosa se pone roja sin que nada esté mal también es de `qa`.
+7. **La traducción de reglas de validación a códigos de error.** `ValidadorDeDominio` la hace
+   para todos los dominios y `UsuarioService` **tiene su propia copia privada**, escrita en
+   S-01-B antes de que existiera la compartida. Las dos ya divergieron: la compartida trata
+   `Between` y la copia no. Es la primera instancia del patrón **dentro del código de
+   producción**, no entre código y documento — y por eso es la que menos excusa tiene: acá la
+   duplicación sí se puede eliminar del todo. Pendiente de despacho a `implementation-backend`
+   junto con el retiro del código por defecto de `'Unique'` (`c8e9771`).
 
 Sobre la cuarta, el argumento que la cierra es de `qa` y es más fuerte que "no agregaba
 mucha cobertura": **`mount()` corre una vez y siempre antes de un `render()`, así que su
@@ -929,6 +954,13 @@ S-DO-02 debe cumplir y su RFC todavía no las declara.
 
 - ~~**Estado externo compartido en la ola 3.**~~ **RESUELTO el 2026-08-19** — ver "Aislamiento de base por carril" abajo. Lo detectó el chat de Frontend antes de que costara nada.
 - **Árbol de trabajo único.** Las cinco sesiones comparten `/Users/sankef/ventas-inventario`. Hoy funciona porque S-00 corre solo, pero cualquier ola con dos sprints simultáneos exige worktrees dedicados por carril, acordados antes del despacho.
+- **Configurar series de comprobante no tiene sprint — decisión de alcance pendiente del usuario, escalada el 2026-08-20.** RF-014 tiene dos mitades: *asignar* el correlativo, hecha en S-05-B (`SerieComprobanteService::reservarCorrelativo`), y **que el administrador configure la serie**, que no la implementa ningún RFC, no tiene pantalla en `docs/frontend/experiencia.md` y sí tiene dos filas en la matriz de permisos (`GET`/`POST /series-comprobante`, ambas `Sí` para administrador).
+
+  Hoy no se nota porque las pruebas insertan la serie directamente en la base. **Se nota en S-06-B**, el primer sprint que emite de verdad: sin una serie configurada, `registrar` rechaza con `SERIE_NO_CONFIGURADA` antes de llegar a SUNAT, y no hay forma soportada de crearla desde el sistema.
+
+  Apareció al sincronizar el contrato de servicios (`a188e74`) — no lo encontró una revisión de RF-014, lo encontró comparar el documento con el código. Es exactamente lo que predice la sexta instancia del patrón de dos fuentes: **la mitad no implementada de un requisito no se ve en ningún artefacto que alguien lea de corrido**; se ve cuando dos artefactos se comparan.
+
+  No lo resuelve el Coordinador: cambiar el alcance de un sprint o abrir uno nuevo es decisión del usuario. Mientras tanto, `SERIE_DUPLICADA` tampoco existe en la taxonomía de errores, porque su método no tiene dónde vivir.
 
 ## Bloqueantes
 
