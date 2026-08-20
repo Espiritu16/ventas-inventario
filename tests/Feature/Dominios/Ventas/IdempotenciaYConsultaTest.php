@@ -299,8 +299,8 @@ final class IdempotenciaYConsultaTest extends TestCase
 
         $encontrada = $this->servicio->encontrar((int) $propia->id, $this->vendedor);
 
-        $this->assertSame($propia->id, $encontrada->id);
-        $this->assertCount(1, $encontrada->lineas);
-        $this->assertNotNull($encontrada->comprobante);
+        $this->assertSame($propia->id, $encontrada['id']);
+        $this->assertCount(1, $encontrada['lineas']);
+        $this->assertNotNull($encontrada['comprobante']);
     }
 }

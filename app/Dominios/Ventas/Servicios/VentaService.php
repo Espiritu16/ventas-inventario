@@ -201,8 +201,14 @@ class VentaService
      * Una venta ajena responde igual que una inexistente: distinguirlas le
      * diría al vendedor que existe una venta que no puede ver, y con eso el
      * identificador se vuelve un canal para averiguar cuántas hay.
+     *
+     * Devuelve la proyección, no el modelo: quién puede pedir la venta y qué
+     * campos viajan dentro son dos preguntas distintas, y el alcance de arriba
+     * solo responde la primera.
+     *
+     * @return array<string, mixed>
      */
-    public function encontrar(int $id, Usuario $actor): Venta
+    public function encontrar(int $id, Usuario $actor): array
     {
         $venta = Venta::query()
             ->with(['lineas.reparto.lote', 'lineas.producto', 'comprobante', 'cliente'])
@@ -216,7 +222,86 @@ class VentaService
             );
         }
 
-        return $venta;
+        return $this->presentar($venta, $actor);
+    }
+
+    /**
+     * Enumera lo que sale, en vez de quitar lo que no debe salir.
+     *
+     * La diferencia importa el día que aparezca un campo nuevo: partir del
+     * modelo entero y descartar el costo deja pasar lo próximo que se agregue
+     * sin que nadie lo note, mientras que una lista de campos deja fuera lo
+     * desconocido por construcción. Es la forma que ya se usa en el stock por
+     * lote.
+     *
+     * @return array<string, mixed>
+     */
+    private function presentar(Venta $venta, Usuario $actor): array
+    {
+        return [
+            'id' => $venta->id,
+            'fecha' => $venta->fecha->toIso8601String(),
+            'subtotal' => $venta->subtotal,
+            'igv' => $venta->igv,
+            'total' => $venta->total,
+            'metodo_pago' => $venta->metodo_pago,
+            'cliente' => $venta->cliente === null ? null : [
+                'id' => $venta->cliente->id,
+                'tipo_documento' => $venta->cliente->tipo_documento,
+                'numero_documento' => $venta->cliente->numero_documento,
+                'nombre' => $venta->cliente->nombre,
+            ],
+            'comprobante' => $venta->comprobante === null ? null : [
+                'tipo_comprobante' => $venta->comprobante->tipo_comprobante,
+                'serie' => $venta->comprobante->serie,
+                'correlativo' => $venta->comprobante->correlativo,
+                'fecha_emision' => $venta->comprobante->fecha_emision->format('Y-m-d'),
+                'estado' => $venta->comprobante->estado,
+            ],
+            'lineas' => $venta->lineas->map(fn (DetalleVenta $linea) => [
+                'id' => $linea->id,
+                'producto' => [
+                    'id' => $linea->producto->id,
+                    'codigo' => $linea->producto->codigo,
+                    'nombre' => $linea->producto->nombre,
+                ],
+                'cantidad' => $linea->cantidad,
+                'tipo_precio' => $linea->tipo_precio,
+                'precio_unitario' => $linea->precio_unitario,
+                'importe' => $linea->importe,
+                'reparto' => $linea->reparto
+                    ->map(fn (DetalleVentaLote $porcion) => $this->presentarPorcion($porcion, $actor))
+                    ->all(),
+            ])->all(),
+        ];
+    }
+
+    /**
+     * El costo aparece en dos sitios sobre la misma porción —en el reparto y
+     * en el lote del que salió—, así que ocultarlo en uno solo no lo oculta.
+     *
+     * @return array<string, mixed>
+     */
+    private function presentarPorcion(DetalleVentaLote $porcion, Usuario $actor): array
+    {
+        $presentada = [
+            'lote_id' => $porcion->lote_id,
+            'codigo_lote' => $porcion->lote?->codigo_lote,
+            'fecha_vencimiento' => $porcion->lote?->fecha_vencimiento?->format('Y-m-d'),
+            'cantidad' => $porcion->cantidad,
+        ];
+
+        // El costo es información de negociación con el proveedor, no algo que
+        // quien vende necesite: con el precio de venta al lado, el margen sale
+        // por resta. El sistema ya lo acota en catálogo y en inventario, y el
+        // reporte de utilidad es solo de administrador (contrato de ventas,
+        // enmienda de Arquitectura 2026-08-20).
+        if ($actor->esAdministrador()) {
+            $presentada['costo_unitario'] = $porcion->costo_unitario;
+            $presentada['costo_unitario_lote'] = $porcion->lote?->costo_unitario;
+        }
+
+        return $presentada;
     }
 
     /** @return array<string, mixed> */
