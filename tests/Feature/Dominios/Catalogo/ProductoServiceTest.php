@@ -285,6 +285,29 @@ final class ProductoServiceTest extends TestCase
         $this->assertSame(1, Producto::query()->count());
     }
 
+    /**
+     * El contrato declara `stockDisponible` ausente hasta S-04-B: no hay lotes
+     * de los que calcularlo. Un cero sería indistinguible de "sin existencias"
+     * y la pantalla de catálogo lo mostraría como tal.
+     *
+     * **S-04-B tiene que invertir esta prueba, no borrarla.** Cuando la compra
+     * cree los lotes, el campo pasa a estar presente y con valor real; que la
+     * prueba cambie de sentido es la señal de que ese sprint hizo su trabajo.
+     * Que desaparezca sería perder la comprobación.
+     *
+     * Vivía en las pruebas de ruta hasta que ADR-0006 las retiró; se conserva
+     * acá, contra el servicio, que es donde el dato se produce.
+     */
+    public function test_el_listado_no_trae_stock_disponible_todavia(): void
+    {
+        $this->servicio->crear($this->datos());
+
+        $producto = $this->servicio->listar()->items()[0]->toArray();
+
+        $this->assertArrayNotHasKey('stockDisponible', $producto);
+        $this->assertArrayNotHasKey('stock_disponible', $producto);
+    }
+
     // --- Auditoría (UT-04, RNF-004) ---
 
     public function test_cambiar_un_precio_deja_rastro_con_el_valor_anterior_y_su_responsable(): void

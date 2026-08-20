@@ -2,6 +2,7 @@
 
 namespace App\Dominios\Usuarios\Livewire;
 
+use App\Compartido\Autorizacion\Permiso;
 use Livewire\Component;
 
 /**
@@ -12,6 +13,7 @@ use Livewire\Component;
  * No es una pantalla ni parte de ningún RF. S-01-F lo reemplaza por las
  * pantallas reales y puede borrarlo sin consultar a nadie.
  */
+#[Permiso('GET /panel')]
 class HumoDeInstalacion extends Component
 {
     public int $interacciones = 0;

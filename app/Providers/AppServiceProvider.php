@@ -2,18 +2,20 @@
 
 namespace App\Providers;
 
+use App\Compartido\Autorizacion\HookDePermisos;
 use App\Compartido\Interfaz\RegistroDeComponentesLivewire;
 use App\Compartido\Persistencia\GrammarPostgresConZonaHoraria;
 use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Database\PostgresConnection;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        Livewire::componentHook(HookDePermisos::class);
     }
 
     public function boot(): void
@@ -29,5 +31,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RegistroDeComponentesLivewire::registrar(app_path('Dominios'));
+
+        Livewire::componentHook(HookDePermisos::class);
     }
 }

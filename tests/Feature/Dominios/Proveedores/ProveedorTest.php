@@ -7,7 +7,6 @@ use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
 use App\Dominios\Proveedores\Modelos\Proveedor;
 use App\Dominios\Proveedores\Servicios\ProveedorService;
-use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -228,43 +227,9 @@ final class ProveedorTest extends TestCase
         $this->assertCount(1, $this->servicio->listar(soloActivos: false)->items());
     }
 
-    // --- Rutas (RNF-013) ---
-
-    public function test_solo_el_administrador_administra_proveedores(): void
-    {
-        $vendedor = Usuario::factory()->create();
-        $admin = Usuario::factory()->administrador()->create();
-
-        $this->actingAs($vendedor)->getJson('/proveedores')->assertStatus(403);
-        $this->actingAs($admin)->getJson('/proveedores')->assertOk();
-    }
-
-    public function test_sin_sesion_las_rutas_de_proveedores_rechazan(): void
-    {
-        $this->getJson('/proveedores')
-            ->assertStatus(401)
-            ->assertJsonPath('error.codigo', 'NO_AUTENTICADO');
-    }
-
-    public function test_crea_un_proveedor_por_http_con_los_nombres_del_contrato(): void
-    {
-        $this->actingAs(Usuario::factory()->administrador()->create())
-            ->postJson('/proveedores', [
-                'numeroDocumento' => '20123456789',
-                'razonSocial' => 'Distribuidora del Norte SAC',
-            ])
-            ->assertStatus(201)
-            ->assertJsonPath('numero_documento', '20123456789');
-    }
-
-    public function test_un_ruc_invalido_por_http_devuelve_documento_invalido(): void
-    {
-        $this->actingAs(Usuario::factory()->administrador()->create())
-            ->postJson('/proveedores', [
-                'numeroDocumento' => '2012345678',
-                'razonSocial' => 'Distribuidora del Norte SAC',
-            ])
-            ->assertStatus(422)
-            ->assertJsonPath('error.codigo', 'DOCUMENTO_INVALIDO');
-    }
+    // Las pruebas que ejercían estas operaciones por HTTP se retiraron con sus
+    // rutas (ADR-0006): los recursos de dominio se sirven como pantallas y la
+    // operación la ejecuta este servicio, invocado en el mismo proceso. Quién
+    // puede hacer qué lo comprueba el mecanismo de permisos en componentes;
+    // lo que este archivo cubre es que la operación haga lo que dice.
 }

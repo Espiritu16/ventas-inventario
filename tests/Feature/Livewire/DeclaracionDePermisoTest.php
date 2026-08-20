@@ -28,14 +28,21 @@ final class DeclaracionDePermisoTest extends TestCase
     /**
      * Componentes que todavía no declaran, con su motivo.
      *
-     * `HumoDeInstalacion` es de S-01-B, no implementa ningún RF y su handoff
-     * lo declara temporal. No se anota ni se borra desde este frente: es ruta
-     * de `implementation-backend` y dos pruebas suyas siguen dependiendo de
-     * él. Cuando el mecanismo entre, va a rechazarlo en ejecución.
+     * **Hoy está vacía, y eso es el estado correcto**: todos los componentes
+     * declaran. La constante se conserva porque un sprint futuro puede toparse
+     * con un componente ajeno sin anotar —fue lo que pasó con
+     * `HumoDeInstalacion`, que era de `implementation-backend` y no se podía
+     * anotar desde acá— y entonces hace falta un lugar donde registrar la
+     * excepción con su motivo, en vez de silenciar la prueba.
+     *
+     * Con la lista vacía, `test_la_lista_de_pendientes_no_envejece` no
+     * comprueba nada, que es lo que corresponde cuando no hay pendientes: la
+     * garantía de que ningún componente queda sin declarar la sostiene la otra
+     * prueba, que sí recorre todos.
+     *
+     * @var array<int, class-string>
      */
-    private const PENDIENTES = [
-        'App\\Dominios\\Usuarios\\Livewire\\HumoDeInstalacion',
-    ];
+    private const PENDIENTES = [];
 
     public function test_todo_componente_declara_su_permiso(): void
     {
@@ -58,20 +65,29 @@ final class DeclaracionDePermisoTest extends TestCase
         );
     }
 
-    /** Los pendientes son una lista cerrada: si alguno ya declara, hay que sacarlo de acá. */
+    /**
+     * Los pendientes son una lista cerrada: si alguno ya declara, hay que
+     * sacarlo de acá.
+     *
+     * Se afirma sobre el conjunto y no dentro de un bucle para que la prueba
+     * haga siempre una aserción, también con la lista vacía. Un bucle sobre
+     * una lista vacía no comprueba nada y PHPUnit lo marca arriesgado con
+     * razón: una prueba sin aserciones pasa siempre, y la que hoy no tiene
+     * nada que mirar es indistinguible de la que dejó de mirar.
+     */
     public function test_la_lista_de_pendientes_no_envejece(): void
     {
-        foreach (self::PENDIENTES as $clase) {
-            if (! class_exists($clase)) {
-                continue;
-            }
+        $yaDeclaran = array_values(array_filter(
+            self::PENDIENTES,
+            fn (string $clase) => class_exists($clase)
+                && (new ReflectionClass($clase))->getAttributes(self::ATRIBUTO) !== []
+        ));
 
-            $this->assertSame(
-                [],
-                (new ReflectionClass($clase))->getAttributes(self::ATRIBUTO),
-                "«{$clase}» ya declara su permiso: sacalo de PENDIENTES."
-            );
-        }
+        $this->assertSame(
+            [],
+            $yaDeclaran,
+            'Estos ya declaran su permiso: sacalos de PENDIENTES.'
+        );
     }
 
     /** @return array<int, class-string> */

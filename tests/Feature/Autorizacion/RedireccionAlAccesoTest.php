@@ -20,11 +20,18 @@ final class RedireccionAlAccesoTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Pantallas reales, registradas por el frente de interfaz. Antes se usaban
+     * `/productos` y `/categorias`, que eran endpoints JSON y estaban ahí por
+     * disponibles, no por ser lo que estas pruebas dicen comprobar; ADR-0006
+     * los retiró. Las dos actuales además cubren las dos formas de fila de la
+     * matriz: `/usuarios` exige administrador y `/panel` admite ambos roles.
+     */
     public static function pantallasProtegidas(): array
     {
         return [
-            'catálogo de productos' => ['/productos'],
-            'categorías' => ['/categorias'],
+            'gestión de usuarios' => ['/usuarios'],
+            'tablero' => ['/panel'],
         ];
     }
 
@@ -70,15 +77,15 @@ final class RedireccionAlAccesoTest extends TestCase
     /** La consulta que acompaña a la URL también se conserva. */
     public function test_se_conserva_tambien_la_consulta_de_la_url(): void
     {
-        $this->get('/productos?buscar=arroz&pagina=2');
+        $this->get('/usuarios?buscar=ana&pagina=2');
 
-        $this->assertSame(url('/productos?buscar=arroz&pagina=2'), session('url.intended'));
+        $this->assertSame(url('/usuarios?buscar=ana&pagina=2'), session('url.intended'));
     }
 
     public function test_con_sesion_no_hay_redireccion(): void
     {
         $this->actingAs(Usuario::factory()->administrador()->create())
-            ->get('/productos')
+            ->get('/usuarios')
             ->assertOk();
 
         $this->assertNull(session('url.intended'));
@@ -91,6 +98,6 @@ final class RedireccionAlAccesoTest extends TestCase
         $this->actingAs($usuario);
         $usuario->update(['activo' => false]);
 
-        $this->get('/productos')->assertRedirect('/login');
+        $this->get('/usuarios')->assertRedirect('/login');
     }
 }
