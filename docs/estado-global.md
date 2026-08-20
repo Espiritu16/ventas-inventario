@@ -189,6 +189,53 @@ documento, en `AGENTS.md` y en Git.
 sin veredicto y ningún documento gobernado quedó afirmando algo que el árbol no
 respalde.
 
+### Inconsistencia conocida, con su causa — pendiente de una decisión del usuario
+
+Los tres handoffs (`S-00`, `S-01-B`, `S-DO-01`) declaran `status: EN_VALIDACION`
+mientras este documento los registra como `COMPLETADO`. **No es un descuido: es un
+hueco de gobernanza.**
+
+Cada implementador dejó ese campo en `EN_VALIDACION`, que era lo correcto en su
+momento — la skill le prohíbe declararse `COMPLETADO` a sí mismo. Cerrar un sprint es
+atribución exclusiva del Coordinador. Pero `AGENTS.md` le permite al rol `coordinacion`
+escribir en `docs/handoffs/` **solo las secciones de resultados QA/DevOps**, y el
+`status` es cabecera del handoff, no esa sección.
+
+Resultado: nadie tiene autoridad para mover ese campo a `COMPLETADO`. El implementador
+no puede porque no cierra sprints; el Coordinador no puede porque no es su ruta. El
+campo queda congelado en el último valor legítimo que alguien pudo escribir.
+
+Hoy no engaña a nadie porque este documento manda y lo dice claro, pero quien mañana
+reconstruya y abra primero el handoff —lo natural para entender un sprint— leerá que
+sigue en validación.
+
+**Enmienda propuesta a `AGENTS.md`, pendiente de aprobación del usuario**, en el bloque
+`coordinacion`, reemplazando la restricción actual sobre handoffs:
+
+```
+- Puede escribir en `docs/handoffs/`: las secciones de resultados QA/DevOps y el
+  campo `status` de la cabecera al cerrar el sprint. El resto del handoff es del rol
+  que lo ejecutó. Cerrar un sprint es atribución del Coordinador, así que registrar
+  ese cierre en el handoff también lo es.
+```
+
+Es la corrección mínima: no le abre al Coordinador el handoff entero, solo el campo
+que su propia autoridad de cierre ya implica. Detectado por `devops` al verificar el
+cierre de S-DO-01, y confirmado por el Coordinador en los tres handoffs.
+
+### Volúmenes de Docker atados a la decisión de los worktrees
+
+Quedan `s-do-01_datos_postgres` y `s-do-01_node_modules`. **Hoy no son huérfanos**: los
+reclama el compose si se levanta desde ese worktree. Si mañana se elimina el worktree,
+se vuelven huérfanos y con un nombre que ya no corresponde a ningún directorio, así que
+nadie los reconocerá — el mismo caso de los tres que se barrieron en S-DO-01. Van
+atados a esa decisión, no aparte: si el worktree se va, `docker volume rm
+s-do-01_datos_postgres s-do-01_node_modules` va con él.
+
+QA también dejó montados su checkout y la base `ventas_inventario_qa_test` en el
+scratchpad de sesión. Son desechables; quien los necesite limpios puede borrarlos sin
+consultar.
+
 ## Decisiones tomadas durante la ejecución
 
 | # | Fecha | Qué se decidió | Quién lo aprobó | Dónde quedó |
