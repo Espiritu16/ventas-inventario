@@ -41,6 +41,50 @@ Decidido por Arquitectura el 2026-08-19, a raíz del desajuste que reportó
 tratarse así sin agregarse a esta tabla: la lista es cerrada, no un criterio general
 de "lo que parezca infraestructura".
 
+## Regla transversal — un componente que escribe comprueba el permiso él mismo
+
+**Aplica a toda pantalla, presente y futura. No es específica de usuarios.**
+
+Proteger la ruta de una pantalla **no protege sus componentes**. Los métodos públicos
+de un componente Livewire no viajan por la ruta que sirve la pantalla: viajan por
+`POST /_livewire/update`, que esta misma matriz declara como "exige sesión activa" y
+que **no distingue rol**. Un usuario con sesión válida pero sin permiso puede invocar
+esos métodos sin pasar nunca por la pantalla.
+
+Y el servicio de dominio tampoco lo cubre, ni debe: no sabe quién lo llama, y hacerlo
+consciente del rol lo convertiría en otra cosa.
+
+Por lo tanto: **todo componente con métodos públicos que escriban comprueba el permiso
+antes de invocar el servicio, derivándolo de esta matriz** — no de una lista propia, por
+la misma razón por la que el menú lo deriva de acá: una sola fuente.
+
+Esto es el tercer piso de la misma lección, y conviene verlos juntos porque cada uno
+parecía suficiente hasta que apareció el siguiente:
+
+1. Ocultar un ítem del menú no es control de acceso. Protege la vista, no la ruta.
+2. Proteger la ruta no es proteger el componente. Protege la navegación, no la
+   invocación.
+3. El servicio no protege nada de esto. Ejecuta la operación; no sabe quién pidió.
+
+Detectado por `implementation-frontend` al cerrar S-01-F, a partir de esta misma nota:
+comprobó su propio componente y encontró que un vendedor podía darse de alta como
+administrador sin pasar por la pantalla. Corregido con pruebas de regresión y
+verificado por mutación.
+
+**Alcance de lo demostrado, para no exagerarlo:** la sonda usó `Livewire::test`, que no
+pasa por el middleware HTTP. Eso demuestra que faltaba la guarda del componente, no que
+la escalada fuera explotable de punta a punta —Livewire firma los snapshots y reaplica
+el middleware de la página donde se montó—. Se corrige igual porque hacer depender el
+control de acceso del comportamiento interno de un paquete de terceros es exactamente
+lo que esta matriz existe para evitar.
+
+**Pendiente estructural, asignado a S-02-F:** hoy la regla depende de que quien escriba
+cada componente se acuerde. Eso no escala — S-02-F, S-03-F y S-04-F traen muchas
+pantallas, y la de caja mueve stock y correlativos. La comprobación debe pasar a
+aplicarse **por mecanismo**, no por disciplina: que un componente que escribe sin
+declarar su permiso falle, en lugar de quedar abierto. La forma concreta la proponen
+`implementation-backend` y `implementation-frontend` juntos, y la aprueba Arquitectura.
+
 ## Rutas que registra Livewire
 
 Livewire registra rutas propias al instalarse. Bajo deny-by-default se rechazarían
