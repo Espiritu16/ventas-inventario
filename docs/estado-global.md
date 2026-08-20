@@ -949,6 +949,41 @@ Lo que deja la ola, más allá de sus entregables:
   motivo del índice parcial, el código de error del campo `codigo`, y el tamaño del
   catálogo 03 de SUNAT.
 
+## La unicidad protege el dato; el bloqueo protege la operación
+
+Son garantías distintas y **una prueba que solo mire integridad da por cubierto un
+mecanismo ausente.**
+
+Al automatizar la prueba de concurrencia en S-05-B, `implementation-backend` quitó el
+bloqueo de la fila de la serie esperando ver correlativos duplicados. No aparecieron: la
+restricción de unicidad de la base lo impide. Lo que apareció fue otra cosa — **tres de
+cada cuatro ventas simultáneas fallan** con violación de unicidad. El dato queda íntegro y
+tres clientes se quedan sin comprobante **después de que se les cobró**.
+
+O sea: la unicidad garantiza que no haya dos correlativos iguales; el bloqueo garantiza que
+la operación pueda completarse. Verificar solo lo primero deja pasar la ausencia de lo
+segundo, y el síntoma no se parece en nada a un problema de concurrencia — se parece a
+ventas que fallan.
+
+La prueba comprueba las tres cosas por separado: integridad del dato, que la operación no
+muera, y que el bloqueo esté.
+
+## Dos formas en que una prueba de concurrencia pasa sin probar nada
+
+Las dos las encontró `implementation-backend` al escribir la de S-05-B, y las dos daban
+verde:
+
+1. **Con un solo par de procesos.** La ventana entre leer y escribir dura microsegundos, y
+   dos procesos sincronizados rara vez la comparten. La prueba pasaba **sin el bloqueo**.
+   Van tres pares.
+2. **Con los procesos hijos muertos al arrancar.** No competía nadie, así que no había
+   divergencia que detectar. Ahora se verifica que corrieron y dejaron rastro, en vez de
+   suponerlo.
+
+La segunda es la misma familia que "confirmá que la mutación se aplicó" y que "un cero de
+un barrido no es evidencia de ausencia": **el procedimiento no se ejecutó, y su no-ejecución
+se lee igual que un resultado limpio.**
+
 ## Por qué existen las reglas de verificación — un hallazgo grande se siente como un buen resultado
 
 Las cuatro reglas de la práctica de mutación nacieron de casos donde **el resultado
