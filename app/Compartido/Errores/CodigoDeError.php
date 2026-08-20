@@ -31,6 +31,14 @@ enum CodigoDeError: string
     case COMPRA_SIN_LINEAS = 'COMPRA_SIN_LINEAS';
     case COMPRA_DOCUMENTO_DUPLICADO = 'COMPRA_DOCUMENTO_DUPLICADO';
     case STOCK_INSUFICIENTE = 'STOCK_INSUFICIENTE';
+    case VENTA_SIN_LINEAS = 'VENTA_SIN_LINEAS';
+    case TIPO_PRECIO_INVALIDO = 'TIPO_PRECIO_INVALIDO';
+    case LOTE_VENCIDO = 'LOTE_VENCIDO';
+    case FACTURA_REQUIERE_RUC = 'FACTURA_REQUIERE_RUC';
+    case BOLETA_REQUIERE_DOCUMENTO = 'BOLETA_REQUIERE_DOCUMENTO';
+    case SERIE_NO_CONFIGURADA = 'SERIE_NO_CONFIGURADA';
+    case CORRELATIVO_EN_CONFLICTO = 'CORRELATIVO_EN_CONFLICTO';
+    case OPERACION_DUPLICADA = 'OPERACION_DUPLICADA';
 
     public function status(): int
     {
@@ -41,7 +49,9 @@ enum CodigoDeError: string
             self::DOCUMENTO_DUPLICADO,
             self::PRODUCTO_CODIGO_DUPLICADO,
             self::COMPRA_DOCUMENTO_DUPLICADO,
-            self::CATEGORIA_NOMBRE_DUPLICADO => 409,
+            self::CATEGORIA_NOMBRE_DUPLICADO,
+            self::CORRELATIVO_EN_CONFLICTO,
+            self::OPERACION_DUPLICADA => 409,
             self::CREDENCIALES_INVALIDAS,
             self::CAMPO_REQUERIDO,
             self::CAMPO_FORMATO_INVALIDO,
@@ -53,7 +63,13 @@ enum CodigoDeError: string
             self::AJUSTE_SIN_MOTIVO,
             self::AJUSTE_CANTIDAD_NEGATIVA,
             self::COMPRA_SIN_LINEAS,
-            self::STOCK_INSUFICIENTE => 422,
+            self::STOCK_INSUFICIENTE,
+            self::VENTA_SIN_LINEAS,
+            self::TIPO_PRECIO_INVALIDO,
+            self::LOTE_VENCIDO,
+            self::FACTURA_REQUIERE_RUC,
+            self::BOLETA_REQUIERE_DOCUMENTO,
+            self::SERIE_NO_CONFIGURADA => 422,
         };
     }
 }
