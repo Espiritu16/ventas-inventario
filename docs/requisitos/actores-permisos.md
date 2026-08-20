@@ -54,9 +54,30 @@ esos métodos sin pasar nunca por la pantalla.
 Y el servicio de dominio tampoco lo cubre, ni debe: no sabe quién lo llama, y hacerlo
 consciente del rol lo convertiría en otra cosa.
 
-Por lo tanto: **todo componente con métodos públicos que escriban comprueba el permiso
-antes de invocar el servicio, derivándolo de esta matriz** — no de una lista propia, por
-la misma razón por la que el menú lo deriva de acá: una sola fuente.
+Por lo tanto: **todo componente comprueba el permiso donde sirve o escribe los datos,
+derivándolo de esta matriz** — no de una lista propia, por la misma razón por la que el
+menú lo deriva de acá: una sola fuente.
+
+**"Donde sirve los datos" no es el montaje.** `mount()` corre una sola vez; en cada
+interacción posterior el componente se **hidrata desde el snapshot** que el navegador
+tiene guardado, y `render()` vuelve a consultar sin pasar por el montaje. Un permiso
+comprobado solo al montar protege la primera carga y nada más: si el rol de la persona
+cambia mientras la pantalla está abierta, sigue viendo datos que ya no le corresponden
+hasta que recargue.
+
+Y esto **no lo cubre el middleware**: el endpoint de actualización de Livewire exige
+sesión activa pero no comprueba rol, precisamente porque es el mismo endpoint para todos
+los componentes.
+
+Demostrado por HTTP real en la validación de S-01-F: a un administrador se le cambió el
+rol a vendedor desde la propia pantalla de usuarios, y con su snapshot y su sesión el
+listado **siguió respondiendo con los nombres y correos de todos**. La escritura sí
+estaba protegida —un vendedor no podía darse de alta como administrador— y la lectura
+no.
+
+Una distinción que costó separarlas y conviene recordar: un usuario **desactivado** sí
+lo frena el middleware, que comprueba `activo`. Un usuario **degradado de rol** no lo
+frena nadie. Parecían el mismo agujero y son dos, y solo uno existe.
 
 Esto es el tercer piso de la misma lección, y conviene verlos juntos porque cada uno
 parecía suficiente hasta que apareció el siguiente:
