@@ -96,15 +96,42 @@ final class MatrizDePermisos
         'PATCH /usuarios/{id}' => [Usuario::ROL_ADMINISTRADOR],
         'GET /panel' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
 
-        // Catálogo: el vendedor consulta para vender, pero no administra.
-        'GET /categorias' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
+        // Catálogo: la gestión es solo del administrador. El vendedor busca
+        // productos desde la caja, que es otra pantalla y sí es suya.
+        'GET /categorias' => [Usuario::ROL_ADMINISTRADOR],
         'POST /categorias' => [Usuario::ROL_ADMINISTRADOR],
         'PATCH /categorias/{id}' => [Usuario::ROL_ADMINISTRADOR],
-        'GET /productos' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
-        'GET /productos/{id}' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
+        'GET /productos' => [Usuario::ROL_ADMINISTRADOR],
+        'GET /productos/{id}' => [Usuario::ROL_ADMINISTRADOR],
         'POST /productos' => [Usuario::ROL_ADMINISTRADOR],
         'PATCH /productos/{id}' => [Usuario::ROL_ADMINISTRADOR],
+
+        // Proveedores: solo el administrador; el vendedor no compra.
+        'GET /proveedores' => [Usuario::ROL_ADMINISTRADOR],
+        'POST /proveedores' => [Usuario::ROL_ADMINISTRADOR],
+        'PATCH /proveedores/{id}' => [Usuario::ROL_ADMINISTRADOR],
+
+        // Clientes: el vendedor consulta y da de alta desde la propia caja,
+        // pero editar un cliente ya registrado es del administrador.
+        'GET /clientes' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
+        'POST /clientes' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
+        'PATCH /clientes/{id}' => [Usuario::ROL_ADMINISTRADOR],
     ];
+
+    /**
+     * Todas las entradas con rol, tal como están transcritas.
+     *
+     * Existe para que una prueba pueda contrastarlas contra la tabla del
+     * documento del que nacen: la transcripción se hace a mano, y sin algo que
+     * las compare una divergencia no falla — el código decide y el documento
+     * se lee, así que puede quedar mintiendo sin que nadie lo note.
+     *
+     * @return array<string, array<int, string>>
+     */
+    public static function porRol(): array
+    {
+        return self::POR_ROL;
+    }
 
     public static function identificar(string $metodo, Route $ruta): string
     {

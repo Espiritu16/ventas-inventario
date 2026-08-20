@@ -65,10 +65,30 @@ final class CategoriaServiceTest extends TestCase
 
         $this->assertRechaza(
             fn () => $this->servicio->crear(DatosDeCatalogo::desde(['nombre' => $nombre])),
-            CodigoDeError::DOCUMENTO_DUPLICADO
+            CodigoDeError::CATEGORIA_NOMBRE_DUPLICADO
         );
 
         $this->assertSame(1, Categoria::query()->count());
+    }
+
+    /**
+     * El error nombra su campo porque la pantalla muestra el mensaje al lado
+     * de él. Y usa un código propio de la categoría: `DOCUMENTO_DUPLICADO`
+     * está reservado al documento de un cliente o proveedor, y el mismo código
+     * significando dos cosas obligaría a la pantalla a saber en qué servicio
+     * está para traducirlo al campo correcto.
+     */
+    public function test_el_nombre_repetido_nombra_su_campo(): void
+    {
+        $this->servicio->crear(DatosDeCatalogo::desde(['nombre' => 'Abarrotes']));
+
+        try {
+            $this->servicio->crear(DatosDeCatalogo::desde(['nombre' => 'Abarrotes']));
+            $this->fail('Se aceptó un nombre repetido.');
+        } catch (ErrorDeDominio $error) {
+            $this->assertSame(CodigoDeError::CATEGORIA_NOMBRE_DUPLICADO, $error->codigo);
+            $this->assertSame('nombre', $error->detalle['campo'] ?? null);
+        }
     }
 
     public static function nombresInvalidos(): array

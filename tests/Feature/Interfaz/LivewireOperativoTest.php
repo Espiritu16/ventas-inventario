@@ -4,6 +4,7 @@ namespace Tests\Feature\Interfaz;
 
 use App\Compartido\Autorizacion\MatrizDePermisos;
 use App\Dominios\Usuarios\Livewire\HumoDeInstalacion;
+use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\View;
 use Livewire\Livewire;
@@ -29,6 +30,12 @@ final class LivewireOperativoTest extends TestCase
         parent::setUp();
 
         View::addLocation(__DIR__.'/../../recursos/vistas');
+
+        // El componente declara el permiso que exige, y el hook lo comprueba
+        // cada vez que sirve datos: sin sesión no renderiza. Estas pruebas
+        // comprueban que Livewire quedó operativo, no el control de acceso, así
+        // que se montan con alguien que puede verlo.
+        $this->actingAs(Usuario::factory()->create());
     }
 
     public function test_el_componente_se_descubre_dentro_de_su_dominio(): void

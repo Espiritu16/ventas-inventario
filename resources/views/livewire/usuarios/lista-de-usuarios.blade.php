@@ -1,11 +1,5 @@
 <div class="space-y-4">
-    @if ($error)
-        <x-aviso tipo="error">{{ $error }}</x-aviso>
-    @endif
-
-    @if ($exito)
-        <x-aviso tipo="exito">{{ $exito }}</x-aviso>
-    @endif
+    <x-mensajes :error="$error" :exito="$exito" />
 
     <div class="flex items-center justify-between gap-4">
         <input
@@ -33,7 +27,7 @@
                 {{ $editando === null ? 'Nuevo usuario' : 'Editar usuario' }}
             </h2>
 
-            <x-formulario enviar="guardar" etiqueta-enviar="Guardar">
+            <x-formulario :enviar="$editando === null ? 'crear' : 'actualizar'" etiqueta-enviar="Guardar">
                 <x-campo
                     nombre="nombre"
                     etiqueta="Nombre"

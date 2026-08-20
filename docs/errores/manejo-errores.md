@@ -43,6 +43,7 @@ las pruebas verifican, no el texto visible.
 
 | Código | HTTP status | Cuándo se usa |
 |---|---|---|
+| CATEGORIA_NOMBRE_DUPLICADO | 409 | ya existe una categoría con ese nombre, comparado sin distinguir mayúsculas |
 | PRODUCTO_CODIGO_DUPLICADO | 409 | ya existe un producto con ese código interno |
 | PRODUCTO_PRECIO_MAYOR_INVALIDO | 422 | el precio al por mayor es mayor que el precio al por menor |
 | PRODUCTO_INACTIVO | 422 | se intenta comprar o vender un producto desactivado |
@@ -74,6 +75,7 @@ las pruebas verifican, no el texto visible.
 
 | Código | HTTP status | Cuándo se usa |
 |---|---|---|
+| SERIE_DUPLICADA | 409 | ya existe una serie con ese identificador para ese tipo de comprobante |
 | SERIE_NO_CONFIGURADA | 422 | no existe una serie activa para el tipo de comprobante solicitado |
 | CORRELATIVO_EN_CONFLICTO | 409 | no se pudo reservar el correlativo por concurrencia; la operación se reintenta y solo se informa si el reintento también falla |
 | TRANSICION_COMPROBANTE_INVALIDA | 409 | se intenta un cambio de estado no permitido por el ciclo de vida de RF-013 |
@@ -89,5 +91,10 @@ las pruebas verifican, no el texto visible.
 - Un error nunca deja una operación a medias: toda operación que escribe (venta, compra, ajuste) es atómica, y si termina en error no deja rastro parcial en inventario, kardex ni correlativos.
 - `SUNAT_NO_DISPONIBLE` y `SUNAT_RECHAZO` son categóricamente distintos y se tratan distinto: el primero se reintenta automáticamente, el segundo nunca.
 - Todo error de severidad `error` o `critical` se registra en `LogError` con su `trace_id`, y además se escribe a la salida estándar del proceso.
+- **Un código de unicidad se nombra `ENTIDAD_CAMPO_DUPLICADO`, con la entidad adelante.** No es estética: un código que nombra solo el campo se puede aplicar a cualquier entidad que tenga algo parecido, y eso ya pasó. `DOCUMENTO_DUPLICADO` es el único de los cuatro que omite la entidad, y es exactamente el que se usó fuera de su significado —para un nombre de categoría, que no es un documento—. Se conserva porque en clientes y proveedores es correcto, pero **ningún código nuevo se nombra así**. Lo observó `implementation-backend` al corregir ese uso: fue a ver si quedaba un tercer caso y encontró que el patrón predice cuáles atraen usos indebidos.
+- **Un error de campo nombra su campo en `detalle`.** Las pantallas muestran el mensaje junto al campo que lo produjo, y para saber cuál es leen ese dato. Sin él, un error de campo se degrada a aviso general de la operación. La correspondencia código→campo **depende del servicio** —`DOCUMENTO_DUPLICADO` es `numero_documento` en clientes y era `nombre` en categorías— así que no puede deducirse desde la pantalla sin crear un segundo lugar donde vive esa equivalencia.
+
+- **Un fallo de unicidad no tiene código por defecto: lo declara quien valida.** `ValidadorDeDominio` traduce reglas de validación a códigos, y su tabla mapeaba `'Unique'` a `DOCUMENTO_DUPLICADO` para cualquier campo de cualquier entidad — es decir, el código mal nombrado era además el que se aplicaba solo, sin que nadie lo eligiera. Un validador compartido **no sabe de qué entidad es el campo**, así que no puede nombrar el código correcto y no debe intentarlo: la regla `ENTIDAD_CAMPO_DUPLICADO` solo es satisfacible desde el servicio, que sí lo sabe. La entrada `'Unique'` se retira de la tabla por defecto y el código se pasa por campo en `$codigosPorCampo`, que es el mecanismo que el propio validador ya ofrece y que catálogo y compras ya usan. Un `unique` sin código declarado deja de resolverse en silencio.
+  Lo planteó `implementation-frontend` al mapear errores a campos en sus pantallas. Al verificarlo apareció además que `UsuarioService` tiene **su propia copia privada** de esa traducción, escrita en S-01-B antes de que existiera el validador compartido, y que las dos ya divergieron: la compartida trata `Between` y la copia no. Es la séptima instancia del patrón de dos fuentes mantenidas a mano, y la primera dentro del código de producción y no entre código y documento.
 
 Aprobado por (Arquitectura): sesión de Arquitectura del 2026-08-19, ejercida por el agente sobre el diseño aprobado por Kevin Espíritu — fecha: 2026-08-19

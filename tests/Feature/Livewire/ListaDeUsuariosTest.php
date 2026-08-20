@@ -80,7 +80,7 @@ final class ListaDeUsuariosTest extends TestCase
             ->set('email', 'ana@ejemplo.pe')
             ->set('password', 'contrasena-valida')
             ->set('rol', Usuario::ROL_VENDEDOR)
-            ->call('guardar')
+            ->call('crear')
             ->assertSet('error', null)
             ->assertSee('Usuario creado');
 
@@ -110,7 +110,7 @@ final class ListaDeUsuariosTest extends TestCase
         Livewire::test(ListaDeUsuarios::class)
             ->call('editar', $usuario->id)
             ->set('rol', Usuario::ROL_ADMINISTRADOR)
-            ->call('guardar')
+            ->call('actualizar')
             ->assertSee('Usuario actualizado');
 
         $this->assertSame(Usuario::ROL_ADMINISTRADOR, $usuario->refresh()->rol);
@@ -127,7 +127,7 @@ final class ListaDeUsuariosTest extends TestCase
             ->set('nombre', 'Otra Ana')
             ->set('email', 'ana@ejemplo.pe')
             ->set('password', 'contrasena-valida')
-            ->call('guardar')
+            ->call('crear')
             ->assertSet('campoConError', 'email')
             ->assertSet('error', null)
             ->assertSeeHtml('data-prueba="error-de-campo"');
@@ -146,7 +146,7 @@ final class ListaDeUsuariosTest extends TestCase
             ->set('nombre', 'Ana Quispe')
             ->set('email', 'no-es-un-correo')
             ->set('password', 'contrasena-valida')
-            ->call('guardar')
+            ->call('crear')
             ->assertSet('campoConError', 'email');
 
         $this->assertDatabaseMissing('usuarios', ['nombre' => 'Ana Quispe']);
@@ -181,7 +181,7 @@ final class ListaDeUsuariosTest extends TestCase
         Livewire::test(ListaDeUsuarios::class)
             ->call('editar', $admin->id)
             ->set('rol', Usuario::ROL_VENDEDOR)
-            ->call('guardar')
+            ->call('actualizar')
             ->assertSee('no puede quitarse su propio rol ni desactivarse');
 
         $this->assertSame(Usuario::ROL_ADMINISTRADOR, $admin->refresh()->rol);

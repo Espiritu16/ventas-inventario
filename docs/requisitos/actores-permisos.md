@@ -110,6 +110,50 @@ el middleware de la página donde se montó—. Se corrige igual porque hacer de
 control de acceso del comportamiento interno de un paquete de terceros es exactamente
 lo que esta matriz existe para evitar.
 
+### El mecanismo — aprobado por Arquitectura el 2026-08-19
+
+Propuesto en conjunto por `implementation-backend` e `implementation-frontend`.
+Se implementa antes de abrir S-04-B y S-02-F.
+
+- **Un `ComponentHook` global de Livewire**, que intercepta `render()` para la lectura y
+  `call()` para la escritura. Global y no opt-in: un mecanismo que cada componente deba
+  acordarse de invocar protege solo los componentes que alguien recordó. El precedente es
+  propio — el middleware de acceso estuvo en el grupo `web` y tres rutas quedaron fuera
+  del control **sin que ninguna prueba fallara**. El fallo no fue de detección sino de
+  alcance: funcionaba perfecto sobre lo que cubría, y lo que no cubría era invisible.
+- **El permiso se declara con un atributo PHP sobre la clase**, y sobre el método cuando
+  difiere. Atributo y no clase base: una clase base solo ayuda si alguien se acuerda de
+  extenderla, o sea que protege en el caso en que ya se acordó. Lo que hace cumplir la
+  regla es el hook; la clase base ataría la herencia a cambio de un recordatorio del
+  editor, y el recordatorio no es lo que falta.
+- **Un componente que no declara nada falla.** Deny-by-default aplicado al componente, el
+  mismo principio que ya gobierna las rutas.
+- **Los métodos de interfaz heredan el permiso de la clase, sin atributo de escape.**
+  Abrir un modal, cambiar de pestaña o limpiar un filtro no son operaciones distintas de
+  la pantalla: son esa pantalla. Si no podés ver la pantalla, tampoco su modal. Que
+  además evite el ruido es señal de que está bien planteado, no el motivo. **No se agrega
+  un escape para "métodos que no tocan datos"**: existiría para esos y terminaría usándose
+  en alguno que sí los toca, porque desde afuera se parecen. Si algún día aparece un caso
+  que de verdad lo necesite, que lo pida ese caso.
+- **El atributo NO puede expresar acceso sin sesión.** Eso lo declara únicamente la lista
+  cerrada de arriba, que aprueba Arquitectura. Si el atributo pudiera decirlo, cualquier
+  sprint futuro se autoconcedería acceso anónimo escribiendo una línea en su propio
+  componente. El hook consulta las dos fuentes: la lista para saber si exige sesión, el
+  atributo para saber qué permiso pide una vez que hay sesión.
+
+**El hook se registra en `register()`, nunca en `boot()`.** Livewire engancha sus hooks
+una sola vez, con los que conoce en ese momento; registrado más tarde, **el hook no
+corre**. Y no falla: deja de comprobar, en silencio, con todo en verde.
+`implementation-backend` lo tuvo así un rato al implementarlo. Es el peor caso de la
+familia que este proyecto viene coleccionando, porque **el mecanismo que falla en
+silencio es justamente el que existe para impedir que las cosas fallen en silencio.**
+
+**Condición de aceptación, no opcional:** el rechazo que nace en `render()` llega hoy
+envuelto en `ViewException`. Si por HTTP eso se tradujera en un **500** en vez del código
+de la taxonomía con su estado, el mecanismo estaría incumpliendo RNF-014 justo en el
+camino que existe para proteger. Se resuelve antes de darlo por terminado, y se prueba
+por HTTP y no solo por componente.
+
 **Pendiente estructural, asignado a S-02-F:** hoy la regla depende de que quien escriba
 cada componente se acuerde. Eso no escala — S-02-F, S-03-F y S-04-F traen muchas
 pantallas, y la de caja mueve stock y correlativos. La comprobación debe pasar a
@@ -197,6 +241,14 @@ tabla es la pantalla que expone esa operación**, no un endpoint que devuelva da
 un cliente. La autorización se aplica igual sobre ella, desde el servidor y con
 deny-by-default: ocultar un ítem del menú no es control de acceso.
 
+**Estas filas siguen vigentes aunque las rutas HTTP ya no existan — no las borres.**
+ADR-0006 retiró los endpoints de dominio del enrutador, pero la matriz no declara rutas:
+declara **quién puede hacer qué**. Lo que cambió es quién consume estas filas: antes el
+middleware sobre una ruta, ahora el mecanismo de permisos en componentes. Si alguien las
+borrara "porque la ruta ya no existe", las pantallas se quedarían sin permiso declarado y
+**fallarían todas** — que es el comportamiento correcto del mecanismo aplicado sobre una
+matriz vaciada por error. Señalado por `implementation-backend` al ejecutar el retiro.
+
 **Las filas cuyo verbo no es `GET` describen operaciones, no rutas HTTP.** Crear y
 actualizar ocurren dentro de la pantalla, invocando el servicio de dominio en el mismo
 proceso; no existe una ruta `POST /usuarios` ni `PATCH /usuarios/{id}` que atender. La
@@ -228,14 +280,14 @@ S-01-F, y la propia tabla de infraestructura ya exigía esa página al declarar 
 | Vendedor | vendedor | GET /usuarios | listar | — | No | RF-002 |
 | Vendedor | vendedor | POST /usuarios | crear | — | No | RF-002 |
 | Administrador | administrador | GET /categorias | listar | — | Sí | RF-003 |
-| Vendedor | vendedor | GET /categorias | listar | — | Sí | RF-003 |
+| Vendedor | vendedor | GET /categorias | listar | **No** desde la pantalla de catálogo. Sí lee categorías dentro de la pantalla de caja, bajo el permiso de esa pantalla | No | RF-003 |
 | Administrador | administrador | POST /categorias | crear | — | Sí | RF-003 |
 | Administrador | administrador | PATCH /categorias/{id} | actualizar | — | Sí | RF-003 |
 | Vendedor | vendedor | POST /categorias | crear | — | No | RF-003 |
 | Administrador | administrador | GET /productos | listar | — | Sí | RF-004 |
-| Vendedor | vendedor | GET /productos | listar | sin columna de costo ni de margen | Sí | RF-004, RF-011 |
+| Vendedor | vendedor | GET /productos | listar | **No** desde la pantalla de catálogo, que `docs/frontend/experiencia.md` declara solo para administrador. Sí busca productos dentro de la pantalla de caja (`/ventas/nueva`), que sí es suya, invocando el mismo servicio bajo el permiso de esa pantalla y sin costo ni margen | No | RF-004, RF-011 |
 | Administrador | administrador | GET /productos/{id} | ver | — | Sí | RF-004 |
-| Vendedor | vendedor | GET /productos/{id} | ver | sin costo ni margen | Sí | RF-004 |
+| Vendedor | vendedor | GET /productos/{id} | ver | **No** como pantalla — no existe una pantalla de detalle de producto. Es una operación dentro del listado, y para el vendedor ocurre dentro de la caja | No | RF-004 |
 | Administrador | administrador | POST /productos | crear | — | Sí | RF-004 |
 | Administrador | administrador | PATCH /productos/{id} | actualizar | — | Sí | RF-004 |
 | Vendedor | vendedor | POST /productos | crear | — | No | RF-004 |

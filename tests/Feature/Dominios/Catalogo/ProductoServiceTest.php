@@ -9,6 +9,8 @@ use App\Dominios\Catalogo\Datos\DatosDeCatalogo;
 use App\Dominios\Catalogo\Modelos\Categoria;
 use App\Dominios\Catalogo\Modelos\Producto;
 use App\Dominios\Catalogo\Servicios\ProductoService;
+use App\Dominios\Inventario\Modelos\Lote;
+use App\Dominios\Inventario\Servicios\InventarioService;
 use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -70,6 +72,36 @@ final class ProductoServiceTest extends TestCase
             fn () => $this->servicio->crear($this->datos(['codigo' => 'arr-001'])),
             CodigoDeError::PRODUCTO_CODIGO_DUPLICADO
         );
+    }
+
+    public static function codigosMalFormados(): array
+    {
+        return [
+            'vacío' => ['', CodigoDeError::CAMPO_REQUERIDO],
+            'con símbolos' => ['AB#123', CodigoDeError::CAMPO_FORMATO_INVALIDO],
+            'con espacios' => ['ARR 001', CodigoDeError::CAMPO_FORMATO_INVALIDO],
+            'con acentos' => ['ARRÓZ', CodigoDeError::CAMPO_FORMATO_INVALIDO],
+            'de más de 40 caracteres' => [str_repeat('A', 41), CodigoDeError::CAMPO_FUERA_DE_RANGO],
+        ];
+    }
+
+    /**
+     * Un código mal escrito no es un código repetido.
+     *
+     * Se cubre porque no lo estaba y el hueco tenía consecuencia: el servicio
+     * declaraba `PRODUCTO_CODIGO_DUPLICADO` como código del campo `codigo`, y
+     * eso alcanzaba a todos sus fallos, no solo al duplicado. Un código vacío
+     * respondía «ya existe» con el mensaje «el campo es obligatorio» al lado.
+     *
+     * La cobertura de formato existía para precios y unidad de medida, pero no
+     * para el código, así que nada lo veía.
+     */
+    #[DataProvider('codigosMalFormados')]
+    public function test_rechaza_un_codigo_mal_escrito_sin_confundirlo_con_uno_repetido(
+        string $codigo,
+        CodigoDeError $esperado,
+    ): void {
+        $this->assertRechaza(fn () => $this->servicio->crear($this->datos(['codigo' => $codigo])), $esperado);
     }
 
     public function test_rechaza_una_categoria_inexistente(): void
@@ -283,6 +315,43 @@ final class ProductoServiceTest extends TestCase
 
         $this->assertCount(0, $this->servicio->listar("' or 1=1 --")->items());
         $this->assertSame(1, Producto::query()->count());
+    }
+
+    /**
+     * Hasta S-04-B esta prueba fijaba que `stockDisponible` **no** estuviera:
+     * no había lotes de los que calcularlo, y un cero habría sido
+     * indistinguible de "sin existencias".
+     *
+     * S-04-B crea los lotes, así que la prueba cambia de sentido en vez de
+     * desaparecer: ahora el catálogo sigue sin traer el campo —el stock se
+     * consulta por su propio servicio, que lo devuelve por lote y con la
+     * proyección que corresponde al rol— y quien lo necesita lo pide ahí.
+     *
+     * Que el catálogo no lo devuelva no es una omisión: mezclar el saldo en el
+     * listado de productos obligaría a calcularlo en cada página y a decidir
+     * ahí la proyección por rol, que ya está resuelta en el servicio de
+     * inventario.
+     */
+    public function test_el_catalogo_no_devuelve_el_stock_que_ahora_sirve_inventario(): void
+    {
+        $producto = $this->servicio->crear($this->datos());
+
+        Lote::factory()->create([
+            'producto_id' => $producto->id,
+            'cantidad_actual' => '12.000',
+        ]);
+
+        $delCatalogo = $this->servicio->listar()->items()[0]->toArray();
+
+        $this->assertArrayNotHasKey('stockDisponible', $delCatalogo);
+        $this->assertArrayNotHasKey('stock_disponible', $delCatalogo);
+
+        // Y el stock sí existe: lo sirve el servicio de inventario.
+        $inventario = new InventarioService(
+            new AuditoriaService
+        );
+
+        $this->assertSame(0, bccomp($inventario->stockDisponible((int) $producto->id), '12.000', 3));
     }
 
     // --- Auditoría (UT-04, RNF-004) ---

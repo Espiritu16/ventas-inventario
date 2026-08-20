@@ -4,12 +4,12 @@ namespace App\Dominios\Usuarios\Servicios;
 
 use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
+use App\Compartido\Errores\ValidadorDeDominio;
 use App\Dominios\Usuarios\Datos\DatosUsuario;
 use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 
 /**
  * Servicios de usuario del contrato docs/contratos/servicios-de-dominio.md.
@@ -68,10 +68,12 @@ class UsuarioService
     {
         $campos = $this->validar($this->normalizar($datos->todos()), [
             'nombre' => ['required', 'string', 'min:3', 'max:120'],
-            'email' => ['required', 'string', 'email', 'max:150', 'unique:usuarios,email'],
+            'email' => ['required', 'string', 'email', 'max:150'],
             'password' => ['required', 'string', 'min:8'],
             'rol' => ['required', 'string', 'in:'.implode(',', Usuario::ROLES)],
         ]);
+
+        $this->garantizarCorreoLibre($campos['email']);
 
         return Usuario::query()->create($campos);
     }
@@ -99,10 +101,14 @@ class UsuarioService
 
         $campos = $this->validar($this->normalizar($enviados), [
             'nombre' => ['sometimes', 'required', 'string', 'min:3', 'max:120'],
-            'email' => ['sometimes', 'required', 'string', 'email', 'max:150', 'unique:usuarios,email,'.$id],
+            'email' => ['sometimes', 'required', 'string', 'email', 'max:150'],
             'rol' => ['sometimes', 'required', 'string', 'in:'.implode(',', Usuario::ROLES)],
             'activo' => ['sometimes', 'required', 'boolean'],
         ]);
+
+        if (isset($campos['email'])) {
+            $this->garantizarCorreoLibre($campos['email'], $id);
+        }
 
         $campos = $this->castearBooleanos($campos);
 
@@ -181,44 +187,46 @@ class UsuarioService
 
     /**
      * @param  array<string, mixed>  $campos
-     * @param  array<string, array<int, string>>  $reglas
+     * @param  array<string, array<int, mixed>>  $reglas
      * @return array<string, mixed>
      */
     private function validar(array $campos, array $reglas): array
     {
-        $validador = Validator::make($campos, $reglas);
-
-        if ($validador->fails()) {
-            $campo = (string) array_key_first($validador->failed());
-            $falladas = array_keys($validador->failed()[$campo]);
-
-            throw new ErrorDeDominio(
-                $this->codigoSegunRegla($falladas),
-                (string) $validador->errors()->first(),
-                ['campo' => $campo]
-            );
-        }
-
-        return $validador->validated();
+        return ValidadorDeDominio::validar($campos, $reglas);
     }
 
-    /** @param  array<int, string>  $reglasFalladas */
-    private function codigoSegunRegla(array $reglasFalladas): CodigoDeError
+    /**
+     * El correo repetido se comprueba acá y no con una regla `unique`, igual
+     * que el documento del cliente y el nombre de la categoría.
+     *
+     * El motivo es que un correo repetido y un correo mal escrito son
+     * problemas distintos y quien los recibe necesita distinguirlos: el código
+     * de un duplicado nombra la entidad, y solo este punto sabe que el campo
+     * es de un usuario.
+     *
+     * `DOCUMENTO_DUPLICADO` está mal nombrado para un correo —no hay ningún
+     * documento de por medio—, pero renombrarlo rompe el contrato con quien ya
+     * lo consume, así que se conserva. Lo que cambió no es el código: cambió
+     * que sea una decisión escrita en vez de un valor por defecto que nadie
+     * eligió.
+     *
+     * La restricción de la base sigue siendo la garantía: esta comprobación da
+     * el mensaje correcto, no la exclusividad.
+     */
+    private function garantizarCorreoLibre(string $email, ?int $exceptoId = null): void
     {
-        foreach ($reglasFalladas as $regla) {
-            $codigo = match ($regla) {
-                'Required' => CodigoDeError::CAMPO_REQUERIDO,
-                'Unique' => CodigoDeError::DOCUMENTO_DUPLICADO,
-                'Min', 'Max' => CodigoDeError::CAMPO_FUERA_DE_RANGO,
-                default => null,
-            };
+        $existe = Usuario::query()
+            ->where('email', $email)
+            ->when($exceptoId !== null, fn ($consulta) => $consulta->whereKeyNot($exceptoId))
+            ->exists();
 
-            if ($codigo !== null) {
-                return $codigo;
-            }
+        if ($existe) {
+            throw new ErrorDeDominio(
+                CodigoDeError::DOCUMENTO_DUPLICADO,
+                'Ya existe un usuario con ese correo.',
+                ['campo' => 'email']
+            );
         }
-
-        return CodigoDeError::CAMPO_FORMATO_INVALIDO;
     }
 
     /** @param  array<string, mixed>  $campos */

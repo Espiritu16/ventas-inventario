@@ -21,6 +21,7 @@ señalado como propuesto en la propia fila.
 | Gestionar clientes | /clientes | administrador, vendedor | RF-010 | menú, o desde la pantalla de venta | idle, confirmando, éxito, error | creado desde la venta, regresa a la venta con el cliente ya seleccionado | el número de documento se valida según su tipo antes de poder guardar |
 | Gestionar proveedores | /proveedores | administrador | RF-005 | menú | carga, vacío, error, éxito | alta y edición en la misma pantalla | un RUC con longitud distinta de 11 se rechaza en el momento |
 | Gestionar usuarios | /usuarios | administrador | RF-002 | menú | carga, vacío, error, éxito | alta y edición en la misma pantalla | un administrador no puede quitarse su propio rol ni desactivarse |
+| Configurar series de comprobante | /series-comprobante | administrador | RF-014 | menú, o el aviso que aparece cuando no hay ninguna serie configurada | carga, vacío ("sin series configuradas"), confirmando, éxito, error | alta y desactivación en la misma pantalla, sin cambiar de ruta | el correlativo actual de cada serie es visible y **no editable a mano**; el sistema avisa que no hay serie configurada **antes** de la primera venta, no al confirmarla |
 | Reportes | /reportes/ventas, /reportes/utilidad | administrador | RF-020, RF-021 | menú | carga, vacío, error, éxito | el rango de fechas queda en la URL y sobrevive a recargar y al botón atrás | el reporte de utilidad muestra el costo real por lote, no un promedio |
 
 ## Reglas transversales de la interfaz

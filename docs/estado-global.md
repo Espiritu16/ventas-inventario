@@ -2,7 +2,7 @@
 project: ventas-inventario
 source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
-active_phase: ola-3
+active_phase: ola-4
 active_status: EN_PROGRESO
 last_completed_phase: ola-2 (S-01-B, S-DO-01)
 bootstrap_status: EN_PROGRESO
@@ -53,22 +53,34 @@ sprints:
   - id: S-03-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: EN_PROGRESO
+    execution_status: COMPLETADO
     branch: sprint/S-03-B
     base_sha: 9304925
-    nota_de_ejecucion: en secuencia tras S-02-B pese a ser paralelizable — comparten database/migrations/ y config/
+    final_sha: 6e8f710393489ee38b51b043fd83538ad7cce4e9
+    merge_sha: 5261b44
+    qa: APROBADO sobre 44ba6e3 con gobernanza caeddd2
+    nota_de_ejecucion: se ejecutó en secuencia tras S-02-B pese a ser paralelizable — comparten database/migrations/ y config/
     depends_on: [S-01-B]
     parallelizable_with: [S-02-B, S-01-F]
   - id: S-04-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: COMPLETADO
+    branch: sprint/S-04-B
+    base_sha: e87aded
+    final_sha: 4ddac6f1ee83f7782354a2953a0e4f47cb37b48c
+    merge_sha: a2d2f48
+    qa: APROBADO sobre 5aa956f con gobernanza 492b784
     depends_on: [S-02-B, S-03-B]
     parallelizable_with: [S-02-F]
   - id: S-05-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: COMPLETADO
+    branch: sprint/S-05-B
+    base_sha: a2d2f48
+    final_sha: d51de537a8a6a79883f43129a9409255e9b97016
+    qa: APROBADO sobre d51de53 con gobernanza 1650dfd
     depends_on: [S-04-B]
     parallelizable_with: [S-03-F]
   - id: S-06-B
@@ -103,7 +115,10 @@ sprints:
   - id: S-02-F
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: LISTO
+    branch: sprint/S-02-F
+    base_sha: e87aded
+    nota_de_ejecucion: despachado y con entorno listo, sin código escrito todavía
     depends_on: [S-02-B, S-03-B, S-01-F]
     parallelizable_with: [S-04-B]
   - id: S-03-F
@@ -311,6 +326,131 @@ verdad —lo que reabre la decisión de E2E, hoy pospuesta— o se acepta el rec
 manual documentado que el propio RNF-008 describe. Decidirlo con el sprint encima es
 peor que decidirlo ahora.
 
+## Punto de detención — 2026-08-20, tercera parada
+
+Se para con **S-05-B cerrado y una tarea corta pendiente que bloquea a S-05-F**.
+
+| Carril | Estado |
+|---|---|
+| **S-05-B** | **COMPLETADO** y fusionado. QA aprobó `d51de53` sin rechazo previo |
+| **S-02-F** | Rama `sprint/S-02-F` en `e87aded`, entorno listo, **sin código escrito** |
+| QA | Sin trabajo asignado |
+| DevOps | Sin turno |
+
+### Lo primero al retomar — una tarea corta de `implementation-backend`
+
+**Proyectar el costo fuera de la respuesta del vendedor en `VentaService::encontrar()`**,
+y fijarlo con una prueba. El contrato ya está enmendado (`docs/contratos/ventas.md`); falta
+el código.
+
+Por qué es lo primero: **debe estar antes de que S-05-F pinte esa pantalla**. Hoy no es
+explotable —ADR-0006 retiró el endpoint y ninguna pantalla consume ese método—, así que
+este es el mejor momento para cerrarlo y el peor para que se olvide.
+
+QA verificó además que **ninguna prueba lo cubre**: las dos de vendedor en ventas
+comprueban el alcance —no ve ajenas, sí ve las propias— y ninguna mira la proyección.
+
+### Después de eso
+
+1. Despachar **S-05-F** (seguimiento de comprobantes y resúmenes diarios) y **S-06-B**
+   (emisión electrónica contra beta de SUNAT), que el roadmap declara paralelizables.
+2. **Aviso obligatorio antes de S-06-B**, ya vencido en su plazo: hacen falta RUC y razón
+   social del emisor, dirección fiscal, usuario secundario SOL y el **certificado digital
+   de pruebas**. Todo de ambiente beta. Conseguirlos es trámite; ver "Avisos al usuario".
+3. **Segunda promoción a `main`**: `main` tiene la ola 1-3; desde entonces entraron S-02-B,
+   S-01-F, S-03-B, S-04-B, S-05-B y toda la gobernanza. Es un lote coherente.
+
+### Lo que S-06-B hereda y no está en su RFC
+
+La verificación de `NIU` contra el ambiente beta, ya enmendada en ese RFC: el primer envío
+real debe incluir un ítem con ese código y comprobarse que el CDR lo acepta.
+
+## Punto de detención — 2026-08-20, segunda parada del día
+
+Se para con la **ola 4 a mitad de camino y nada roto**.
+
+| Carril | Estado |
+|---|---|
+| **S-04-B** | **EN_VALIDACION.** `sprint/S-04-B`, HEAD `5aa956f`, final_sha `4ddac6f`. Sin validar todavía |
+| **S-02-F** | Rama `sprint/S-02-F` en `e87aded`, **sin commits propios y sin código escrito**. Entorno instalado y carril `ventas_inventario_s02f_test` creado. El tiempo del sprint se fue en leer antes de implementar — de ahí salió el hallazgo de `CategoriaService` |
+| QA | Sin trabajo asignado. S-04-B la espera |
+| DevOps | Sin turno |
+
+**Lo primero al retomar:** despachar a QA la validación de S-04-B sobre
+`5aa956f2e449726096e791cccca23d0cfc4918b2`, con la gobernanza vigente de ese momento.
+
+**Lo que QA necesita saber y no está en el RFC**, para que no lo levante como
+incumplimiento:
+
+- `descontarPorVencimiento()` **no se implementó a propósito** — ver la enmienda del RFC.
+- La prueba de `stockDisponible` **cambió de sentido**, no desapareció: ahora fija que el
+  catálogo sigue sin devolverlo y que el stock lo sirve el servicio de inventario.
+- RNF-003 se demostró con **dos procesos reales**, no con dos llamadas en el mismo
+  proceso. Sin el bloqueo de fila, saldo y kardex divergen **respondiendo "ok" las dos
+  operaciones**: nada falla, y el daño aparece cuando alguien cuadra el inventario semanas
+  después.
+
+**Lo que S-05-B hereda:** escribir `descontarPorVencimiento()` con las reglas de reparto
+FEFO, y las dos notas de S-03-B —dirección obligatoria para factura como regla del momento
+de emitir, y el tope de S/ 700 como regla de venta—.
+
+**Un dato operativo:** revocar `UPDATE`/`DELETE` sobre el kardex impide borrar lotes, y el
+error habla de permisos y no de la clave foránea. En el dominio no importa (ADR-0004: los
+lotes no se borran), pero desconcierta a quien lo encuentre.
+
+## Punto de detención — 2026-08-20
+
+Segunda parada, con todo en estado consistente y **una sola acción pendiente del
+usuario**. Quien retome no necesita ninguna conversación: todo está acá, en `AGENTS.md` y
+en Git.
+
+**Lo único bloqueante: el PR #2** — `gobernanza/enmienda-permisos-por-area` hacia
+`develop`. Fusionarlo *es* la aprobación de la enmienda. Detrás de él está todo lo de la
+sección "Bloqueantes".
+
+**Lo primero al retomar, en este orden:**
+
+1. Si el PR #2 está fusionado, avisar a `implementation-backend`: commitea el retiro de
+   los endpoints de ADR-0006 —hecho en su árbol, sin commitear— y repara las 12 pruebas.
+   El diagnóstico línea por línea de las 9 de `RedireccionAlAccesoTest` está en su
+   scratchpad; si esa sesión ya no existe, el arreglo es apuntar el data provider y tres
+   referencias sueltas a `/usuarios` y `/panel`, que sí son pantallas.
+   **Las 12 pruebas son dos problemas distintos, no uno.** Las 9 de
+   `RedireccionAlAccesoTest` apuntan a rutas retiradas y hay que cambiarles el destino a
+   `/usuarios` y `/panel`. Las 3 de `LivewireOperativoTest` montan `HumoDeInstalacion` sin
+   autenticar, y lo que les falta es un usuario con permiso sobre `GET /panel`. Quien las
+   trate como un solo problema va a arreglar la mitad. Señalado por `implementation-backend`.
+
+2. Fusionar `feature/permisos-en-componentes`, cuyo HEAD es **`80e682c`** — lleva el
+   mecanismo y las tareas de la matriz, y tiene commits que no están en `develop`. Hasta
+   que las 12 pruebas estén reparadas, esa rama va en rojo. El mecanismo y el retiro viven
+   en un stash con nombre en el árbol de backend, no en commits.
+3. `implementation-frontend` saca `HumoDeInstalacion` de la lista de pendientes de
+   `DeclaracionDePermisoTest` **cuando la anotación esté en `develop`**, no antes: su
+   prueba va a fallar sola pidiéndolo.
+4. Abrir S-04-B y S-02-F en paralelo, cada uno con worktree nuevo desde `develop` y su
+   base de carril.
+
+**Aviso sobre el orden de S-04-B, si la enmienda todavía no entró.** La prueba
+`test_el_listado_no_trae_stock_disponible_todavia`
+(`tests/Feature/Autorizacion/RutasDeCatalogoTest.php:140`) fija la ausencia del campo
+`stockDisponible`, y S-04-B es el sprint que tiene que hacerla **cambiar de sentido**, no
+desaparecer. Vive en un directorio congelado. Si la enmienda no está aprobada cuando ese
+sprint llegue a ese punto, **se bloquea a mitad de camino en vez de al principio**, que es
+peor porque se descubre tarde y con trabajo ya hecho. Señalado por `qa`; si la enmienda
+sigue pendiente, conviene planificar el orden de las unidades contando con esto.
+
+**El PR #1 se fusionó el 2026-08-20.** Primera promoción del proyecto: `main` pasó de
+`99cd061` —solo documentación inicial— a `2e735c7`, con los cinco sprints aprobados de las
+olas 1 a 3 y toda la gobernanza que produjeron.
+
+`main` no incluye S-03-B ni las decisiones posteriores a la promoción; van en la siguiente,
+que se hace en lote cuando el conjunto sea estable, no por sprint.
+
+**Estado de los carriles:** ninguno a medias. Backend tiene trabajo hecho sin commitear a
+propósito, para no entregar rojo. Frontend está sin worktree y sin cambios. QA sin nada
+pendiente. DevOps sin turno desde S-DO-01.
+
 ## Punto de detención — 2026-08-19
 
 El trabajo se detuvo acá por decisión del usuario, con todo en estado consistente.
@@ -356,6 +496,22 @@ alguna prueba falla. Después se restaura el árbol. Once mutaciones costaron mi
 S-01-B porque cada una era una línea. Redactado como "pruebas de mutación" a secas,
 quien lo lea va a pensar en una herramienta y una hora de ejecución, y lo va a saltar.
 
+**La mutación también compara dos versiones de una prueba, no solo prueba contra código.**
+Es una extensión de la práctica, adoptada el 2026-08-20 a partir de una observación de
+`implementation-frontend`. Cuando se endurece una prueba que ya estaba en verde, **la mejora
+no se ve corriendo la suite**: las dos versiones dan verde, porque el defecto que la nueva
+cubre todavía no existe. Lo único que las distingue es romper algo que la vieja **no** cubría.
+
+Lo demostró al derivar de la matriz la prueba del menú: coló una sección nueva visible para
+todos, y la versión con la lista escrita a mano **habría pasado en verde** porque nadie la
+había agregado a la lista, mientras la derivada falla. Sin esa mutación, "endurecí la prueba"
+habría sido una afirmación sin respaldo — y una que suena bien.
+
+De ahí la regla de método que se lleva al escribir pruebas nuevas: **preguntarse antes qué
+mutación distinguiría la versión buena de la mediocre**, en vez de escribir la prueba y
+después buscar cómo verificarla. Si no se puede nombrar esa mutación, probablemente las dos
+versiones sean la misma.
+
 **Una mutación demasiado destructiva no informa nada.** Si tumba media suite, dice "algo
 se rompió", no "esta regla está protegida". A `implementation-backend` le pasó en S-03-B:
 quitar un `CHECK` rompió la migración entera y cayeron 216 de 252 pruebas. Una mutación
@@ -377,6 +533,19 @@ cuando la migración lo declara con `DB::statement`, el patrón no coincidió, e
 quedó igual y la suite pasó — lo que parecía decir que nadie protegía esa regla. Lo
 detectó verificando el archivo. Es el reverso exacto de la regla de abajo: una deja
 falsa confianza, la otra deja falsa alarma, y las dos se evitan mirando el árbol.
+
+**Después de restaurar, verificar qué se restauró — no qué se pretendía restaurar.** El
+`git checkout` de la restauración se lleva todo lo pendiente en ese archivo, no solo la
+mutación. `implementation-backend` asumió que se había llevado un cambio y se había
+llevado dos: repuso las tres filas de la matriz y no el método que la prueba necesitaba,
+y commiteó con la suite en rojo. Contar los cambios pendientes antes de mutar habría
+bastado.
+
+Lo notable es quién lo cometió: **el mismo rol que había formulado la regla de mutar
+sobre árbol limpio, dos días antes**. Su lectura, que comparto: si una regla de disciplina
+falla en manos de quien la escribió y la tenía presente, el problema no es la atención
+—es que la disciplina no es el lugar correcto para eso—. Es el mismo argumento con el que
+se eligió el hook global sobre la clase base.
 
 **Mutar solo sobre árbol limpio.** La restauración es un `git checkout` del archivo
 mutado, y eso se lleva cualquier trabajo sin commitear que hubiera ahí. `implementation-backend`
@@ -578,10 +747,88 @@ aprueba, y aprueba lo que no era. Si alguna vez hacen falta dos entornos a la ve
 la misma máquina, la salida conocida es parametrizar el puerto publicado
 (`${PUERTO_APP:-8080}:8000`); no se implementó porque hoy ningún caso lo pide.
 
+## Lo que no tiene verificación automática es lo que falla
+
+El 2026-08-20 fallaron dos cosas, y no fueron el código ni los sprints: **el
+procedimiento de aprobación** —se pidió aprobar un texto que no existía como documento— y
+**el canal entre sesiones** —se trasladó un "ya está hecho" que vivía en una rama sin
+fusionar—.
+
+No es casualidad. Todo lo demás en este proyecto tiene algo detrás que lo respalda: una
+prueba, un SHA, un documento versionado. Esas dos partes no tienen nada salvo que alguien
+se acuerde de seguirlas. **Son las dos únicas sin verificación automática, y son las dos
+que fallaron.** Las dos veces el error apareció recién cuando alguien fue a mirar.
+
+La observación es de `implementation-frontend`, que fue quien miró las dos veces.
+
+**La otra mitad, que señaló `implementation-backend`:** el error se encontró porque
+alguien fue a buscar el artefacto en vez de confiar en la afirmación. Lo que lo atrapó no
+fue que quien se equivocó se diera cuenta, fue que otro verificó — el mismo mecanismo que
+funcionó cuando QA encontró pruebas que pasaban por la razón equivocada. **La verificación
+cruzada entre roles es lo único que cubre las partes que no tienen prueba.**
+
+**Y una asimetría que conviene tener presente**, también suya: los errores que uno comete
+sobre sus propias reglas no son distintos de los demás, pero **se sienten peores, y por eso
+dan la tentación de no reportarlos**. Reportarlos rápido es lo que hace que la regla
+siguiente se escriba mejor: la de "verificar qué se restauró" no existiría si él hubiera
+corregido el commit en silencio.
+
+**Corolario, de `devops`:** los huecos que no molestan a nadie son los que sobreviven. El
+suyo con `README.md` se notó porque lo bloqueaba; el de `docker/` no se notó durante un
+sprint entero porque no lo bloqueaba.
+
+Del canal ya salió una regla concreta —referenciar por SHA fusionado, abajo—. Del
+procedimiento de aprobación salió que el borrador viva en una rama antes de pedir la
+aprobación, en vez de en un mensaje. Ninguna de las dos es una verificación automática:
+siguen dependiendo de que alguien las siga. **Queda anotado como cosa a pensar, no como
+resuelto** — vale la pena discutir con el usuario si hay forma de que fallen solas en vez
+de esperar a que alguien vaya a mirar.
+
+## Regla de despacho — un trabajo ajeno se referencia por SHA fusionado, nunca por "ya está hecho"
+
+Cuando el Coordinador despacha una tarea que depende del trabajo de otro rol, **indica el
+SHA donde ese trabajo está fusionado en la rama compartida**. No alcanza con trasladar que
+el otro rol dijo haberlo hecho.
+
+Entre "lo hice" y "está en `develop`" hay una distancia que nadie mide si no se nombra: el
+trabajo puede estar en una rama sin fusionar, en un commit posterior al que se citó, o sin
+commitear. Un "ya está hecho" sin SHA es una afirmación sin evidencia, exactamente igual
+que un handoff que declara `COMPLETADO` sin `final_sha`.
+
+Ocurrió dos veces, las dos por el mismo canal y las dos las atrapó
+`implementation-frontend` verificando antes de tocar:
+
+1. Se le indicó traer `77fed0f` como "ya corregido"; la corrección estaba en `03a54ae`,
+   posterior. Su rama quedó cargando el defecto sin haber tocado nada.
+2. Se le pidió actualizar una lista porque un componente "ya estaba anotado"; la anotación
+   vivía en una rama sin fusionar. Hacer el cambio habría roto `develop`.
+
+Lo notable es dónde nace el defecto: **no en el código sino en el canal entre sesiones**,
+que es la única parte del sistema que no tiene pruebas. La regla es del Coordinador porque
+el SHA es un dato que él tiene a mano y quien recibe la tarea no.
+
+## Regla de permisos — "lo escribí yo" no es "es mi ruta"
+
+Un rol es dueño de las rutas que `AGENTS.md` le declara, **no de los archivos que
+escribió primero**. Si valiera la autoría, cada rol sería dueño de lo que tocó antes que
+nadie y la partición dejaría de significar algo: dos roles podrían reclamar el mismo
+directorio según quién llegó primero, que es exactamente lo que la partición existe para
+evitar.
+
+Es la confusión que produjo el inventario de los 32 archivos sin dueño: buena parte los
+escribió `implementation-backend` durante tres sprints, y eso no los volvió suyos.
+
+La distinción importa sobre todo cuando la salida cómoda es tentadora. Lo señaló él mismo
+al quedar bloqueado por un archivo que había escrito dos días antes, en el sprint en
+curso: **"se siente mío, pero se siente no es lo mismo que está declarado"**. Reconocerlo
+ahí, y no cuando el archivo es ajeno, es lo que hace que la regla sirva.
+
 ## Patrón recurrente — dos valores que hay que mantener iguales
 
-Cuatro veces, y las cuatro se resolvieron igual: **reemplazar dos fuentes que alguien
-debe mantener sincronizadas por una sola, derivada de donde nace el dato.**
+Ocho veces ya. Las que se pudieron cerrar se cerraron igual: **reemplazar dos fuentes que
+alguien debe mantener sincronizadas por una sola, derivada de donde nace el dato.** Cuando la
+duplicación no se puede eliminar —porque una de las dos fuentes es un documento que la gente
+lee— se cierra con lo segundo mejor: **una prueba que falla cuando divergen.**
 
 1. **El prefijo de Livewire.** Se iba a fijar por configuración y declarar la cadena en
    la gobernanza. Se deriva de `APP_KEY`, así que la declaración habría sido correcta en
@@ -594,6 +841,74 @@ debe mantener sincronizadas por una sola, derivada de donde nace el dato.**
    Pendiente en S-08-B: derivarlo del coste vigente.
 4. **La comprobación de permiso en `mount()` y en `render()`.** Se retiró la del montaje
    en lugar de dejar ambas.
+5. **La matriz de permisos y su transcripción a código.** `docs/requisitos/actores-permisos.md`
+   es la autoridad y `app/Compartido/Autorizacion/MatrizDePermisos.php` se escribe a mano
+   desde ella. **Es la instancia más grave de todas**, porque el código es el que decide y
+   el documento el que se lee: cuando divergen, la gobernanza dice una cosa y el sistema
+   hace otra, sin que nada falle.
+
+   Ocurrió el 2026-08-19: Arquitectura corrigió tres filas del vendedor en el documento y
+   no despachó el cambio de código. Durante ese lapso, quien construyera la pantalla de
+   catálogo habría dado acceso al vendedor **derivándolo correctamente de la fuente que la
+   gobernanza le indica usar**. Lo encontró `implementation-frontend` leyendo las dos.
+
+   **Decisión, 2026-08-19: una prueba verifica que el código coincide con el documento.**
+   Vive en `tests/Unit/`, ruta ya declarada de `implementation-backend`. Lee la tabla de
+   `actores-permisos.md` y la compara fila por fila con `MatrizDePermisos`. No convierte
+   al documento en generador —sigue escribiéndose a mano— pero **la divergencia deja de ser
+   silenciosa**, que es lo único que hacía falta. Es el mismo criterio con el que se
+   resolvieron las cuatro anteriores, aplicado al caso donde más costaba.
+
+6. **El contrato de servicios de dominio y las firmas reales.** `docs/contratos/servicios-de-dominio.md`
+   es la interfaz completa entre los dos frentes y **nadie lo actualizó en cinco sprints**.
+   Declaraba siete métodos que no existen y omitía cuatro servicios enteros. Sobrevivió tanto
+   porque hasta S-02-F ningún sprint de frontend consumió un servicio: QA validó cada sprint
+   contra su RFC y su contrato por dominio, y este documento no entraba en ninguna de esas
+   comparaciones. **Ninguna divergencia se detecta por casualidad; se detecta porque algo la
+   compara.**
+
+   Sincronizado hacia el código el 2026-08-20 en `a188e74`. Cerrado con el mismo criterio que
+   la quinta: una prueba de consistencia asignada a S-02-F que compara documento y métodos
+   públicos reales **en las dos direcciones** —método sin declarar y declaración sin método—,
+   porque acá el problema es de los dos tipos a la vez y mirar una sola dirección deja pasar
+   la mitad. Lo observó `qa`. Para que esa prueba no sea frágil, el documento pasó a declarar
+   cada firma en una fila con formato fijo y una columna de estado; el aviso de que una prueba
+   sobre prosa se pone roja sin que nada esté mal también es de `qa`.
+
+   Y una segunda corrección de `qa`, sobre un criterio que yo ya había dado por bueno:
+   reconocer las tablas de servicio **por su encabezado**, no por contar sus columnas. Contar
+   columnas funciona hoy y falla en silencio el día que una tabla gane una — la tabla deja de
+   ser reconocida, sus métodos salen de la comparación y **la prueba sigue en verde**. Se suma
+   una guarda que afirma cuántas tablas encontró, por el mismo principio que la comprobación
+   de coherencia de la sonda de concurrencia: el instrumento verifica que midió lo que cree
+   haber medido. **Un criterio que funciona por una propiedad accidental del documento no es
+   más seguro que no tener criterio; es menos, porque parece que lo tiene.**
+7. **La traducción de reglas de validación a códigos de error.** `ValidadorDeDominio` la hace
+   para todos los dominios y `UsuarioService` **tiene su propia copia privada**, escrita en
+   S-01-B antes de que existiera la compartida. Las dos ya divergieron: la compartida trata
+   `Between` y la copia no. Es la primera instancia del patrón **dentro del código de
+   producción**, no entre código y documento — y por eso es la que menos excusa tiene: acá la
+   duplicación sí se puede eliminar del todo. Pendiente de despacho a `implementation-backend`
+   junto con el retiro del código por defecto de `'Unique'` (`c8e9771`).
+
+8. **La lista de secciones del menú en su prueba, contra la matriz de permisos.**
+   `FundacionDeInterfazTest::test_el_vendedor_solo_ve_las_secciones_que_le_corresponden`
+   recorre `['Usuarios', 'Categorías', 'Productos', 'Proveedores']` **escrita a mano**. Cuando
+   aparezca una sección que el vendedor no deba ver, alguien tiene que acordarse de agregarla
+   ahí; si no lo hace, **la prueba sigue verde sin cubrirla**.
+
+   Lo encontró `qa` al validar S-02-F, y tiene un origen que vale registrar: nació de reparar
+   otra prueba que había caducado por el mismo motivo —afirmaba que el menú del vendedor está
+   vacío, y dejó de ser cierto al aparecer Clientes—. **La reparación cambió una foto por otra
+   foto**: en vez de "no ve nada" quedó "no ve estas cuatro". Más precisa, igual de perecedera.
+
+   Lo cierra hacer lo que el menú ya hace: derivar las secciones esperadas de
+   `MatrizDePermisos` en vez de enumerarlas. Entonces la prueba comprueba la regla y no la foto
+   de las pantallas de hoy, y una sección nueva queda cubierta el día que se declara.
+
+   **La lección de método es la que menos se ve:** reparar una prueba que caducó no garantiza
+   haber quitado lo que la hacía caducar. Hay que preguntar de qué depende la afirmación nueva,
+   no solo si hoy es cierta.
 
 Sobre la cuarta, el argumento que la cierra es de `qa` y es más fuerte que "no agregaba
 mucha cobertura": **`mount()` corre una vez y siempre antes de un `render()`, así que su
@@ -683,9 +998,29 @@ S-DO-02 debe cumplir y su RFC todavía no las declara.
 
 - ~~**Estado externo compartido en la ola 3.**~~ **RESUELTO el 2026-08-19** — ver "Aislamiento de base por carril" abajo. Lo detectó el chat de Frontend antes de que costara nada.
 - **Árbol de trabajo único.** Las cinco sesiones comparten `/Users/sankef/ventas-inventario`. Hoy funciona porque S-00 corre solo, pero cualquier ola con dos sprints simultáneos exige worktrees dedicados por carril, acordados antes del despacho.
+- **Configurar series de comprobante no tiene sprint — decisión de alcance pendiente del usuario, escalada el 2026-08-20.** RF-014 tiene dos mitades: *asignar* el correlativo, hecha en S-05-B (`SerieComprobanteService::reservarCorrelativo`), y **que el administrador configure la serie**, que no la implementa ningún RFC, no tiene pantalla en `docs/frontend/experiencia.md` y sí tiene dos filas en la matriz de permisos (`GET`/`POST /series-comprobante`, ambas `Sí` para administrador).
+
+  Hoy no se nota porque las pruebas insertan la serie directamente en la base. **Se nota en S-06-B**, el primer sprint que emite de verdad: sin una serie configurada, `registrar` rechaza con `SERIE_NO_CONFIGURADA` antes de llegar a SUNAT, y no hay forma soportada de crearla desde el sistema.
+
+  Apareció al sincronizar el contrato de servicios (`a188e74`) — no lo encontró una revisión de RF-014, lo encontró comparar el documento con el código. Es exactamente lo que predice la sexta instancia del patrón de dos fuentes: **la mitad no implementada de un requisito no se ve en ningún artefacto que alguien lea de corrido**; se ve cuando dos artefactos se comparan.
+
+  No lo resuelve el Coordinador: cambiar el alcance de un sprint o abrir uno nuevo es decisión del usuario. Mientras tanto, `SERIE_DUPLICADA` tampoco existe en la taxonomía de errores, porque su método no tiene dónde vivir.
 
 ## Bloqueantes
-- Ninguno para planificar ni para ejecutar. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
+
+**Ninguno. La enmienda de permisos por área se aprobó el 2026-08-20** al fusionar el PR
+#2, y con ella se destrabaron los cinco directorios de prueba que no tenían dueño desde
+S-00 —`tests/Feature/Autorizacion/`, `tests/Feature/Fundacion/`, `tests/Feature/Interfaz/`,
+`tests/Soporte/` y `tests/recursos/`—, las doce pruebas que nadie podía reparar, el retiro
+de endpoints de ADR-0006, el mecanismo de permisos en componentes y los sprints S-04-B y
+S-02-F.
+
+Esa enmienda estuvo bloqueando trabajo real durante cinco escaladas sucesivas. Vale
+recordar por qué: `AGENTS.md` declaraba permisos como lista de rutas conocidas al
+aprobarlo, y cada sprint materializaba artefactos que la lista no anticipaba. Ahora declara
+áreas, así que un directorio nuevo no queda sin dueño por el solo hecho de ser nuevo.
+
+- Sin bloqueo para el resto de la planificación. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
 - Condición futura, no bloqueante: el RUC real, la razón social, la dirección fiscal, el usuario SOL real y el certificado digital comprado se necesitan solo para el paso a producción, que exige autorización explícita del usuario. Ver `docs/integraciones/sunat.md`.
 
 ## Ola 2 — CERRADA (2026-08-19)
@@ -714,7 +1049,245 @@ porque revela que el healthcheck depende del render HTML de esa ruta, y esa ruta
 puede responder distinto según el `Accept`. Sirve si alguna vez aparece un contenedor
 `unhealthy` con la aplicación aparentemente sana.
 
-## Siguiente fase — ola 3
+## Ola 3 — CERRADA (2026-08-19)
+
+S-02-B, S-01-F y S-03-B completados y fusionados. S-01-F fue rechazado una vez; los
+otros dos se aprobaron a la primera.
+
+Lo que deja la ola, más allá de sus entregables:
+
+- **La regla transversal de permisos en componentes**, encontrada en tres pisos
+  sucesivos y con la forma del error nombrada. Es la regla más importante que produjo el
+  proyecto hasta ahora.
+- **El patrón de las dos fuentes sincronizadas**, con cuatro instancias.
+- **Cuatro reglas nuevas para la práctica de mutación**, todas nacidas de errores reales
+  cometidos al aplicarla.
+- **Tres documentos aprobados corregidos porque afirmaban cosas que no se sostenían**: el
+  motivo del índice parcial, el código de error del campo `codigo`, y el tamaño del
+  catálogo 03 de SUNAT.
+
+## Cómo se comprueba que algo está publicado — y por qué el comando obvio miente
+
+**Al cerrar una jornada, verificar que el remoto tenga lo que el local tiene.** No alcanza
+con que los `push` hayan parecido entrar: fallaron dos veces por caída de red y se reportó
+"publicado" sin comprobar. Durante un rato real, S-05-B entero y una decisión de
+Arquitectura existieron solo en este disco. Lo midieron `qa` e `implementation-frontend`
+por separado.
+
+La frase con la que veníamos cerrando —"nada depende de que esta conversación
+sobreviva"— era cierta a medias. `qa` la corrigió: **no depende de la conversación, pero sí
+de la máquina.** La durabilidad tenía un segundo eslabón que nadie comprobaba.
+
+**Pero el comando obvio no sirve solo, y esto es lo importante.**
+`git log origin/develop..develop` compara contra la **referencia local** de
+`origin/develop`, que únicamente se actualiza con un `fetch` o un `push` exitosos. Si el
+`fetch` falla —que es exactamente el escenario de red caída que motiva la comprobación— la
+referencia queda vieja y el comando responde "cero pendientes" **mirando una foto de hace
+horas**.
+
+O sea: el comando de verificación puede pasar sin verificar nada. Es la misma forma de
+fallo que este proyecto viene persiguiendo, un nivel más arriba — ya no es el mecanismo el
+que falla en silencio, es la comprobación del mecanismo.
+
+**El procedimiento, entonces:**
+
+1. `git fetch` primero, y **comprobar que el fetch funcionó**.
+2. Si el fetch falla, el estado de publicación es **desconocido**, no verde.
+3. Recién con el fetch en verde, `git log origin/develop..develop` significa algo.
+4. Para lo crítico, mirar el **árbol del remoto** y no solo el commit: un commit puede
+   figurar y el árbol no tener lo que uno cree.
+
+Lo señaló `qa`, sobre el procedimiento que se estaba incorporando para corregir el problema
+anterior.
+
+**Las ramas de sprint sin publicar son otra cosa, y pesan menos de lo que parecía.** El
+remoto tiene cuatro ramas y el local doce, pero ninguna de las nueve de sprint guarda un
+commit fuera de `develop`: todo el contenido está publicado.
+
+Y la trazabilidad tampoco se pierde. `implementation-frontend` fue a comprobar si era
+cierto que "se perdería la etiqueta de qué commit fue el `final_sha` de cada sprint" y
+**no lo es**: este mismo documento registra por sprint el `branch`, el `base_sha`, el
+`final_sha` y el `merge_sha`, y está versionado y publicado. Quien quisiera reconstruirlo
+lo lee acá, y los commits siguen existiendo dentro de `develop`.
+
+Lo que se perdería es la comodidad de una rama con nombre apuntando ahí. Eso baja el asunto
+de **pérdida de trazabilidad** a **pérdida de conveniencia**.
+
+Vale registrar por qué: la disciplina de anotar los SHA en el estado global se adoptó para
+que un sprint se pudiera auditar sin depender de la conversación. Terminó siendo el
+respaldo de la trazabilidad ante la pérdida de los punteros, sin que nadie lo diseñara para
+eso.
+
+## Alcance y proyección son dos preguntas distintas
+
+**A quién pertenece un recurso** y **qué campos viajan dentro de él** se prueban por
+separado, y cubrir la primera no cubre la segunda.
+
+`implementation-backend` lo formuló al reconocer el costo visible al vendedor: *"miré el
+acote de a quién pertenece la venta, no qué campos viaja adentro"*. Sus dos pruebas de
+vendedor comprobaban el alcance —no ve ventas ajenas, sí ve las propias— y ninguna miraba
+la proyección. QA lo confirmó de forma independiente.
+
+Es fácil de cometer porque la primera pregunta se siente como la difícil: el acote por
+propiedad es la regla explícita del contrato, la que uno va a buscar. La proyección suele
+estar en una cláusula aparte, o —como acá— no estar.
+
+**Al validar o al escribir pruebas de un recurso acotado, son dos aserciones distintas**, y
+la de proyección es la que se olvida.
+
+## La unicidad protege el dato; el bloqueo protege la operación
+
+Son garantías distintas y **una prueba que solo mire integridad da por cubierto un
+mecanismo ausente.**
+
+Al automatizar la prueba de concurrencia en S-05-B, `implementation-backend` quitó el
+bloqueo de la fila de la serie esperando ver correlativos duplicados. No aparecieron: la
+restricción de unicidad de la base lo impide. Lo que apareció fue otra cosa — **tres de
+cada cuatro ventas simultáneas fallan** con violación de unicidad. El dato queda íntegro y
+tres clientes se quedan sin comprobante **después de que se les cobró**.
+
+O sea: la unicidad garantiza que no haya dos correlativos iguales; el bloqueo garantiza que
+la operación pueda completarse. Verificar solo lo primero deja pasar la ausencia de lo
+segundo, y el síntoma no se parece en nada a un problema de concurrencia — se parece a
+ventas que fallan.
+
+La prueba comprueba las tres cosas por separado: integridad del dato, que la operación no
+muera, y que el bloqueo esté.
+
+**El daño es peor de lo que la primera descripción sugería.** Se escribió como "tres
+clientes sin comprobante después de que se les cobró", y `qa` precisó que el rollback
+revierte también el descuento de stock: la venta no queda a medias en los datos. Eso suena
+a mitigación y no lo es — significa que **no queda ningún rastro de esas ventas**. El
+cajero cobró, el sistema dice que no pasó nada, y no hay nada que reconciliar después: hay
+que rehacerlas de memoria. La integridad intacta es justamente lo que borra la evidencia.
+
+## Dos formas en que una prueba de concurrencia pasa sin probar nada
+
+Las dos las encontró `implementation-backend` al escribir la de S-05-B, y las dos daban
+verde:
+
+1. **Con un solo par de procesos.** La ventana entre leer y escribir dura microsegundos, y
+   dos procesos sincronizados rara vez la comparten. La prueba pasaba **sin el bloqueo**.
+   Van tres pares.
+2. **Con los procesos hijos muertos al arrancar.** No competía nadie, así que no había
+   divergencia que detectar. Ahora se verifica que corrieron y dejaron rastro, en vez de
+   suponerlo.
+
+La segunda es la misma familia que "confirmá que la mutación se aplicó" y que "un cero de
+un barrido no es evidencia de ausencia": **el procedimiento no se ejecutó, y su no-ejecución
+se lee igual que un resultado limpio.**
+
+## Por qué existen las reglas de verificación — un hallazgo grande se siente como un buen resultado
+
+Las cuatro reglas de la práctica de mutación nacieron de casos donde **el resultado
+engañoso era más cómodo que el correcto**. Vale tener escrito el mecanismo, porque es lo
+que se repite:
+
+`implementation-backend` obtuvo "DIVERGEN" en su primera prueba de concurrencia de S-04-B,
+con el bloqueo de fila puesto. La lectura inmediata era *encontré un defecto grave en el
+mecanismo más importante del sprint* — una lectura atractiva, que confirmaba que la
+mutación servía y que valía la pena mirar. Investigar antes de reportar significaba
+arriesgarse a que el hallazgo se desinflara. Se desinfló: el defecto estaba en su
+escenario, que creaba el lote con una factory que no escribe el movimiento de ingreso.
+
+Su formulación, que es la que importa: **la tentación no es reportar rápido por descuido,
+es que un hallazgo grande se siente como un buen resultado.** Por eso las reglas no piden
+más atención, piden un paso concreto antes de concluir.
+
+## Un mensaje de error describe el mecanismo que falló, no la causa
+
+Dos casos opuestos, misma suposición rota:
+
+- **`lsof`** devolvió salida vacía sin error cuando no podía ver los sockets ajenos. La
+  herramienta **calló** lo que no podía ver.
+- **PostgreSQL** dice "permiso denegado sobre `movimientos_inventario`" al intentar borrar
+  un lote, porque necesita bloquear la fila hija para verificar la clave foránea y ese
+  bloqueo exige privilegio de escritura. El motor **dice la verdad** sobre el mecanismo que
+  falló, y esa verdad apunta lejos de la causa: quien lo lea sale a revisar `GRANT`s
+  cuando lo que ocurre es una clave foránea haciendo su trabajo.
+
+Los dos rompen la suposición de que el mensaje describe el problema, y los dos se
+resuelven igual: **comprobando, no leyendo**. Consecuencia directa para S-DO-02, señalada
+por `devops`: un error de permisos en producción no se diagnostica por su texto.
+
+## Regla de barrido — un cero no es evidencia de ausencia
+
+**Un barrido encuentra lo que su patrón sabe mirar, y devuelve cero sin distinguirlo de
+"no existe".** Antes de concluir que algo falta, hay que saber que el barrido miró donde
+debía.
+
+Tres veces en dos días, y las tres por causas distintas:
+
+- El guardián de arquitectura de S-00 buscaba sufijos en inglés y no veía `VentaServicio`
+  ni `ProductoRepositorio`. Devolvía lista vacía.
+- Un inventario de directorios de prueba filtró por archivos `.php` y contó cuatro
+  directorios sin dueño cuando eran cinco: `tests/recursos/` tiene un `.blade.php`.
+- Coordinación buscó un componente en `app/Dominios/Interfaz/Livewire/` cuando vive en
+  `Usuarios/Livewire/`, obtuvo cero coincidencias y estuvo a punto de reportar que no
+  estaba anotado.
+
+La formulación es de `implementation-frontend`, que cometió la segunda y nombró la
+tercera. Es hermana de la regla de mutación "confirmá que la mutación se aplicó": las dos
+distinguen *no encontré nada* de *no hay nada*.
+
+## Una prueba sin aserciones pasa siempre
+
+`implementation-frontend` vació la lista de pendientes de su propia prueba guardiana y
+PHPUnit la marcó como **arriesgada**: con la lista vacía, el bucle no ejecutaba ninguna
+aserción. **Su prueba contra las listas que envejecen se estaba convirtiendo en lo que
+vigila** — la que hoy no tiene nada que mirar es indistinguible de la que dejó de mirar.
+
+Corregida afirmando sobre el conjunto y no dentro del bucle, así hace siempre una
+aserción, con lista vacía o no. Verificada por mutación en las dos direcciones.
+
+Vale registrar quién lo detectó: **la herramienta, no el criterio de quien la escribió**.
+Es el argumento que este proyecto viene acumulando a favor del mecanismo sobre la
+disciplina, esta vez a favor de una herramienta que nadie eligió por ese motivo.
+
+## Siguiente fase — ola 4
+
+**S-04-B** (compras, lotes, kardex y ajustes) y **S-02-F** (pantallas de catálogo,
+proveedores, clientes y usuarios). Dependencias satisfechas: los dos dependen de S-02-B
+y S-03-B, y S-02-F además de S-01-F.
+
+**HABILITADA el 2026-08-20.** La dependencia cruzada se resolvió: el mecanismo está
+implementado, aprobado y fusionado en `develop@e87aded`, junto con el retiro de endpoints
+de ADR-0006 y las doce pruebas reparadas.
+
+| Carril | Sprint | Rol | Rama | Base de carril |
+|---|---|---|---|---|
+| 1 | **S-04-B** — compras, lotes, kardex y ajustes | `implementation-backend` | `sprint/S-04-B` | `ventas_inventario_s04b_test` |
+| 2 | **S-02-F** — pantallas de catálogo, proveedores, clientes y usuarios | `implementation-frontend` | `sprint/S-02-F` | `ventas_inventario_s02f_test` |
+
+Ambos parten de `develop@e87aded`, cada uno con su worktree fuera del árbol compartido.
+
+### Inventario de estado externo — hecho ejerciendo, no consultando
+
+| Recurso | Estado real | Decisión |
+|---|---|---|
+| PostgreSQL | **Conecta** con el rol de la aplicación. Comprobado conectándose, no mirando el puerto — `lsof` ya mintió una vez | Base por carril, creada por cada uno |
+| Puertos 8000, 8080, 5173 | **Sin respuesta**, comprobado con petición real y no con listado | Libres. Si los dos carriles quieren el 8000, coordina el Coordinador |
+| Contenedores | Solo `reservas-canchas-mysql` en 3307, de otro proyecto | No interfiere |
+| Bases acumuladas | Siete: la de aplicación, la genérica y cinco de carril de sprints cerrados | No se borran; su nombre dice a qué sprint pertenecen y `RefreshDatabase` las recompone |
+
+### Dependencia que se resolvió y por qué se registra
+
+**Historial anterior de esta sección:** La
+enmienda de S-02-F exige el mecanismo que hace fallar a un componente que escribe sin
+declarar permiso, y ese mecanismo vive en `app/Compartido/`, que es ruta de
+`implementation-backend`. Si S-02-F lo necesitara mientras S-04-B corre, dos sesiones
+escribirían el mismo árbol.
+
+Secuencia decidida:
+
+1. Los dos frentes proponen juntos la forma del mecanismo. Arquitectura aprueba.
+2. `implementation-backend` lo implementa como tarea corta, antes de abrir S-04-B.
+3. Recién entonces S-04-B y S-02-F corren en paralelo, cada uno en su worktree y con su
+   base de carril.
+
+Frontend puede avanzar mientras tanto lo que no dependa del mecanismo.
+
+## Ola 3 — despacho original
 
 **S-02-B, S-03-B y S-01-F**, declarados paralelizables entre sí en el roadmap.
 

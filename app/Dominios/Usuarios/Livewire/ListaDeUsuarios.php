@@ -2,13 +2,11 @@
 
 namespace App\Dominios\Usuarios\Livewire;
 
-use App\Compartido\Autorizacion\MatrizDePermisos;
-use App\Compartido\Errores\CodigoDeError;
+use App\Compartido\Autorizacion\Permiso;
 use App\Compartido\Errores\ErrorDeDominio;
 use App\Dominios\Usuarios\Datos\DatosUsuario;
 use App\Dominios\Usuarios\Modelos\Usuario;
 use App\Dominios\Usuarios\Servicios\UsuarioService;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -24,7 +22,13 @@ use Livewire\Component;
  * podría aceptar algo que el servicio rechaza —o al revés— y las dos reglas
  * divergirían en silencio. Lo que hace la pantalla es mostrar el rechazo
  * donde corresponde.
+ *
+ * El atributo de la clase gobierna lo que `render()` sirve; los métodos que
+ * escriben declaran el suyo. Los de interfaz —`nuevo`, `editar`, `cancelar`—
+ * heredan el de la clase: no son operaciones distintas de la pantalla, son esa
+ * pantalla.
  */
+#[Permiso('GET /usuarios')]
 class ListaDeUsuarios extends Component
 {
     /**
@@ -76,8 +80,6 @@ class ListaDeUsuarios extends Component
 
     public function editar(int $id): void
     {
-        $this->exigirPermiso('GET /usuarios');
-
         $usuario = Usuario::query()->find($id);
 
         if ($usuario === null) {
@@ -101,37 +103,60 @@ class ListaDeUsuarios extends Component
         $this->limpiarFormulario();
     }
 
-    public function guardar(UsuarioService $usuarios): void
+    /**
+     * El alta y la edición son dos métodos y no uno con una condición, porque
+     * el permiso se resuelve por reflexión antes de ejecutar el método: es
+     * estático y no puede depender de `$editando`.
+     *
+     * Un solo `guardar()` declarando `POST /usuarios` dejaría las ediciones
+     * autorizadas por un permiso de creación. Hoy funcionaría igual —las dos
+     * filas son del administrador— y eso es justamente lo que lo vuelve
+     * peligroso: el día que alguien pueda crear pero no editar, el sistema
+     * autorizaría ediciones que la matriz prohíbe y ninguna prueba fallaría,
+     * porque hoy las dos coinciden.
+     */
+    #[Permiso('POST /usuarios')]
+    public function crear(UsuarioService $usuarios): void
     {
-        $this->exigirPermiso($this->editando === null ? 'POST /usuarios' : 'PATCH /usuarios/{id}');
-
         $this->limpiarMensajes();
 
         try {
-            if ($this->editando === null) {
-                $usuarios->crear(DatosUsuario::desde([
-                    'nombre' => $this->nombre,
-                    'email' => $this->email,
-                    'password' => $this->password,
-                    'rol' => $this->rol,
-                ]));
-            } else {
-                // La contraseña no se cambia por esta vía, así que no se envía.
-                $usuarios->actualizar($this->editando, DatosUsuario::desde([
-                    'nombre' => $this->nombre,
-                    'email' => $this->email,
-                    'rol' => $this->rol,
-                ]));
-            }
+            $usuarios->crear(DatosUsuario::desde([
+                'nombre' => $this->nombre,
+                'email' => $this->email,
+                'password' => $this->password,
+                'rol' => $this->rol,
+            ]));
         } catch (ErrorDeDominio $fallo) {
             $this->mostrar($fallo);
 
             return;
         }
 
-        $this->exito = $this->editando === null
-            ? 'Usuario creado.'
-            : 'Usuario actualizado.';
+        $this->exito = 'Usuario creado.';
+
+        $this->limpiarFormulario();
+    }
+
+    #[Permiso('PATCH /usuarios/{id}')]
+    public function actualizar(UsuarioService $usuarios): void
+    {
+        $this->limpiarMensajes();
+
+        try {
+            // La contraseña no se cambia por esta vía, así que no se envía.
+            $usuarios->actualizar((int) $this->editando, DatosUsuario::desde([
+                'nombre' => $this->nombre,
+                'email' => $this->email,
+                'rol' => $this->rol,
+            ]));
+        } catch (ErrorDeDominio $fallo) {
+            $this->mostrar($fallo);
+
+            return;
+        }
+
+        $this->exito = 'Usuario actualizado.';
 
         $this->limpiarFormulario();
     }
@@ -145,10 +170,9 @@ class ListaDeUsuarios extends Component
      * regla fuera la ausencia de un botón —que no protege de nada, porque el
      * método se puede invocar igual.
      */
+    #[Permiso('PATCH /usuarios/{id}')]
     public function cambiarEstado(int $id, bool $activo, UsuarioService $usuarios): void
     {
-        $this->exigirPermiso('PATCH /usuarios/{id}');
-
         $this->limpiarMensajes();
 
         try {
@@ -160,36 +184,6 @@ class ListaDeUsuarios extends Component
         }
 
         $this->exito = $activo ? 'Usuario activado.' : 'Usuario desactivado.';
-    }
-
-    /**
-     * Comprueba el permiso antes de invocar el servicio.
-     *
-     * No es redundante con el middleware. El middleware protege la ruta
-     * `GET /usuarios`, pero los métodos de este componente no viajan por esa
-     * ruta: viajan por el endpoint de actualización de Livewire, que solo
-     * exige sesión activa y no distingue rol. Sin esta comprobación, quien
-     * tuviera cualquier sesión podía invocar `guardar` y darse de alta como
-     * administrador, sin pasar nunca por la pantalla.
-     *
-     * `UsuarioService` tampoco cubre esto, y no debería: es un servicio de
-     * dominio y no sabe quién lo llama. Por eso la matriz declara que el
-     * componente comprueba el permiso y el servicio no confía en el
-     * componente — son dos capas, no la misma dos veces.
-     *
-     * El permiso se deriva de la misma matriz que autoriza las rutas, con el
-     * identificador de la operación que la tabla ya declara.
-     */
-    private function exigirPermiso(string $operacion): void
-    {
-        $usuario = Auth::user();
-
-        if ($usuario === null || ! $usuario->activo || ! MatrizDePermisos::permiteA($operacion, $usuario)) {
-            throw new ErrorDeDominio(
-                CodigoDeError::NO_AUTORIZADO,
-                'Tu rol no tiene permiso para esta operación.'
-            );
-        }
     }
 
     /**
@@ -246,8 +240,6 @@ class ListaDeUsuarios extends Component
      */
     public function render()
     {
-        $this->exigirPermiso('GET /usuarios');
-
         return view('livewire.usuarios.lista-de-usuarios', [
             'usuarios' => app(UsuarioService::class)->listar(
                 $this->buscar === '' ? null : $this->buscar,

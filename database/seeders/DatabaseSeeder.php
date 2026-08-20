@@ -11,8 +11,11 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        $this->call(ClientePublicoGeneralSeeder::class);
+        $this->call(SeriesComprobanteSeeder::class);
+
         // Los seeders de dominio se agregan en su sprint: el usuario
-        // administrador inicial en S-01-B, el cliente "público general" en
-        // S-03-B y las series de comprobante en S-05-B.
+        // administrador inicial en S-01-B y las series de comprobante en
+        // S-05-B.
     }
 }

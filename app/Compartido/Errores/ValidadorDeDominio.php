@@ -17,10 +17,9 @@ final class ValidadorDeDominio
     /**
      * @param  array<string, mixed>  $campos
      * @param  array<string, array<int, mixed>>  $reglas
-     * @param  array<string, CodigoDeError>  $codigosPorCampo  código específico de negocio para ese campo
      * @return array<string, mixed>
      */
-    public static function validar(array $campos, array $reglas, array $codigosPorCampo = []): array
+    public static function validar(array $campos, array $reglas): array
     {
         $validador = Validator::make($campos, $reglas);
 
@@ -29,7 +28,7 @@ final class ValidadorDeDominio
             $reglasFalladas = array_keys($validador->failed()[$campo]);
 
             throw new ErrorDeDominio(
-                $codigosPorCampo[$campo] ?? self::codigoSegunRegla($reglasFalladas),
+                self::codigoSegunRegla($reglasFalladas),
                 (string) $validador->errors()->first(),
                 ['campo' => $campo]
             );
@@ -38,13 +37,33 @@ final class ValidadorDeDominio
         return $validador->validated();
     }
 
-    /** @param  array<int, string>  $reglasFalladas */
+    /**
+     * Traduce las reglas que no dependen del dominio.
+     *
+     * **Acá solo se traduce lo que la regla dice por sí sola.** Un código que
+     * nombra la entidad —`PRODUCTO_CODIGO_DUPLICADO`, `DOCUMENTO_DUPLICADO`—
+     * no se puede elegir desde este punto, porque este validador recibe campos
+     * sueltos y no sabe de qué entidad son. Esos rechazos van en el servicio
+     * del dominio, con su comprobación propia, su mensaje y su campo: así lo
+     * hacen usuarios, clientes, proveedores, categorías y productos.
+     *
+     * Hubo un parámetro para declarar un código por campo y se retiró: cubría
+     * **cualquier** fallo de ese campo, no la regla que se quería nombrar, así
+     * que un valor mal escrito respondía con el código del duplicado. Sus dos
+     * únicos usos resultaron ser precisamente ese defecto.
+     *
+     * Un `unique` sin nada más cae al genérico de formato, que es visiblemente
+     * incorrecto para un duplicado, y está fijado con una prueba: quien
+     * agregue uno nuevo se encuentra con eso al escribirlo y no en
+     * producción.
+     *
+     * @param  array<int, string>  $reglasFalladas
+     */
     private static function codigoSegunRegla(array $reglasFalladas): CodigoDeError
     {
         foreach ($reglasFalladas as $regla) {
             $codigo = match ($regla) {
                 'Required' => CodigoDeError::CAMPO_REQUERIDO,
-                'Unique' => CodigoDeError::DOCUMENTO_DUPLICADO,
                 'Min', 'Max', 'Between' => CodigoDeError::CAMPO_FUERA_DE_RANGO,
                 default => null,
             };
