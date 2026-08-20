@@ -101,8 +101,41 @@ Decisiones que se derivan, tomadas por Arquitectura:
    documenta como tal, con el motivo de qué se incluye. Ampliarlo cuando el negocio lo
    necesite es trivial y no rompe nada; el registro tiene que dejar claro que la
    restricción es nuestra.
-4. **`NIU` (unidad) se mantiene como valor por defecto**, tal como ya declara
-   `docs/contratos/productos.md`.
+4. **`NIU` se mantiene como valor por defecto, con una discrepancia registrada que
+   S-06-B debe cerrar empíricamente.**
+
+### La discrepancia de `NIU`
+
+En el catálogo enumerado que publica SUNAT
+(`http://contenido.app.sunat.gob.pe/insc/ComprobantesDePago+Electronicos/Detalle+CATALOGO+2,3,4+13.pdf`,
+leído el 2026-08-19), la entrada dice literalmente:
+
+```
+NIU   number of international units
+```
+
+Es una **unidad de actividad biológica** del estándar UN/ECE, no "unidad de bien". Sin
+embargo, la orientación de SUNAT para Perú usa `NIU` como la unidad de bienes —y `ZZ`
+para servicios—, al punto de eximir de mostrarla en la representación impresa
+justamente por ser la unidad por defecto.
+
+O sea: **el significado del código en el estándar y su uso en Perú no coinciden**, y
+las dos cosas vienen de SUNAT.
+
+Decisión: se mantiene `NIU` como valor por defecto, porque quien acepta o rechaza el
+comprobante es SUNAT y su propia orientación indica ese código para bienes. La
+semántica de UN/ECE no es la que valida.
+
+**Pero no se da por cerrado por documentación.** El primer envío real contra el
+ambiente **beta** en S-06-B es la prueba definitiva: si SUNAT devuelve un CDR aceptando
+un comprobante con `NIU`, la discrepancia es solo nominal y se anota como tal. Si lo
+rechaza, `NIU` deja de ser el valor por defecto y hay que revisar el subconjunto
+entero. **El RFC de S-06-B debe incluir esa verificación explícitamente**, porque es
+barata en beta y cara después.
+
+Lo detectó `implementation-backend` al no poder verificar el catálogo y decir que no lo
+había verificado, en vez de dejar pasar el valor por defecto que Arquitectura acababa
+de fijar.
 
 El subconjunto concreto lo propone `implementation-backend` en el handoff de S-02-B,
 derivado de UN/ECE Rec 20 Rev 13, y lo aprueba Arquitectura antes del cierre del
