@@ -209,6 +209,30 @@ un registro sobre él. Y si puede fallar por falta de permisos, tiene que distin
 caso del caso sano, o mentirá exactamente cuando más importa. Es el mismo falso verde
 del healthcheck que devolvía 200 sirviendo una advertencia, con otra cara.
 
+## Huecos de cobertura abiertos — S-02-B, aprobados con ellos a la vista
+
+QA aprobó S-02-B y reportó dos huecos que ninguna prueba sostiene. **No son defectos:
+el comportamiento hoy es correcto y está verificado.** Lo que falta es lo que impediría
+que se rompa sin que nadie se entere.
+
+| # | Qué no está fijado | Consecuencia si se rompe | Propietario |
+|---|---|---|---|
+| H-1 | La rama de Livewire en el middleware de acceso. Quitar `esDeLivewire()` hace que un componente sin sesión reciba 302 a `/login` en vez de 401, **y la suite sigue verde** | Un componente Livewire recibiría un redirect que no sabe manejar. El síntoma aparecería en una pantalla de otro sprint, lejos de la causa | `implementation-backend` |
+| H-2 | La clave foránea de categoría en `RESTRICT`. Cambiarla a `CASCADE` no lo detecta nadie | Borrar una categoría arrastraría sus productos. Hoy **ninguna ruta ni método borra categorías**, así que protege contra algo que aún no se puede hacer | `implementation-backend` |
+
+H-1 importa más y su momento es ahora: S-01-F construye componentes Livewire. Una prueba
+que pida `POST {prefijo}/update` sin sesión y afirme 401 —no 302— lo cierra.
+
+**Las dos están bloqueadas por la enmienda de permisos por área**: viven en
+`tests/Feature/Autorizacion/`, que ningún rol tiene declarado. Es la misma enmienda que
+bloquea la corrección de la raíz.
+
+QA consideró rechazar por H-1 y explicó por qué no lo hizo, en vez de decidirlo por
+omisión: `RECHAZADO` está definido como no conformidad reproducida, regresión,
+divergencia de contrato o alcance no aprobado, y un hueco de cobertura no es ninguna de
+las cuatro. Estirar la definición para forzar el resultado habría sido peor que
+reportarlo y dejar la decisión donde corresponde.
+
 ## Decisiones de Arquitectura de la ola 3
 
 **El proyecto no expone una API HTTP entre backend y frontend.** Ya estaba en ADR-0005
@@ -300,6 +324,14 @@ lista de permisos, desactivar un control, invertir una comprobación— y verifi
 alguna prueba falla. Después se restaura el árbol. Once mutaciones costaron minutos en
 S-01-B porque cada una era una línea. Redactado como "pruebas de mutación" a secas,
 quien lo lea va a pensar en una herramienta y una hora de ejecución, y lo va a saltar.
+
+**Confirmar que la mutación se aplicó antes de correr la suite.** Una mutación que no
+llegó a tocar el archivo se lee como cobertura ausente, y el resultado es un hueco
+inventado. Le pasó a `qa` en S-02-B: intentó anular un `CHECK` buscando `->check()`
+cuando la migración lo declara con `DB::statement`, el patrón no coincidió, el archivo
+quedó igual y la suite pasó — lo que parecía decir que nadie protegía esa regla. Lo
+detectó verificando el archivo. Es el reverso exacto de la regla de abajo: una deja
+falsa confianza, la otra deja falsa alarma, y las dos se evitan mirando el árbol.
 
 **Mutar solo sobre árbol limpio.** La restauración es un `git checkout` del archivo
 mutado, y eso se lleva cualquier trabajo sin commitear que hubiera ahí. `implementation-backend`

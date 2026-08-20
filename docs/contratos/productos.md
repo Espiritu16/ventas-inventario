@@ -45,7 +45,15 @@ Autoridad: Arquitectura. Versión del contrato: v1.
 ### Validaciones de entrada
 | Campo/ubicación | Tipo semántico | Presencia/default | Formato/caracteres | Límites | Normalización/coerción | Regla cruzada/negocio | Error | Fuente/estado |
 |---|---|---|---|---|---|---|---|---|
-| codigo (body) | string | requerido, no vacío | letras, dígitos, guion y guion bajo; sin espacios | 1 a 40 caracteres | recorte de extremos y mayúsculas | único entre todos los productos, activos e inactivos | PRODUCTO_CODIGO_DUPLICADO | RF-004 |
+| codigo (body) | string | requerido, no vacío | letras, dígitos, guion y guion bajo; sin espacios | 1 a 40 caracteres | recorte de extremos y mayúsculas | único entre todos los productos, activos e inactivos | **`CAMPO_FORMATO_INVALIDO` si el formato o la longitud fallan; `PRODUCTO_CODIGO_DUPLICADO` solo si ya existe** | RF-004 |
+
+> **Enmienda de Arquitectura, 2026-08-19.** La tabla asignaba `PRODUCTO_CODIGO_DUPLICADO`
+> como único código de error del campo, así que un código con espacios respondía
+> "duplicado". El servicio hacía lo que el contrato decía; el contrato estaba mal. La
+> pantalla de S-02-F le habría dicho "código duplicado" a alguien que escribió un
+> espacio, y esa persona habría cambiado el código en vez de borrar el espacio. Lo notó
+> `qa` al validar S-02-B y fue a comprobar si era divergencia antes de reportarlo:
+> no lo era.
 | nombre (body) | string | requerido, no vacío ni solo espacios | texto libre | 3 a 150 caracteres | recorte, espacios internos colapsados | no aplica | CAMPO_REQUERIDO | RF-004 |
 | categoriaId (body) | entero (identificador) | requerido | entero positivo | no aplica | ninguna | debe existir y estar activa | RECURSO_NO_ENCONTRADO | RF-004 |
 | unidadMedida (body) | enum | requerido, default `NIU` | código de unidad del catálogo de SUNAT | 2 a 10 caracteres | mayúsculas | debe existir en el catálogo vigente de SUNAT, porque viaja en el comprobante | CAMPO_FORMATO_INVALIDO | RF-004 más docs/integraciones/sunat.md |
