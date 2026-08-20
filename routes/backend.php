@@ -1,9 +1,5 @@
 <?php
 
-use App\Dominios\Catalogo\Controllers\CategoriaController;
-use App\Dominios\Catalogo\Controllers\ProductoController;
-use App\Dominios\Clientes\Controllers\ClienteController;
-use App\Dominios\Proveedores\Controllers\ProveedorController;
 use App\Dominios\Usuarios\Controllers\SesionController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,33 +7,14 @@ use Illuminate\Support\Facades\Route;
  * Rutas HTTP del servidor.
  *
  * Solo viven acá las operaciones que el navegador ejecuta de verdad contra el
- * servidor. La gestión de usuarios NO está: son pantallas Livewire que
- * invocan `UsuarioService` en el mismo proceso, sin cliente HTTP de por medio
- * (ADR-0005 y la enmienda de 2026-08-19 en docs/contratos/usuarios.md).
+ * servidor. Los recursos de dominio NO están: se sirven como pantallas, y la
+ * operación la ejecuta el servicio de dominio invocado en el mismo proceso por
+ * el componente (ADR-0006).
  *
- * Las pantallas viven en routes/web.php y son del frente de interfaz; acá
- * están las operaciones. Los dos archivos comparten el grupo `web`, así que
- * el control de acceso deny-by-default (RNF-013) los alcanza por igual: una
- * ruta sin fila en docs/requisitos/actores-permisos.md se rechaza, esté
- * declarada donde esté.
+ * Un endpoint que ningún consumidor declarado usa no es una comodidad para el
+ * futuro: es superficie viva que hay que autorizar, probar y mantener, y que
+ * además se disputa la URI con la pantalla que sí existe.
  */
 
 Route::post('/login', [SesionController::class, 'iniciar'])->name('login');
 Route::post('/logout', [SesionController::class, 'cerrar'])->name('logout');
-
-Route::get('/categorias', [CategoriaController::class, 'listar'])->name('categorias.listar');
-Route::post('/categorias', [CategoriaController::class, 'crear'])->name('categorias.crear');
-Route::patch('/categorias/{id}', [CategoriaController::class, 'actualizar'])->name('categorias.actualizar');
-
-Route::get('/productos', [ProductoController::class, 'listar'])->name('productos.listar');
-Route::post('/productos', [ProductoController::class, 'crear'])->name('productos.crear');
-Route::get('/productos/{id}', [ProductoController::class, 'ver'])->name('productos.ver');
-Route::patch('/productos/{id}', [ProductoController::class, 'actualizar'])->name('productos.actualizar');
-
-Route::get('/proveedores', [ProveedorController::class, 'listar'])->name('proveedores.listar');
-Route::post('/proveedores', [ProveedorController::class, 'crear'])->name('proveedores.crear');
-Route::patch('/proveedores/{id}', [ProveedorController::class, 'actualizar'])->name('proveedores.actualizar');
-
-Route::get('/clientes', [ClienteController::class, 'listar'])->name('clientes.listar');
-Route::post('/clientes', [ClienteController::class, 'crear'])->name('clientes.crear');
-Route::patch('/clientes/{id}', [ClienteController::class, 'actualizar'])->name('clientes.actualizar');

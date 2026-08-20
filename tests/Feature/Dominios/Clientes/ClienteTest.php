@@ -8,7 +8,6 @@ use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
 use App\Dominios\Clientes\Modelos\Cliente;
 use App\Dominios\Clientes\Servicios\ClienteService;
-use App\Dominios\Usuarios\Modelos\Usuario;
 use Database\Seeders\ClientePublicoGeneralSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -217,42 +216,9 @@ final class ClienteTest extends TestCase
         $this->assertSame(1, Cliente::query()->where('tipo_documento', '0')->count());
     }
 
-    // --- Rutas (RNF-013) ---
-
-    public function test_el_vendedor_consulta_y_da_de_alta_clientes_desde_la_caja(): void
-    {
-        $vendedor = Usuario::factory()->create();
-
-        $this->actingAs($vendedor)->getJson('/clientes')->assertOk();
-
-        $this->actingAs($vendedor)
-            ->postJson('/clientes', ['tipoDocumento' => '1', 'numeroDocumento' => '12345678', 'nombre' => 'Ana Quispe'])
-            ->assertStatus(201);
-    }
-
-    public function test_el_vendedor_no_puede_editar_un_cliente_ya_registrado(): void
-    {
-        $cliente = Cliente::factory()->create();
-
-        $this->actingAs(Usuario::factory()->create())
-            ->patchJson("/clientes/{$cliente->id}", ['nombre' => 'Otro nombre'])
-            ->assertStatus(403);
-    }
-
-    public function test_sin_sesion_las_rutas_de_clientes_rechazan(): void
-    {
-        $this->getJson('/clientes')
-            ->assertStatus(401)
-            ->assertJsonPath('error.codigo', 'NO_AUTENTICADO');
-    }
-
-    public function test_un_documento_invalido_por_http_devuelve_documento_invalido(): void
-    {
-        $this->actingAs(Usuario::factory()->administrador()->create())
-            ->postJson('/clientes', ['tipoDocumento' => '1', 'numeroDocumento' => '1234-5678', 'nombre' => 'Ana Quispe'])
-            ->assertStatus(422)
-            ->assertJsonPath('error.codigo', 'DOCUMENTO_INVALIDO');
-
-        $this->assertSame(0, Cliente::query()->count());
-    }
+    // Las pruebas que ejercían estas operaciones por HTTP se retiraron con sus
+    // rutas (ADR-0006): los recursos de dominio se sirven como pantallas y la
+    // operación la ejecuta este servicio, invocado en el mismo proceso. Quién
+    // puede hacer qué lo comprueba el mecanismo de permisos en componentes;
+    // lo que este archivo cubre es que la operación haga lo que dice.
 }
