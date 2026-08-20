@@ -78,6 +78,8 @@ final class MatrizDePermisos
     /** Matriz de permisos, filas del actor Anónimo. */
     private const ANONIMAS = [
         'POST /login',
+        // La pantalla donde se obtiene la sesión no puede exigir sesión.
+        'GET /login',
     ];
 
     /**
@@ -87,9 +89,12 @@ final class MatrizDePermisos
      */
     private const POR_ROL = [
         'POST /logout' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
+        // Gestión de usuarios: son pantallas de routes/web.php, no endpoints
+        // JSON. La operación la ejecuta UsuarioService en el mismo proceso.
         'GET /usuarios' => [Usuario::ROL_ADMINISTRADOR],
         'POST /usuarios' => [Usuario::ROL_ADMINISTRADOR],
         'PATCH /usuarios/{id}' => [Usuario::ROL_ADMINISTRADOR],
+        'GET /panel' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
 
         // Catálogo: el vendedor consulta para vender, pero no administra.
         'GET /categorias' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],

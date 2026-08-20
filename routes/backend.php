@@ -3,11 +3,15 @@
 use App\Dominios\Catalogo\Controllers\CategoriaController;
 use App\Dominios\Catalogo\Controllers\ProductoController;
 use App\Dominios\Usuarios\Controllers\SesionController;
-use App\Dominios\Usuarios\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
 /*
  * Rutas HTTP del servidor.
+ *
+ * Solo viven acá las operaciones que el navegador ejecuta de verdad contra el
+ * servidor. La gestión de usuarios NO está: son pantallas Livewire que
+ * invocan `UsuarioService` en el mismo proceso, sin cliente HTTP de por medio
+ * (ADR-0005 y la enmienda de 2026-08-19 en docs/contratos/usuarios.md).
  *
  * Las pantallas viven en routes/web.php y son del frente de interfaz; acá
  * están las operaciones. Los dos archivos comparten el grupo `web`, así que
@@ -18,10 +22,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [SesionController::class, 'iniciar'])->name('login');
 Route::post('/logout', [SesionController::class, 'cerrar'])->name('logout');
-
-Route::get('/usuarios', [UsuarioController::class, 'listar'])->name('usuarios.listar');
-Route::post('/usuarios', [UsuarioController::class, 'crear'])->name('usuarios.crear');
-Route::patch('/usuarios/{id}', [UsuarioController::class, 'actualizar'])->name('usuarios.actualizar');
 
 Route::get('/categorias', [CategoriaController::class, 'listar'])->name('categorias.listar');
 Route::post('/categorias', [CategoriaController::class, 'crear'])->name('categorias.crear');
