@@ -314,6 +314,59 @@ verdad —lo que reabre la decisión de E2E, hoy pospuesta— o se acepta el rec
 manual documentado que el propio RNF-008 describe. Decidirlo con el sprint encima es
 peor que decidirlo ahora.
 
+## Punto de detención — 2026-08-20
+
+Segunda parada, con todo en estado consistente y **una sola acción pendiente del
+usuario**. Quien retome no necesita ninguna conversación: todo está acá, en `AGENTS.md` y
+en Git.
+
+**Lo único bloqueante: el PR #2** — `gobernanza/enmienda-permisos-por-area` hacia
+`develop`. Fusionarlo *es* la aprobación de la enmienda. Detrás de él está todo lo de la
+sección "Bloqueantes".
+
+**Lo primero al retomar, en este orden:**
+
+1. Si el PR #2 está fusionado, avisar a `implementation-backend`: commitea el retiro de
+   los endpoints de ADR-0006 —hecho en su árbol, sin commitear— y repara las 12 pruebas.
+   El diagnóstico línea por línea de las 9 de `RedireccionAlAccesoTest` está en su
+   scratchpad; si esa sesión ya no existe, el arreglo es apuntar el data provider y tres
+   referencias sueltas a `/usuarios` y `/panel`, que sí son pantallas.
+   **Las 12 pruebas son dos problemas distintos, no uno.** Las 9 de
+   `RedireccionAlAccesoTest` apuntan a rutas retiradas y hay que cambiarles el destino a
+   `/usuarios` y `/panel`. Las 3 de `LivewireOperativoTest` montan `HumoDeInstalacion` sin
+   autenticar, y lo que les falta es un usuario con permiso sobre `GET /panel`. Quien las
+   trate como un solo problema va a arreglar la mitad. Señalado por `implementation-backend`.
+
+2. Fusionar `feature/permisos-en-componentes`, cuyo HEAD es **`80e682c`** — lleva el
+   mecanismo y las tareas de la matriz, y tiene commits que no están en `develop`. Hasta
+   que las 12 pruebas estén reparadas, esa rama va en rojo. El mecanismo y el retiro viven
+   en un stash con nombre en el árbol de backend, no en commits.
+3. `implementation-frontend` saca `HumoDeInstalacion` de la lista de pendientes de
+   `DeclaracionDePermisoTest` **cuando la anotación esté en `develop`**, no antes: su
+   prueba va a fallar sola pidiéndolo.
+4. Abrir S-04-B y S-02-F en paralelo, cada uno con worktree nuevo desde `develop` y su
+   base de carril.
+
+**Aviso sobre el orden de S-04-B, si la enmienda todavía no entró.** La prueba
+`test_el_listado_no_trae_stock_disponible_todavia`
+(`tests/Feature/Autorizacion/RutasDeCatalogoTest.php:140`) fija la ausencia del campo
+`stockDisponible`, y S-04-B es el sprint que tiene que hacerla **cambiar de sentido**, no
+desaparecer. Vive en un directorio congelado. Si la enmienda no está aprobada cuando ese
+sprint llegue a ese punto, **se bloquea a mitad de camino en vez de al principio**, que es
+peor porque se descubre tarde y con trabajo ya hecho. Señalado por `qa`; si la enmienda
+sigue pendiente, conviene planificar el orden de las unidades contando con esto.
+
+**El PR #1 se fusionó el 2026-08-20.** Primera promoción del proyecto: `main` pasó de
+`99cd061` —solo documentación inicial— a `2e735c7`, con los cinco sprints aprobados de las
+olas 1 a 3 y toda la gobernanza que produjeron.
+
+`main` no incluye S-03-B ni las decisiones posteriores a la promoción; van en la siguiente,
+que se hace en lote cuando el conjunto sea estable, no por sprint.
+
+**Estado de los carriles:** ninguno a medias. Backend tiene trabajo hecho sin commitear a
+propósito, para no entregar rojo. Frontend está sin worktree y sin cambios. QA sin nada
+pendiente. DevOps sin turno desde S-DO-01.
+
 ## Punto de detención — 2026-08-19
 
 El trabajo se detuvo acá por decisión del usuario, con todo en estado consistente.
@@ -380,6 +433,19 @@ cuando la migración lo declara con `DB::statement`, el patrón no coincidió, e
 quedó igual y la suite pasó — lo que parecía decir que nadie protegía esa regla. Lo
 detectó verificando el archivo. Es el reverso exacto de la regla de abajo: una deja
 falsa confianza, la otra deja falsa alarma, y las dos se evitan mirando el árbol.
+
+**Después de restaurar, verificar qué se restauró — no qué se pretendía restaurar.** El
+`git checkout` de la restauración se lleva todo lo pendiente en ese archivo, no solo la
+mutación. `implementation-backend` asumió que se había llevado un cambio y se había
+llevado dos: repuso las tres filas de la matriz y no el método que la prueba necesitaba,
+y commiteó con la suite en rojo. Contar los cambios pendientes antes de mutar habría
+bastado.
+
+Lo notable es quién lo cometió: **el mismo rol que había formulado la regla de mutar
+sobre árbol limpio, dos días antes**. Su lectura, que comparto: si una regla de disciplina
+falla en manos de quien la escribió y la tenía presente, el problema no es la atención
+—es que la disciplina no es el lugar correcto para eso—. Es el mismo argumento con el que
+se eligió el hook global sobre la clase base.
 
 **Mutar solo sobre árbol limpio.** La restauración es un `git checkout` del archivo
 mutado, y eso se lleva cualquier trabajo sin commitear que hubiera ahí. `implementation-backend`
@@ -581,6 +647,66 @@ aprueba, y aprueba lo que no era. Si alguna vez hacen falta dos entornos a la ve
 la misma máquina, la salida conocida es parametrizar el puerto publicado
 (`${PUERTO_APP:-8080}:8000`); no se implementó porque hoy ningún caso lo pide.
 
+## Lo que no tiene verificación automática es lo que falla
+
+El 2026-08-20 fallaron dos cosas, y no fueron el código ni los sprints: **el
+procedimiento de aprobación** —se pidió aprobar un texto que no existía como documento— y
+**el canal entre sesiones** —se trasladó un "ya está hecho" que vivía en una rama sin
+fusionar—.
+
+No es casualidad. Todo lo demás en este proyecto tiene algo detrás que lo respalda: una
+prueba, un SHA, un documento versionado. Esas dos partes no tienen nada salvo que alguien
+se acuerde de seguirlas. **Son las dos únicas sin verificación automática, y son las dos
+que fallaron.** Las dos veces el error apareció recién cuando alguien fue a mirar.
+
+La observación es de `implementation-frontend`, que fue quien miró las dos veces.
+
+**La otra mitad, que señaló `implementation-backend`:** el error se encontró porque
+alguien fue a buscar el artefacto en vez de confiar en la afirmación. Lo que lo atrapó no
+fue que quien se equivocó se diera cuenta, fue que otro verificó — el mismo mecanismo que
+funcionó cuando QA encontró pruebas que pasaban por la razón equivocada. **La verificación
+cruzada entre roles es lo único que cubre las partes que no tienen prueba.**
+
+**Y una asimetría que conviene tener presente**, también suya: los errores que uno comete
+sobre sus propias reglas no son distintos de los demás, pero **se sienten peores, y por eso
+dan la tentación de no reportarlos**. Reportarlos rápido es lo que hace que la regla
+siguiente se escriba mejor: la de "verificar qué se restauró" no existiría si él hubiera
+corregido el commit en silencio.
+
+**Corolario, de `devops`:** los huecos que no molestan a nadie son los que sobreviven. El
+suyo con `README.md` se notó porque lo bloqueaba; el de `docker/` no se notó durante un
+sprint entero porque no lo bloqueaba.
+
+Del canal ya salió una regla concreta —referenciar por SHA fusionado, abajo—. Del
+procedimiento de aprobación salió que el borrador viva en una rama antes de pedir la
+aprobación, en vez de en un mensaje. Ninguna de las dos es una verificación automática:
+siguen dependiendo de que alguien las siga. **Queda anotado como cosa a pensar, no como
+resuelto** — vale la pena discutir con el usuario si hay forma de que fallen solas en vez
+de esperar a que alguien vaya a mirar.
+
+## Regla de despacho — un trabajo ajeno se referencia por SHA fusionado, nunca por "ya está hecho"
+
+Cuando el Coordinador despacha una tarea que depende del trabajo de otro rol, **indica el
+SHA donde ese trabajo está fusionado en la rama compartida**. No alcanza con trasladar que
+el otro rol dijo haberlo hecho.
+
+Entre "lo hice" y "está en `develop`" hay una distancia que nadie mide si no se nombra: el
+trabajo puede estar en una rama sin fusionar, en un commit posterior al que se citó, o sin
+commitear. Un "ya está hecho" sin SHA es una afirmación sin evidencia, exactamente igual
+que un handoff que declara `COMPLETADO` sin `final_sha`.
+
+Ocurrió dos veces, las dos por el mismo canal y las dos las atrapó
+`implementation-frontend` verificando antes de tocar:
+
+1. Se le indicó traer `77fed0f` como "ya corregido"; la corrección estaba en `03a54ae`,
+   posterior. Su rama quedó cargando el defecto sin haber tocado nada.
+2. Se le pidió actualizar una lista porque un componente "ya estaba anotado"; la anotación
+   vivía en una rama sin fusionar. Hacer el cambio habría roto `develop`.
+
+Lo notable es dónde nace el defecto: **no en el código sino en el canal entre sesiones**,
+que es la única parte del sistema que no tiene pruebas. La regla es del Coordinador porque
+el SHA es un dato que él tiene a mano y quien recibe la tarea no.
+
 ## Regla de permisos — "lo escribí yo" no es "es mi ruta"
 
 Un rol es dueño de las rutas que `AGENTS.md` le declara, **no de los archivos que
@@ -721,7 +847,20 @@ S-DO-02 debe cumplir y su RFC todavía no las declara.
 - **Árbol de trabajo único.** Las cinco sesiones comparten `/Users/sankef/ventas-inventario`. Hoy funciona porque S-00 corre solo, pero cualquier ola con dos sprints simultáneos exige worktrees dedicados por carril, acordados antes del despacho.
 
 ## Bloqueantes
-- Ninguno para planificar ni para ejecutar. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
+
+**Ninguno. La enmienda de permisos por área se aprobó el 2026-08-20** al fusionar el PR
+#2, y con ella se destrabaron los cinco directorios de prueba que no tenían dueño desde
+S-00 —`tests/Feature/Autorizacion/`, `tests/Feature/Fundacion/`, `tests/Feature/Interfaz/`,
+`tests/Soporte/` y `tests/recursos/`—, las doce pruebas que nadie podía reparar, el retiro
+de endpoints de ADR-0006, el mecanismo de permisos en componentes y los sprints S-04-B y
+S-02-F.
+
+Esa enmienda estuvo bloqueando trabajo real durante cinco escaladas sucesivas. Vale
+recordar por qué: `AGENTS.md` declaraba permisos como lista de rutas conocidas al
+aprobarlo, y cada sprint materializaba artefactos que la lista no anticipaba. Ahora declara
+áreas, así que un directorio nuevo no queda sin dueño por el solo hecho de ser nuevo.
+
+- Sin bloqueo para el resto de la planificación. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
 - Condición futura, no bloqueante: el RUC real, la razón social, la dirección fiscal, el usuario SOL real y el certificado digital comprado se necesitan solo para el paso a producción, que exige autorización explícita del usuario. Ver `docs/integraciones/sunat.md`.
 
 ## Ola 2 — CERRADA (2026-08-19)

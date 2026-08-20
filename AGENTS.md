@@ -17,13 +17,15 @@
 
 ## Vigencia de gobernanza
 - Estado de gobernanza: APROBADO
-- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-19 tras asignar `routes/backend.php` a `implementation-backend`, manteniendo `routes/web.php` exclusivo de `implementation-frontend`
+- Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-20 al fusionar el PR #2, que declara los permisos por área en vez de por lista de rutas
+- Fecha de la reaprobación: 2026-08-20
 - Fecha de aprobación: 2026-08-19
 
 ## Roles activos en este repositorio
 
 ### coordinacion
-- Puede escribir gobernanza y planificación: `AGENTS.md`, `docs/estado-global.md`, `docs/rfcs/`, `docs/handoffs/` (solo las secciones de resultados QA/DevOps)
+- Puede escribir gobernanza y planificación: `AGENTS.md`, `docs/estado-global.md`, `docs/rfcs/`, `docs/decisiones/`, `docs/chats-de-rol.md`
+- Puede escribir en `docs/handoffs/`: las secciones de resultados QA/DevOps y el campo `status` de la cabecera al cerrar el sprint. El resto del handoff es del rol que lo ejecutó — cerrar un sprint es atribución del Coordinador, así que registrar ese cierre también lo es
 - Puede redactar borradores documentales dentro de: `docs/requisitos/`, `docs/frontend/experiencia.md`, `docs/integraciones/`, `README.md`
 - No puede: implementar código, autoaprobar al usuario, sustituir la aprobación de Arquitectura, emitir el veredicto QA ni ejecutar trabajo DevOps
 
@@ -38,8 +40,8 @@ frontend. `S-00` es la única excepción: funda el proyecto y usa ambas rutas, p
 que se ejecuta solo, sin nada en paralelo.
 
 #### implementation-backend (sprints con sufijo `-B`, y `S-00`)
-- Puede escribir código y pruebas: `app/Dominios/*/` **excepto** la subcarpeta `Livewire/` de cada dominio, `app/Compartido/`, `app/Http/Middleware/`, `app/Providers/`, `app/Jobs/`, `app/Console/`, `database/`, `config/`, `tests/Unit/`, `tests/Feature/Dominios/`
-- Puede escribir bootstrap/configuración cuando el RFC lo autoriza: `composer.json`, `composer.lock`, `.env.example` (sin secretos), `database/migrations/`, y el andamiaje que el framework exige y ningún otro rol cubre: `bootstrap/`, `public/index.php`, `artisan`, `phpunit.xml`, `routes/console.php`, `.gitignore`
+- Puede escribir código y pruebas: `app/Dominios/*/` **excepto** la subcarpeta `Livewire/` de cada dominio, `app/Compartido/`, `app/Http/Middleware/`, `app/Providers/`, `app/Jobs/`, `app/Console/`, `database/`, `config/`, y **todo `tests/` excepto `tests/Feature/Livewire/`** — declarado por área y no por lista, para que un directorio de pruebas nuevo no quede sin dueño (ver "Permisos por área" abajo)
+- Puede escribir bootstrap/configuración cuando el RFC lo autoriza: `composer.json`, `composer.lock`, `.env.example` (sin secretos), `database/migrations/`, y el andamiaje que el framework exige y ningún otro rol cubre: `bootstrap/`, **todo `public/`**, `artisan`, `phpunit.xml`, `pint.json`, `routes/console.php`, y los archivos de configuración de la raíz que ningún otro rol cubre (`.gitignore`, `.editorconfig`, `.gitattributes`, `.npmrc`)
 - Es el dueño de las firmas declaradas en `docs/contratos/servicios-de-dominio.md`: puede proponer cambios, pero la aprobación es de Arquitectura
 - Puede escribir las rutas HTTP del servidor en `routes/backend.php`, registrado desde `bootstrap/app.php`. `routes/web.php` sigue siendo exclusivo de `implementation-frontend`: los dos frentes nunca escriben el mismo archivo de rutas, que es lo que permite que trabajen a la vez. El control de acceso deny-by-default de RNF-013 se aplica por igual a los dos grupos de rutas; una ruta sin declaración en `docs/requisitos/actores-permisos.md` se rechaza, venga del archivo que venga
 - No puede escribir: `resources/views/`, `resources/css/`, `resources/js/`, `routes/web.php`, ni ninguna subcarpeta `Livewire/` — **salvo en S-00**, donde crea el andamiaje inicial de esas rutas (entry points de Vite, layout base vacío y `routes/web.php` con la ruta raíz), tal como declara la excepción del encabezado de este rol. A partir de S-01-F, esas rutas pasan a ser exclusivas de `implementation-frontend`
@@ -59,6 +61,7 @@ que se ejecuta solo, sin nada en paralelo.
 - Puede leer: todo el repositorio
 - Debe validar con la skill `qa-validacion`, usando el RFC y los `final_sha` exactos
 - Debe evaluar y activar automáticamente `seguridad-validacion` según superficie/riesgo; no requiere un rol `security` separado por defecto
+- **Debe comprobar que la suite detecta la ausencia del mecanismo** en sprints que tocan autorización, persistencia o configuración: rompe a mano una línea del control y verifica que alguna prueba falla. Sobre árbol limpio, confirmando que la mutación se aplicó, y restaurando después. Ver `docs/estado-global.md`, "Práctica adoptada"
 - Puede ejecutar: los comandos de verificación declarados abajo y crear artefactos desechables fuera del árbol objetivo
 - No puede escribir ni commitear durante la validación. Automatización o fixtures versionados requieren un sprint separado bajo rol `implementation`; QA puede definir los casos
 - No puede: hacer merge, modificar implementación para pasar pruebas
@@ -70,7 +73,7 @@ que se ejecuta solo, sin nada en paralelo.
 
 ### devops
 - Debe usar la skill `devops-entrega` y reportar sobre `repositorio@final_sha` + artefacto/digest exactos
-- Puede escribir: `Dockerfile`, `docker-compose.yml`, `.github/workflows/`, scripts de build/deploy, configuración operativa
+- Puede escribir: `Dockerfile`, `docker-compose.yml`, `.dockerignore`, **todo `docker/`**, `.github/workflows/`, scripts de build/deploy, configuración operativa
 - Ejecución delegada al agente `devops-engineer` cuando esté disponible
 - Puede operar sin nueva aprobación solo: entorno local de desarrollo
 - No puede: desplegar a producción, alterar infraestructura externa real, rotar secretos, enviar comprobantes al ambiente de producción de SUNAT, ni ejecutar operaciones destructivas sin autorización explícita del usuario
@@ -115,7 +118,7 @@ que se ejecuta solo, sin nada en paralelo.
 - Identidades/datos de prueba: seeders del repositorio y el RUC/certificado de **pruebas** de SUNAT; nunca el certificado digital real ni secretos
 - Evidencia durable: `docs/handoffs/<id-sprint>.md` bajo responsabilidad del Coordinador
 - Retención de artefactos externos: no aplica — sin CI ni almacenamiento externo
-- Navegadores/viewports requeridos: Chrome y Edge de escritorio, viewport mínimo 1366x768. La caja no se opera desde móvil (RNF-008: operación con teclado y lector de código de barras)
+- Navegadores/viewports requeridos: **motor Blink** —Chrome y Edge lo comparten desde 2020, y las diferencias entre ellos están en integración con el sistema operativo, no en layout ni en teclado—, viewport mínimo 1366x768. Se valida en un navegador Chromium y **se declara cuál**, incluido si no es Chrome de escritorio. La caja no se opera desde móvil (RNF-008: operación con teclado y lector de código de barras)
 - Seguridad de aplicación: automática por superficie/riesgo mediante `seguridad-validacion`
 - Motores permitidos: auto según plataforma; nunca asumir disponibilidad
 - Alcance dinámico autorizado: local y ambiente **beta** de SUNAT. Producción de SUNAT y cualquier envío con el certificado real: prohibido sin autorización explícita del usuario inmediatamente antes
@@ -165,6 +168,57 @@ apertura ya están redactados en `docs/chats-de-rol.md`.
 
 Ningún chat se abre por adelantado: se abre cuando su primer sprint está
 habilitado. Hoy solo lo está el de Backend, para S-00.
+
+## Permisos por área
+
+**APROBADO el 2026-08-20**, al fusionar el PR #2. Las cuatro enmiendas están vigentes.
+
+### Por qué
+
+`AGENTS.md` declaraba los permisos como **lista de rutas conocidas al aprobarlo**. Cada
+sprint materializa artefactos que esa lista no anticipó, así que el mismo desajuste
+apareció una y otra vez, siempre a mitad de sprint y siempre deteniendo a alguien: las
+rutas HTTP del servidor, el `README`, un registro compartido, y finalmente cinco
+directorios de prueba.
+
+Un inventario del árbol completo contra este documento encontró **32 archivos versionados
+sin dueño**, escritos a lo largo de tres sprints por roles que no notaron estar fuera de
+su declaración. No fue descuido de nadie: la lista no los cubría porque no existían cuando
+se escribió.
+
+Enumerarlos cerraría el estado de hoy y garantizaría que aparezca el siguiente. Por eso la
+enmienda declara **áreas**, igual que se resolvieron los assets de Livewire por patrón en
+vez de uno por uno, y los contratos por ADR en vez de enmienda por dominio.
+
+### Qué cambia
+
+| Rol | Se agrega |
+|---|---|
+| `implementation-backend` | Todo `tests/` excepto `tests/Feature/Livewire/`; todo `public/`; `pint.json` y los archivos de configuración de la raíz |
+| `devops` | Todo `docker/` y `.dockerignore` |
+| `coordinacion` | El campo `status` de la cabecera de los handoffs al cerrar un sprint; `docs/decisiones/` y `docs/chats-de-rol.md` |
+| `qa` | La práctica de mutación como obligación del rol, no como decisión registrada |
+
+Además, los navegadores de validación pasan de "Chrome y Edge" a "motor Blink, declarando
+cuál se usó".
+
+### Qué desbloquea hoy
+
+Cinco directorios de prueba con doce archivos dentro no tienen dueño: `tests/Feature/Autorizacion/`
+(7), `tests/Feature/Fundacion/` (2), `tests/Feature/Interfaz/` (1), `tests/Soporte/` (1) y
+`tests/recursos/` (1). Con ellos, doce pruebas que nadie puede reparar, el retiro de los
+endpoints que exige ADR-0006, el mecanismo de permisos en componentes, y los sprints S-04-B
+y S-02-F.
+
+### Qué NO cambia
+
+- Ningún rol gana acceso a las rutas de otro. `tests/Feature/Livewire/` sigue siendo de
+  `implementation-frontend`, y las rutas de interfaz siguen siendo suyas.
+- La regla de fondo no se relaja: **una ruta no declarada sigue sin ser una ruta
+  permitida**. Lo que cambia es que la declaración cubra áreas y no enumeraciones, para
+  que dejen de aparecer huecos por artefactos nuevos.
+- Nada de esto autoriza a un rol a escribir donde no le corresponde por contenido: si un
+  sprint necesita tocar el área de otro, sigue escalando al Coordinador.
 
 ## Documentación de referencia
 - Requisitos (RF/RNF): docs/requisitos/
