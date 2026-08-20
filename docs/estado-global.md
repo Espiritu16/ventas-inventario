@@ -440,6 +440,16 @@ exige una sesión por carril; un chat no atiende dos sprints a la vez. Las opcio
 son abrir un segundo chat de Backend o ejecutar S-02-B y S-03-B en secuencia dentro
 del mismo. Es decisión del usuario y está pendiente.
 
+**Dato que pesa sobre esa decisión, aportado por `implementation-backend`:** S-02-B y
+S-03-B comparten `database/migrations/` y `config/`. O sea que dos chats de backend en
+paralelo tendrían **contención real de archivos**, no solo de puertos y bases. El
+roadmap los declara paralelizables, y esa declaración sigue siendo válida a nivel de
+dependencias funcionales —ninguno necesita el resultado del otro—, pero materializarla
+en dos sesiones simultáneas chocaría en el árbol. Es exactamente el caso que la Fase 3
+de la skill describe: buckets que se creían disjuntos y no lo son. Ejecutarlos en
+secuencia no contradice el roadmap: renuncia al paralelo por una razón operativa real,
+que es una salida explícitamente válida.
+
 Aislamiento ya resuelto para cuando se habilite: un worktree por carril fuera del
 árbol compartido, y una base por carril según la convención de arriba
 (`ventas_inventario_<carril>_test`), que el `CREATEDB` otorgado el 2026-08-19 hace
