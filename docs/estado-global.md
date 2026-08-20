@@ -2,7 +2,7 @@
 project: ventas-inventario
 source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
-active_phase: ola-3
+active_phase: ola-4
 active_status: EN_PROGRESO
 last_completed_phase: ola-2 (S-01-B, S-DO-01)
 bootstrap_status: EN_PROGRESO
@@ -65,7 +65,10 @@ sprints:
   - id: S-04-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: EN_VALIDACION
+    branch: sprint/S-04-B
+    base_sha: e87aded
+    final_sha: 4ddac6f1ee83f7782354a2953a0e4f47cb37b48c
     depends_on: [S-02-B, S-03-B]
     parallelizable_with: [S-02-F]
   - id: S-05-B
@@ -106,7 +109,9 @@ sprints:
   - id: S-02-F
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: EN_PROGRESO
+    branch: sprint/S-02-F
+    base_sha: e87aded
     depends_on: [S-02-B, S-03-B, S-01-F]
     parallelizable_with: [S-04-B]
   - id: S-03-F
@@ -313,6 +318,39 @@ con teclado. Para S-09-B no: o se decide una herramienta que controle el teclado
 verdad —lo que reabre la decisión de E2E, hoy pospuesta— o se acepta el recorrido
 manual documentado que el propio RNF-008 describe. Decidirlo con el sprint encima es
 peor que decidirlo ahora.
+
+## Punto de detención — 2026-08-20, segunda parada del día
+
+Se para con la **ola 4 a mitad de camino y nada roto**.
+
+| Carril | Estado |
+|---|---|
+| **S-04-B** | **EN_VALIDACION.** `sprint/S-04-B`, HEAD `5aa956f`, final_sha `4ddac6f`. Sin validar todavía |
+| **S-02-F** | **EN_PROGRESO.** `sprint/S-02-F`, construyendo las cuatro pantallas |
+| QA | Sin trabajo asignado. S-04-B la espera |
+| DevOps | Sin turno |
+
+**Lo primero al retomar:** despachar a QA la validación de S-04-B sobre
+`5aa956f2e449726096e791cccca23d0cfc4918b2`, con la gobernanza vigente de ese momento.
+
+**Lo que QA necesita saber y no está en el RFC**, para que no lo levante como
+incumplimiento:
+
+- `descontarPorVencimiento()` **no se implementó a propósito** — ver la enmienda del RFC.
+- La prueba de `stockDisponible` **cambió de sentido**, no desapareció: ahora fija que el
+  catálogo sigue sin devolverlo y que el stock lo sirve el servicio de inventario.
+- RNF-003 se demostró con **dos procesos reales**, no con dos llamadas en el mismo
+  proceso. Sin el bloqueo de fila, saldo y kardex divergen **respondiendo "ok" las dos
+  operaciones**: nada falla, y el daño aparece cuando alguien cuadra el inventario semanas
+  después.
+
+**Lo que S-05-B hereda:** escribir `descontarPorVencimiento()` con las reglas de reparto
+FEFO, y las dos notas de S-03-B —dirección obligatoria para factura como regla del momento
+de emitir, y el tope de S/ 700 como regla de venta—.
+
+**Un dato operativo:** revocar `UPDATE`/`DELETE` sobre el kardex impide borrar lotes, y el
+error habla de permisos y no de la clave foránea. En el dominio no importa (ADR-0004: los
+lotes no se borran), pero desconcierta a quien lo encuentre.
 
 ## Punto de detención — 2026-08-20
 
