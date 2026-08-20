@@ -24,6 +24,12 @@ enum CodigoDeError: string
     case PRODUCTO_CODIGO_DUPLICADO = 'PRODUCTO_CODIGO_DUPLICADO';
     case PRODUCTO_PRECIO_MAYOR_INVALIDO = 'PRODUCTO_PRECIO_MAYOR_INVALIDO';
     case PRODUCTO_INACTIVO = 'PRODUCTO_INACTIVO';
+    case LOTE_VENCIMIENTO_PASADO = 'LOTE_VENCIMIENTO_PASADO';
+    case AJUSTE_SIN_MOTIVO = 'AJUSTE_SIN_MOTIVO';
+    case AJUSTE_CANTIDAD_NEGATIVA = 'AJUSTE_CANTIDAD_NEGATIVA';
+    case COMPRA_SIN_LINEAS = 'COMPRA_SIN_LINEAS';
+    case COMPRA_DOCUMENTO_DUPLICADO = 'COMPRA_DOCUMENTO_DUPLICADO';
+    case STOCK_INSUFICIENTE = 'STOCK_INSUFICIENTE';
 
     public function status(): int
     {
@@ -32,14 +38,20 @@ enum CodigoDeError: string
             self::NO_AUTORIZADO => 403,
             self::RECURSO_NO_ENCONTRADO => 404,
             self::DOCUMENTO_DUPLICADO,
-            self::PRODUCTO_CODIGO_DUPLICADO => 409,
+            self::PRODUCTO_CODIGO_DUPLICADO,
+            self::COMPRA_DOCUMENTO_DUPLICADO => 409,
             self::CREDENCIALES_INVALIDAS,
             self::CAMPO_REQUERIDO,
             self::CAMPO_FORMATO_INVALIDO,
             self::CAMPO_FUERA_DE_RANGO,
             self::DOCUMENTO_INVALIDO,
             self::PRODUCTO_PRECIO_MAYOR_INVALIDO,
-            self::PRODUCTO_INACTIVO => 422,
+            self::PRODUCTO_INACTIVO,
+            self::LOTE_VENCIMIENTO_PASADO,
+            self::AJUSTE_SIN_MOTIVO,
+            self::AJUSTE_CANTIDAD_NEGATIVA,
+            self::COMPRA_SIN_LINEAS,
+            self::STOCK_INSUFICIENTE => 422,
         };
     }
 }
