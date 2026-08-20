@@ -48,7 +48,7 @@
                         etiqueta="Código"
                         wire:model="codigo"
                         ayuda="Letras mayúsculas, números, guion y guion bajo."
-                        :error="$campoConError === 'codigo' ? $errorDeCampo : null"
+                        :error="$this->errorDe('codigo')"
                     />
                 @else
                     <p class="text-sm text-slate-600">
@@ -61,7 +61,7 @@
                     nombre="nombre"
                     etiqueta="Nombre"
                     wire:model="nombre"
-                    :error="$campoConError === 'nombre' ? $errorDeCampo : null"
+                    :error="$this->errorDe('nombre')"
                 />
 
                 <div class="space-y-1">
@@ -78,7 +78,7 @@
                         @endforeach
                     </select>
 
-                    @if ($campoConError === 'categoria_id')
+                    @if ($this->errorDe('categoria_id'))
                         <p data-prueba="error-de-campo" class="text-sm text-red-700">{{ $errorDeCampo }}</p>
                     @endif
                 </div>
@@ -97,7 +97,7 @@
                         @endforeach
                     </select>
 
-                    @if ($campoConError === 'unidad_medida')
+                    @if ($this->errorDe('unidad_medida'))
                         <p data-prueba="error-de-campo" class="text-sm text-red-700">{{ $errorDeCampo }}</p>
                     @endif
                 </div>
@@ -108,7 +108,7 @@
                         etiqueta="Precio al por menor"
                         wire:model.live.debounce.300ms="precioMenor"
                         inputmode="decimal"
-                        :error="$campoConError === 'precio_menor' ? $errorDeCampo : null"
+                        :error="$this->errorDe('precio_menor')"
                     />
 
                     <x-campo
@@ -116,7 +116,7 @@
                         etiqueta="Precio al por mayor"
                         wire:model.live.debounce.300ms="precioMayor"
                         inputmode="decimal"
-                        :error="$campoConError === 'precio_mayor' ? $errorDeCampo : null"
+                        :error="$this->errorDe('precio_mayor')"
                     />
                 </div>
 
@@ -131,7 +131,7 @@
                     wire:model="stockMinimo"
                     inputmode="decimal"
                     ayuda="Opcional. Se usa para avisar cuándo reponer."
-                    :error="$campoConError === 'stock_minimo' ? $errorDeCampo : null"
+                    :error="$this->errorDe('stock_minimo')"
                 />
 
                 <x-slot:acciones>

@@ -176,6 +176,191 @@ sprints:
     parallelizable_with: []
 ---
 
+# Segunda promoción del día — 2026-08-20
+
+`origin/main` recibe cinco ramas más sobre `develop@bb43001`, las cinco aprobadas por `qa`:
+pruebas del menú derivadas de la matriz, extracción del manejo de rechazos a
+`app/Compartido/Interfaz/`, guardián por vocabulario, mensajes del validador en español con
+mapa de campos, y la comprobación de que ese mensaje llega a la pantalla.
+
+Suite completa sobre la fusión: **529 / 1080 aserciones**, quince migraciones desde base
+limpia, pint verde.
+
+## El riesgo que tenía esta fusión, y cómo se descartó
+
+`refactor/errores-de-pantalla` y `test/mensajes-en-pantalla` **se desarrollaron en paralelo
+desde bases distintas y ninguna contenía a la otra**. La primera reorganizó cómo los cinco
+componentes guardan el error; la segunda afirma sobre esas mismas propiedades.
+
+Arquitectura leyó el trait y la prueba y concluyó que eran compatibles. `qa` no aceptó la
+lectura: **mutó el trait para que `errorDeCampo` se llenara con un texto fijo**, y la prueba
+de pantalla falla. Eso descarta el escenario que la lectura no podía descartar — que la prueba
+estuviera leyendo una propiedad llenada por otra vía y quedándose verde por casualidad.
+
+Confirmó además que ningún componente asigna `errorDeCampo` con contenido: los cinco solo la
+ponen a `null`, y la única vía que la llena es el trait.
+
+## La regla que cierra el día
+
+Salió de un push forzado que **devolvió un mensaje de permiso denegado y sin embargo se había
+ejecutado**. Quedarse con esa respuesta habría producido el reporte contrario al hecho, y
+habría llevado a forzar de nuevo un push ya hecho. Lo resolvió `git ls-remote`, que no pasa
+por ninguna referencia local.
+
+Es la del SHA un nivel más arriba, y `qa` lo formuló mejor de lo que apareció:
+
+> **La respuesta de quien ejecuta no es evidencia de lo ejecutado; la evidencia es el estado
+> consultado aparte.**
+
+Y su observación de por qué es más difícil de sospechar: **uno acepta el resultado de lo que
+acaba de hacer con mucha menos resistencia que un dato de terceros.** El nombre de la rama es
+un dato ajeno del que se desconfía; la respuesta del comando propio se siente como haber
+mirado.
+
+La familia entera, ordenada de menos a más sutil: el nombre de la rama miente porque sobrevive
+a un rebase; la referencia `origin/...` local miente porque es una foto que solo se actualiza
+con un fetch exitoso; y la respuesta de la herramienta miente porque describe el intento, no
+el efecto.
+
+## Una línea suelta, sin urgencia
+
+Los cinco componentes usan `limpiarMensajes()` del trait, **pero dentro de su propio
+`limpiarFormulario()` repiten las dos asignaciones a mano** en vez de llamarlo. Hoy es
+idéntico funcionalmente. Es el modo de fallo clásico de una extracción incompleta: **si mañana
+el trait suma una tercera propiedad de mensaje, `limpiarMensajes()` la limpiará y esos cinco
+`limpiarFormulario()` no.** Lo observó `qa`. Para cuando alguien vuelva a tocar ese archivo.
+
+---
+
+# Promoción a `main` — 2026-08-20
+
+`origin/main` en `ad42599`. Contiene `develop@8ae24d1` entero. Segunda promoción; la
+anterior dejó `main` en `2e735c7` con las olas 1–3.
+
+| Sprint | Qué entra | Validación |
+|---|---|---|
+| S-02-B | catálogo: categorías y productos | APROBADO |
+| S-03-B | lotes, kardex y puerta única de escritura del stock | APROBADO |
+| S-04-B | compras, consulta de inventario y kardex | APROBADO |
+| S-05-B | venta con descuento FEFO, idempotencia y comprobante | APROBADO |
+| S-01-F | acceso, menú y pantalla de usuarios | APROBADO |
+| S-02-F | catálogo, productos, proveedores y clientes | APROBADO |
+
+**Lo que hace válida esta promoción no es que las seis ramas estuvieran aprobadas.** Cada
+una se validó por separado y las seis estaban verdes, pero `develop@8ae24d1` es un séptimo
+artefacto que nadie había corrido. `qa` corrió la suite completa sobre un checkout limpio de
+ese SHA antes de promover: Feature 493/976, Unit 12/17, quince migraciones desde base limpia,
+pint y build en verde.
+
+El riesgo concreto era real y estaba acotado: S-02-F escribió sus pruebas cuando un código de
+producto mal formado devolvía `PRODUCTO_CODIGO_DUPLICADO`, y el fix de unicidad lo cambió. Se
+dedujo leyendo que no las tocaba —las pruebas de pantalla afirman el campo, no el código— y
+`qa` lo comprobó **ejecutando la pantalla real**: el campo señalado es `codigo` en los cuatro
+casos y el duplicado legítimo conserva su mensaje de dominio. **Una suite verde no distingue
+"las pruebas no dependen de eso" de "las pruebas no ejercitan ese camino"**; solo mirar la
+interacción lo distingue.
+
+## Dos líneas sueltas que quedaron de la validación, ninguna bloqueante
+
+- **La rendija de `fecha_vencimiento`.** La lista de claves exactas de la proyección de la
+  venta cierra la forma; lo que detiene un costo escondido *dentro* de un campo permitido son
+  las aserciones de **valor**. `codigo_lote` y `cantidad` tienen su valor fijado;
+  `fecha_vencimiento` no, y por ahí pasa un costo redondeado concatenado. Es artificial y
+  nadie lo haría, pero la lección es transferible y quedó como regla: **las listas de claves
+  cierran la forma, las aserciones de valor cierran el contenido, y hacen falta las dos.**
+  Cierre de una línea, asignado a `implementation-backend`.
+- **`UnaSolaTraduccionDeReglasTest` resiste el renombrado y no el cambio de forma.** Detecta
+  una copia con `match` y otro nombre de método; **no** detecta una escrita con `if/elseif`. Y
+  ese es el caso más probable de los dos: **quien copia se lleva el `match`, quien se hace el
+  suyo escribe lo que le sale.** Un guardián que solo atrapa al que copia no protege del que
+  reinventa. Propuesta de `qa`, adoptada: buscar la **conjunción de vocabularios** —códigos
+  genéricos junto a nombres de reglas de validación— en vez de la sintaxis.
+
+## Un hallazgo abierto: el usuario lee mensajes en inglés
+
+`config/app.php` tiene `'locale' => env('APP_LOCALE', 'en')`, **no existe directorio `lang/`**,
+y `docs/frontend/experiencia.md` declara que el texto mostrado es *"el mensaje en español de la
+taxonomía"*. Las tres cosas verificadas. En la pantalla real de productos, un código con
+espacio muestra `"The codigo field format is invalid."`
+
+Es preexistente y **no lo introduce ningún sprint de hoy**. Pero el fix de unicidad amplió su
+alcance en la dirección buena: ese caso antes respondía "Ya existe un producto con ese código"
+—en español y **mentiroso**—, y ahora responde un mensaje veraz en inglés. Cambió una mentira
+en castellano por una verdad en otro idioma, y al hacerlo **destapó una capa que el defecto
+anterior tapaba**. Por eso no se rechazó: revertir reintroduce códigos que mienten, que es peor.
+
+`qa` acotó la superficie ejecutando: el mensaje sale **en español donde hay mensaje de dominio
+y en inglés donde cae al validador genérico**. No hay que traducir el framework entero; basta
+con que los genéricos tengan traducción o con que cada servicio dé el suyo.
+
+**RESUELTO el 2026-08-20.** El usuario decidió **traducir el validador con mapa de campos**.
+Va como corrección en rama de fix y no como sprint nuevo: es una divergencia contra un
+documento aprobado, no alcance nuevo — el mismo tratamiento que los dos defectos que destapó
+el fix de unicidad. Despachado a `implementation-backend`; el detalle y sus dos condiciones
+quedan en `docs/errores/manejo-errores.md`.
+
+Lo que la decisión incorpora y no estaba a la vista al escalarla: **traducir no alcanza solo**,
+porque los mensajes por defecto nombran el campo por su identificador técnico y la taxonomía
+prohíbe la jerga técnica. El mapa que hace falta es la **novena instancia** del patrón de dos
+fuentes, y se cierra con la misma prueba de consistencia que la matriz de permisos.
+
+---
+
+# Verificar un hecho vecino no es verificar la pregunta
+
+**Registrado el 2026-08-20, después de que la misma forma apareciera cuatro veces en una
+tarde, en los tres roles y en Arquitectura.** No es falta de rigor: las cuatro veces se
+verificó algo *de verdad*, y las cuatro veces lo verificado no era lo que se estaba afirmando.
+
+| Quién | Qué comprobó | Qué afirmó | Por qué no se seguía |
+|---|---|---|---|
+| `implementation-backend` | un `grep` de seis líneas después de cada llamada al validador | que `$codigosPorCampo` no tenía consumidores | tenía dos, y los dos caían fuera de la ventana |
+| Arquitectura | que el enum no menciona nombres de regla | que **eso** era lo que impedía el falso positivo | lo impedía el prefijo `CodigoDeError::`; nunca se leyó qué contaba el detector |
+| `qa` | que los `case` viven fuera de los métodos | que eso distinguía una declaración de una traducción | el enum ya usa `self::CAMPO_*` **dentro** de un método, y no es una traducción |
+| `implementation-backend` | nada — venía razonado | que cada mitad de la conjunción del guardián sostenía un caso propio | quitar el mínimo de dos códigos **no hacía fallar ninguna prueba** |
+
+**Lo que las une: se razonó sobre lo que el mecanismo *debería* mirar en vez de leer lo que
+mira.** Y en los cuatro casos la comprobación hecha era cierta, lo que las vuelve difíciles de
+detectar: no hay un dato falso del que tirar, hay un dato verdadero contestando otra pregunta.
+
+Las tres reglas que salen, y las tres se pagaron el mismo día:
+
+1. **Antes de afirmar por qué algo funciona, leé el mecanismo.** No alcanza con comprobar una
+   propiedad del artefacto sobre el que el mecanismo opera. Fue lo que resolvió los cuatro
+   casos, y siempre del mismo modo: alguien fue a leer el código en vez de deducirlo.
+2. **La ventana de la búsqueda es parte de la búsqueda.** Un resultado vacío solo dice que no
+   había nada *dentro de la ventana*. Vale para un `grep` acotado, para un `lsof` sin
+   privilegios, y para un patrón mal escapado — que le pasó a Arquitectura media hora después
+   de señalárselo a otro.
+3. **Una afirmación sobre cobertura que se escribe en el código se mide, no se argumenta.** La
+   cuarta fila iba a quedar escrita como comentario en el propio detector, razonada y sonando
+   bien. Al medirla resultó que una de las dos condiciones no la sostenía **nada**, y era
+   exactamente el tipo de condición que alguien borra en seis meses porque parece de más y no
+   ve que rompa nada. Ahora cada mitad tiene una prueba que se cae si desaparece.
+
+**La defensa contra un resultado vacío no es recordar que puede ser falso: es no aceptarlo sin
+una segunda vía que lo confirme.** Es la afinación de `qa` y es lo que vuelve accionable a las
+tres reglas de arriba, porque las tres se sabían y las cuatro veces se incumplieron igual. Lo
+que salvó los dos casos que **no** terminaron en un reporte falso no fue acordarse de la regla:
+
+- Arquitectura repitió el `grep` con otro patrón antes de afirmar que Backend no había
+  commiteado. No sospechó por prudencia; repitió por costumbre.
+- `qa` tenía delante una prueba que pasaba y contradecía su sonda —la del `categoriaId`
+  equivocado—, así que fue a leer cómo lo hacía la que funcionaba en vez de reportar el
+  defecto. **Cuando una sonda propia dice que algo básico está roto y la suite dice que no, la
+  sonda es la sospechosa.**
+
+En los dos casos lo que funcionó fue **una segunda medición**, no tener presente la regla.
+Conocer el patrón no protege de repetirlo: Arquitectura lo repitió media hora después de
+señalárselo a otro rol.
+
+**Y por eso el correctivo tampoco es "prestar más atención".** Las cuatro veces el error lo encontró **otro
+rol**, no quien lo cometió, y ninguno de los cuatro se sentía inseguro al afirmarlo. Lo que
+funcionó fue tener alguien mirando con otra pregunta en la cabeza — y que quien se equivocó lo
+contara en vez de corregirlo en silencio, porque eso cambia qué va a mirar el siguiente.
+
+---
+
 # Estado del proyecto
 
 ## Progreso
@@ -1067,6 +1252,26 @@ Lo que deja la ola, más allá de sus entregables:
   catálogo 03 de SUNAT.
 
 ## Cómo se comprueba que algo está publicado — y por qué el comando obvio miente
+
+> **Ampliación del 2026-08-20 — el nombre de la rama no es la unidad de verificación; el SHA
+> sí.** Apareció midiendo, no buscando: `fix/pruebas-de-menu-derivadas` figuraba en `origin`
+> y **lo publicado no era lo aprobado**. `qa` validó `6ae351f`; en `origin` estaba `cf0523d`,
+> la versión previa a un rebase. Cualquier comprobación por nombre —"¿existe la rama en
+> origin?"— la daba por publicada.
+>
+> Es la forma del día: **la respuesta era cierta y contestaba otra pregunta.** Un nombre de
+> rama sobrevive a un rebase, a un amend y a un force-push, y esa persistencia es justo lo que
+> lo vuelve inútil para decidir si algo está publicado.
+>
+> **Al fusionar, la comprobación se hace con el SHA que consta en el veredicto**, no con el
+> nombre de la rama: `git branch -r --contains <sha>`. Si no devuelve ningún ref del remoto,
+> ese SHA no está publicado, sin importar qué diga la lista de ramas. Es de `qa`.
+>
+> Y sirve como recuento honesto de la exposición: de 78 ramas locales sin publicar, solo seis
+> refs tenían contenido fuera de `main` — las demás eran punteros de gobernanza ya fusionados.
+> **Contar ramas exagera el riesgo; contar archivos que no existen en ningún otro lado lo
+> mide.** Ese día eran siete.
+
 
 **Al cerrar una jornada, verificar que el remoto tenga lo que el local tiene.** No alcanza
 con que los `push` hayan parecido entrar: fallaron dos veces por caída de red y se reportó

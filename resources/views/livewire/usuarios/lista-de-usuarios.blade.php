@@ -32,7 +32,7 @@
                     nombre="nombre"
                     etiqueta="Nombre"
                     wire:model="nombre"
-                    :error="$campoConError === 'nombre' ? $errorDeCampo : null"
+                    :error="$this->errorDe('nombre')"
                 />
 
                 <x-campo
@@ -40,7 +40,7 @@
                     etiqueta="Correo"
                     tipo="email"
                     wire:model="email"
-                    :error="$campoConError === 'email' ? $errorDeCampo : null"
+                    :error="$this->errorDe('email')"
                 />
 
                 @if ($editando === null)
@@ -50,7 +50,7 @@
                         tipo="password"
                         wire:model="password"
                         ayuda="Mínimo 8 caracteres."
-                        :error="$campoConError === 'password' ? $errorDeCampo : null"
+                        :error="$this->errorDe('password')"
                     />
                 @endif
 
@@ -67,7 +67,7 @@
                         @endforeach
                     </select>
 
-                    @if ($campoConError === 'rol')
+                    @if ($this->errorDe('rol'))
                         <p data-prueba="error-de-campo" class="text-sm text-red-700">{{ $errorDeCampo }}</p>
                     @endif
                 </div>

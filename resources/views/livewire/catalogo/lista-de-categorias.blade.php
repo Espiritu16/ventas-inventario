@@ -28,7 +28,7 @@
                     nombre="nombre"
                     etiqueta="Nombre"
                     wire:model="nombre"
-                    :error="$campoConError === 'nombre' ? $errorDeCampo : null"
+                    :error="$this->errorDe('nombre')"
                 />
 
                 <x-campo
@@ -36,7 +36,7 @@
                     etiqueta="Descripción"
                     wire:model="descripcion"
                     ayuda="Opcional."
-                    :error="$campoConError === 'descripcion' ? $errorDeCampo : null"
+                    :error="$this->errorDe('descripcion')"
                 />
 
                 <x-slot:acciones>
