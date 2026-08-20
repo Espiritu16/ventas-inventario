@@ -95,13 +95,50 @@ que vuelvan a faltar en el próximo método que alguien escriba. Es la cuarta ve
 proyecto elige declarar el principio en vez de enumerar los casos, como los assets de Livewire
 por patrón, los permisos por área y ADR-0006.
 
-**Lo que esto no cierra, y conviene decirlo:** la columna Errores sigue cubierta por revisión
-humana y por nada más. Comprobar mecánicamente qué códigos puede lanzar un método exige seguir
-las llamadas y adivinar, que es la fragilidad por la que este proyecto ya eligió el mecanismo
-en ejecución sobre la prueba de arquitectura. Lo que cambia es la superficie: quedan por
-revisar los códigos propios de cada operación, que son pocos y específicos, en vez de tres
-genéricos repetidos en cuarenta filas. Lo observó `implementation-frontend` leyendo el
-documento antes de construir contra él.
+### Cómo se cierra la columna Errores — observando, no deduciendo
+
+**Estado: diseño aprobado por Arquitectura el 2026-08-20. Sin sprint asignado; propuesto para
+S-02-F junto a la prueba de consistencia de firmas, pendiente de la decisión del usuario.**
+
+Deducir qué códigos puede lanzar un método obliga a seguir las llamadas y adivinar, y este
+proyecto ya rechazó esa fragilidad al elegir preguntarle el nombre de la base al motor en vez
+de deducirlo de la configuración. La salida es la de siempre: **observar lo que de verdad
+pasa.**
+
+Mientras corre la suite —que ya ejercita los servicios y ya provoca la mayoría de estos errores
+a propósito— cada `ErrorDeDominio` que escape de un método de servicio se anota como el par
+`(método, código)`. El error ya lleva su código y el método sale del punto donde se lanza. Al
+terminar, se compara el conjunto observado contra el declarado acá. **No sigue llamadas ni
+adivina: registra lo que ocurrió.**
+
+Da dos señales, y tratarlas igual arruinaría las dos:
+
+| Señal | Qué significa | Qué hace |
+|---|---|---|
+| Código **observado y no declarado** | un consumidor recibe algo que el contrato no anuncia — es el hueco que apareció hoy | **falla** |
+| Código **declarado y nunca observado** | o sobra la declaración, o falta una prueba que provoque ese error | **avisa, no falla** |
+
+Convertir la segunda en fallo la haría insoportable; convertirla en silencio la haría inútil.
+
+**El límite, dicho de frente: solo ve lo que la suite ejercita.** Un código que ninguna prueba
+dispara no aparece. Pero eso cambia la naturaleza del problema — pasa de *"no se puede saber
+sin adivinar"* a *"se sabe exactamente lo que las pruebas cubren, y lo que no está cubierto es
+visible"*. Un hueco de cobertura es medible y accionable; un hueco de adivinación no lo es. La
+segunda señal es la que lo vuelve explícito.
+
+Dos condiciones al implementarlo, las dos de `qa`, que propuso el mecanismo entero:
+
+- El registro **observa y relanza**. Si se traga el error, las pruebas dejan de fallar donde
+  deben.
+- El instrumento **afirma que observó algo**. Una corrida que termina con cero pares
+  registrados no significa "no hay códigos sin declarar": significa que el registro no se
+  enganchó. **Sin esa guarda, un instrumento roto se lee exactamente igual que un contrato
+  perfecto.** Es la misma exigencia que ya llevan la sonda de concurrencia y el recuento de
+  tablas de esta página.
+
+**Hasta que exista**, la columna Errores queda cubierta por revisión humana y por nada más. Lo
+observó `implementation-frontend` leyendo el documento antes de construir contra él; el
+mecanismo que lo cierra es de `qa`.
 
 ---
 
