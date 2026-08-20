@@ -1,7 +1,3 @@
-@extends('layouts.base')
-
-@section('contenido')
-    <main class="p-8">
-        <h1 class="text-xl font-semibold">{{ config('app.name') }}</h1>
-    </main>
-@endsection
+<x-layout>
+    <p class="text-sm text-slate-600">{{ config('app.name') }}</p>
+</x-layout>
