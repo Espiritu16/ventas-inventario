@@ -25,14 +25,26 @@ instalados en tu máquina.
 Necesitas Docker Desktop —o Docker Engine con el complemento Compose— y nada más.
 
 ```bash
-docker compose up -d
+docker compose up -d --build --force-recreate
 ```
 
-Eso es todo. Ese comando construye la imagen, levanta PostgreSQL, instala las
-dependencias de PHP y de Node, genera la clave de la aplicación, compila los
-assets, aplica las migraciones y arranca el servidor y el proceso trabajador de
-la cola. La primera vez tarda varios minutos porque descarga las imágenes y
-compila las extensiones de PHP; las siguientes son cuestión de segundos.
+Ese comando construye la imagen, levanta PostgreSQL, instala las dependencias de
+PHP y de Node, genera la clave de la aplicación, compila los assets, aplica las
+migraciones y arranca el servidor y el proceso trabajador de la cola. La primera
+vez tarda varios minutos porque descarga las imágenes y compila las extensiones
+de PHP; las siguientes son cuestión de segundos.
+
+**Usa ese mismo comando cada vez**, no solo la primera: después de un `git pull`,
+después de cambiar de rama, siempre. Es lo que mantiene el entorno sincronizado
+con el código que tienes delante.
+
+`docker compose up -d` a secas sirve para arrancar un entorno que estaba apagado,
+pero **si ya está corriendo no hace nada**: Docker ve los contenedores levantados
+y los deja como están, así que las dependencias y los assets se quedan como
+estaban antes de que cambiaras de rama. Si el código nuevo necesita algo que el
+entorno viejo no tiene, la aplicación responde 500; si solo cambiaron los
+estilos, la página carga con los de antes y nada avisa. Por eso el comando de
+arriba lleva `--force-recreate`.
 
 Cuando termine, la aplicación está en **<http://localhost:8080>**.
 
@@ -92,6 +104,12 @@ reiniciar la máquina. Para empezar de cero y borrarlos:
 docker compose down -v
 ```
 
+Dentro del contenedor hay dos roles: uno que administra el clúster y otro, sin
+privilegios de superusuario, con el que se conecta la aplicación. La separación no
+es decorativa: la bitácora de auditoría es de solo agregado porque la base le
+revoca `update` y `delete` al rol de la aplicación, y un superusuario se saltaría
+esa revocación sin que nada lo indicara.
+
 La contraseña de esa base está escrita en `docker-compose.yml`. **Es local y
 desechable**: no da acceso a nada fuera de tu máquina, porque el puerto no se
 publica y la base se recrea con el comando de arriba. No la copies a un servidor
@@ -100,9 +118,11 @@ ni la tomes como ejemplo de cómo configurar uno.
 **Si ya tenías un `.env`**, se respeta tal cual y no se toca. La conexión a la
 base la define `docker-compose.yml`, así que tu `.env` puede seguir apuntando a
 tu instalación local sin romper nada. La única excepción es `DB_URL`: si la
-tienes definida con un valor, el contenedor se detiene y te lo dice, porque esa
-variable tiene prioridad sobre todas las demás y te conectaría a otro sitio sin
-avisar.
+tienes definida con un valor, el contenedor no arranca y lo dice en sus registros
+(`docker compose logs app`), porque esa variable tiene prioridad sobre todas las
+demás y te conectaría a otro sitio sin avisar. Verás el servicio reiniciándose una
+y otra vez en `docker compose ps`, no detenido: quita esa línea del `.env` y
+volverá a levantar.
 
 **Este entorno es para desarrollar en tu máquina.** No sirve como base para
 poner el sistema en un servidor: no tiene HTTPS, ni respaldos, ni manejo de

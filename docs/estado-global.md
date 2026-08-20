@@ -296,9 +296,21 @@ que la cuarta se reconozca antes de costar una validación:
 3. **S-01-B** — `validated()` devuelve el valor tal como llegó, sin castear, así que
    la guarda comparaba contra una forma del dato y el modelo persistía otra.
 
+4. **S-DO-01, dos veces más** — el compose definía `APP_ENV` y `QUEUE_CONNECTION`
+   como variables reales del entorno, y esas ganan sobre el bloque `<env>` de
+   `phpunit.xml`. Sin `APP_ENV=testing` fallaban 17 pruebas por verificación CSRF;
+   con `QUEUE_CONNECTION` pisado el efecto era **silencioso**: las pruebas encolaban
+   de verdad en lugar de ejecutar en el acto. Es el mismo mecanismo que ya se
+   conocía por `DB_DATABASE`, en dos variables que nadie había mirado.
+
 La forma común: **existe un valor declarado y un valor efectivo, y el código
-confía en el declarado.** El síntoma siempre aparece lejos de la causa, y en los tres
-casos hubo una prueba en verde que no lo detectaba.
+confía en el declarado.** El síntoma siempre aparece lejos de la causa, y en todos
+los casos hubo una prueba en verde que no lo detectaba.
+
+Frontera que quedó escrita en el compose a raíz del cuarto caso, y que conviene
+respetar en cualquier entorno futuro: **el compose define dónde está el servidor de
+base; `phpunit.xml` define cuál base y en qué modo corre la aplicación.** Una
+variable que cruce esa frontera pisa a la otra sin avisar.
 
 Regla que se deriva de esto, aplicable a cualquier sprint: cuando una decisión
 dependa de un valor de configuración, preguntar por el valor **efectivo** a quien
