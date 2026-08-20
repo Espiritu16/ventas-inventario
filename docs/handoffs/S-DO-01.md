@@ -3,10 +3,10 @@ id: S-DO-01
 name: Entorno reproducible
 role: devops
 repository: ventas-inventario
-status: EN_PROGRESO
+status: EN_VALIDACION
 branch: sprint/S-DO-01
 base_sha: b99b93667d47bf49b18f8febabc5b0541f2df579
-final_sha: null
+final_sha: 3fc99a7bf8e1615b66a54d0f54b5bacc9749106e
 worktree_path: /private/tmp/claude-501/-Users-sankef-ventas-inventario/8fefec88-810c-4dd5-b0d7-6da99cf44f83/scratchpad/S-DO-01
 updated_at: 2026-08-19
 ---
@@ -215,7 +215,7 @@ local desechable; ninguna credencial real pasó nunca por ahí.
 
 ## Evidencia de verificación
 
-Todo sobre `ventas-inventario@44e76c2`, con `develop@0e6a0ac` ya fusionado —así
+Todo sobre `ventas-inventario@3fc99a7`, con `develop@c917aec` ya fusionado —así
 que **la suite es la real del proyecto, 89 pruebas, no las 7 de la entrega
 anterior**. Partiendo de un árbol sin `vendor/`, sin `node_modules/`, sin
 `public/build/` y sin `.env`, y con `docker compose down -v` previo.
@@ -245,18 +245,28 @@ anterior**. Partiendo de un árbol sin `vendor/`, sin `node_modules/`, sin
 | El repositorio queda limpio | `git status --porcelain` | solo los archivos nuevos del sprint |
 | `docker compose down -v` deja la máquina limpia | al desmontar el entorno | contenedores, red y los dos volúmenes eliminados |
 
-### UT-04: qué falta reverificar
+### UT-04 — la prueba del clon, rehecha sobre este SHA
 
-La prueba del clon —clonar la rama en un directorio vacío y seguir solo el
-README— se hizo sobre la entrega anterior (`ac207cd`) y pasó. **No se rehízo
-sobre este SHA a propósito**, porque el README todavía documenta
-`docker compose up -d` como comando único y esa es justamente una de las cosas
-que hay que corregir: con el entorno ya levantado, ese comando no resincroniza.
+No se reutilizó la de la entrega anterior: aquella se hizo sobre `ac207cd` y con
+el comando viejo. Se clonó `sprint/S-DO-01` en un directorio vacío y se recorrió
+el README entero contra ese clon.
 
-El texto corregido está abajo. En cuanto el Coordinador lo aplique y lo integre,
-traigo `develop` otra vez y rehago la prueba del clon completa sobre el SHA
-final. Dar UT-04 por verificada sobre este SHA sin eso sería exactamente el tipo
-de afirmación sin respaldo que este sprint viene corrigiendo.
+| Qué dice el README | Resultado en el clon |
+|---|---|
+| `docker compose up -d --build --force-recreate` levanta todo | los tres servicios arriba en **38 s**, sin ningún paso adicional |
+| la aplicación está en `localhost:8080` | 200, con los assets compilados referenciados |
+| `docker compose exec app php artisan migrate` | sin migraciones pendientes |
+| `docker compose exec app ./vendor/bin/pint --test` | 52 archivos, PASA |
+| `docker compose exec app php artisan test --testsuite=Unit` | 4 passed |
+| `... -e DB_DATABASE=ventas_inventario_test ... --testsuite=Feature` | **89 passed (184 aserciones)** |
+| `docker compose exec app pnpm build` | compila |
+| `docker compose exec db psql -U ventas_inventario -d ventas_inventario` | conecta como `ventas_inventario` |
+| el rol de la aplicación no es superusuario | `rolsuper = f`, `rolcreatedb = t` |
+| el trabajador ya corre sin lanzarlo | `queue:work` en marcha, y procesa un trabajo encolado |
+| los datos sobreviven a `docker compose down` | el dato vuelve a leerse tras `down` y `up` |
+| con `DB_URL` el contenedor no arranca y lo dice en sus registros, y se ve reiniciándose | `Restarting`, con el mensaje en los registros; al quitar la línea, 200 |
+| "usa ese mismo comando cada vez": resincroniza al cambiar las dependencias | quitando Livewire del código, el comando lo desinstala; devolviéndolo, lo reinstala, y la aplicación responde 200 en ambos casos |
+| `docker compose down -v` deja la máquina limpia | contenedores, red y los dos volúmenes eliminados |
 
 Ninguna credencial real pasó por este sprint. Las únicas contraseñas que
 aparecen son las dos del contenedor de base de datos —la del superusuario que
@@ -264,60 +274,15 @@ solo administra el clúster y la del rol de la aplicación—, ambas locales y
 desechables, en `docker-compose.yml` y en el script de inicialización, con la
 advertencia de que un entorno servido no puede heredar ese patrón.
 
-## Correcciones pendientes del README, para el Coordinador
+## UT-04 — dónde quedó el texto
 
-El README vive en `develop` y no es ruta de este rol. Estos son los tres cambios
-que la revalidación dejó pendientes. Los dos primeros los pidió QA; el tercero
-salió de probar el escenario de cambio de rama y es el más importante de los
-tres.
+Las tres correcciones que la revalidación dejó pendientes las aplicó el
+Coordinador en `develop@c917aec`, ya fusionado a esta rama: el comando principal
+con `--force-recreate` y su explicación, la redacción del bucle de reinicio ante
+`DB_URL`, y la nota sobre los dos roles de la base. El texto no se copia acá para
+que no existan dos versiones que puedan divergir: la única es
+[`README.md`](../../README.md), sección "Cómo correrlo".
 
-**1. El comando principal. Reemplazar el bloque de "Con Docker".** Donde hoy
-dice `docker compose up -d`, poner:
-
-```bash
-docker compose up -d --build --force-recreate
-```
-
-Y a continuación, en lugar de la frase "Eso es todo…", este texto:
-
-> Ese comando construye la imagen, levanta PostgreSQL, instala las dependencias
-> de PHP y de Node, genera la clave de la aplicación, compila los assets, aplica
-> las migraciones y arranca el servidor y el proceso trabajador de la cola. La
-> primera vez tarda varios minutos porque descarga las imágenes y compila las
-> extensiones de PHP; las siguientes son cuestión de segundos.
->
-> **Usa ese mismo comando cada vez**, no solo la primera: después de un `git
-> pull`, después de cambiar de rama, siempre. Es lo que mantiene el entorno
-> sincronizado con el código que tienes delante.
->
-> `docker compose up -d` a secas sirve para arrancar un entorno que estaba
-> apagado, pero **si ya está corriendo no hace nada**: Docker ve los
-> contenedores levantados y los deja como están, así que las dependencias y los
-> assets se quedan como estaban antes de que cambiaras de rama. Si el código
-> nuevo necesita algo que el entorno viejo no tiene, la aplicación responde 500;
-> si solo cambiaron los estilos, la página carga con los de antes y nada avisa.
-> Por eso el comando de arriba lleva `--force-recreate`.
-
-**2. La guardia de `DB_URL`.** Donde dice "el contenedor se detiene y te lo
-dice", reemplazar por:
-
-> La única excepción es `DB_URL`: si la tienes definida con un valor, el
-> contenedor no arranca y lo dice en sus registros (`docker compose logs app`),
-> porque esa variable tiene prioridad sobre todas las demás y te conectaría a
-> otro sitio sin avisar. Verás el servicio reiniciándose una y otra vez en
-> `docker compose ps`, no detenido: quita esa línea del `.env` y volverá a
-> levantar.
-
-**3. La base de datos.** Agregar al final del párrafo "La base de datos":
-
-> Dentro del contenedor hay dos roles: uno que administra el clúster y otro, sin
-> privilegios de superusuario, con el que se conecta la aplicación. La
-> separación no es decorativa: la bitácora de auditoría es de solo agregado
-> porque la base le revoca `update` y `delete` al rol de la aplicación, y un
-> superusuario se saltaría esa revocación sin que nada lo indicara.
-
-El resto del texto sigue siendo correcto tal como está; se verificó comando por
-comando contra el entorno actual, incluida la sesión `psql`.
 ## Resultado QA
 
 Pendiente — lo registra el Coordinador cuando QA valide el `final_sha`.
@@ -345,14 +310,17 @@ para que no se pierda tiempo en falsos negativos ni en falsos positivos:
 
 ## Pendientes o desviaciones
 
-1. **Falta un paso del Coordinador antes de fijar el `final_sha`.** El README
-   necesita las tres correcciones de arriba, y la más importante —el comando
-   con `--force-recreate`— es parte de la corrección de QA-01, no un detalle de
-   redacción: sin ella, el escenario que QA va a probar sigue rompiéndose desde
-   el lado humano aunque el entrypoint ya converja. Cuando el Coordinador las
-   aplique e integre, traigo `develop`, rehago la prueba del clon completa y
-   entrego en EN_VALIDACION con el `final_sha` fijado. Por eso este handoff
-   queda en EN_PROGRESO y con `final_sha: null`.
+1. **Mi corrección del superusuario NO cierra SEG-02, y conviene no
+   confundirlas.** Son de la misma familia y distinto alcance: lo que resolví es
+   que la aplicación se conectaba como superusuario y por eso se saltaba toda
+   comprobación de privilegios. SEG-02 —que QA encontró en S-01-B, sigue abierto
+   y está asignado a S-08-B— es que el rol de la aplicación, aun sin ser
+   superusuario, es **dueño** de la tabla, y un dueño puede hacer `TRUNCATE` y
+   darse `GRANT UPDATE` a sí mismo. Mi corrección es condición necesaria para
+   que SEG-02 tenga sentido siquiera, no su solución. **Cuando S-08-B implemente
+   la separación de dueño, este entorno tiene que reflejarla**: el rol se crea
+   en `docker/postgres/10-crear-rol-y-bases.sh`, así que ese cambio pasa por
+   acá.
 2. **Un `docker compose up -d` a secas sobre un entorno ya corriendo no
    sincroniza, y no hay forma de arreglarlo dentro del contenedor.** El
    entrypoint se ejecuta al arrancar; si Docker no recrea el contenedor, no hay
