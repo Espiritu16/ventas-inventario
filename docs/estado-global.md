@@ -356,8 +356,12 @@ sprint llegue a ese punto, **se bloquea a mitad de camino en vez de al principio
 peor porque se descubre tarde y con trabajo ya hecho. Señalado por `qa`; si la enmienda
 sigue pendiente, conviene planificar el orden de las unidades contando con esto.
 
-**El PR #1** —`develop` hacia `main`, la primera promoción— sigue abierto y sin fusionar.
-No bloquea nada: `main` simplemente no refleja el proyecto.
+**El PR #1 se fusionó el 2026-08-20.** Primera promoción del proyecto: `main` pasó de
+`99cd061` —solo documentación inicial— a `2e735c7`, con los cinco sprints aprobados de las
+olas 1 a 3 y toda la gobernanza que produjeron.
+
+`main` no incluye S-03-B ni las decisiones posteriores a la promoción; van en la siguiente,
+que se hace en lote cuando el conjunto sea estable, no por sprint.
 
 **Estado de los carriles:** ninguno a medias. Backend tiene trabajo hecho sin commitear a
 propósito, para no entregar rojo. Frontend está sin worktree y sin cambios. QA sin nada
