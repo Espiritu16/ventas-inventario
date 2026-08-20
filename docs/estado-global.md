@@ -990,6 +990,58 @@ Lo que deja la ola, más allá de sus entregables:
   motivo del índice parcial, el código de error del campo `codigo`, y el tamaño del
   catálogo 03 de SUNAT.
 
+## Cómo se comprueba que algo está publicado — y por qué el comando obvio miente
+
+**Al cerrar una jornada, verificar que el remoto tenga lo que el local tiene.** No alcanza
+con que los `push` hayan parecido entrar: fallaron dos veces por caída de red y se reportó
+"publicado" sin comprobar. Durante un rato real, S-05-B entero y una decisión de
+Arquitectura existieron solo en este disco. Lo midieron `qa` e `implementation-frontend`
+por separado.
+
+La frase con la que veníamos cerrando —"nada depende de que esta conversación
+sobreviva"— era cierta a medias. `qa` la corrigió: **no depende de la conversación, pero sí
+de la máquina.** La durabilidad tenía un segundo eslabón que nadie comprobaba.
+
+**Pero el comando obvio no sirve solo, y esto es lo importante.**
+`git log origin/develop..develop` compara contra la **referencia local** de
+`origin/develop`, que únicamente se actualiza con un `fetch` o un `push` exitosos. Si el
+`fetch` falla —que es exactamente el escenario de red caída que motiva la comprobación— la
+referencia queda vieja y el comando responde "cero pendientes" **mirando una foto de hace
+horas**.
+
+O sea: el comando de verificación puede pasar sin verificar nada. Es la misma forma de
+fallo que este proyecto viene persiguiendo, un nivel más arriba — ya no es el mecanismo el
+que falla en silencio, es la comprobación del mecanismo.
+
+**El procedimiento, entonces:**
+
+1. `git fetch` primero, y **comprobar que el fetch funcionó**.
+2. Si el fetch falla, el estado de publicación es **desconocido**, no verde.
+3. Recién con el fetch en verde, `git log origin/develop..develop` significa algo.
+4. Para lo crítico, mirar el **árbol del remoto** y no solo el commit: un commit puede
+   figurar y el árbol no tener lo que uno cree.
+
+Lo señaló `qa`, sobre el procedimiento que se estaba incorporando para corregir el problema
+anterior.
+
+**Las ramas de sprint sin publicar son otra cosa, y pesan menos de lo que parecía.** El
+remoto tiene cuatro ramas y el local doce, pero ninguna de las nueve de sprint guarda un
+commit fuera de `develop`: todo el contenido está publicado.
+
+Y la trazabilidad tampoco se pierde. `implementation-frontend` fue a comprobar si era
+cierto que "se perdería la etiqueta de qué commit fue el `final_sha` de cada sprint" y
+**no lo es**: este mismo documento registra por sprint el `branch`, el `base_sha`, el
+`final_sha` y el `merge_sha`, y está versionado y publicado. Quien quisiera reconstruirlo
+lo lee acá, y los commits siguen existiendo dentro de `develop`.
+
+Lo que se perdería es la comodidad de una rama con nombre apuntando ahí. Eso baja el asunto
+de **pérdida de trazabilidad** a **pérdida de conveniencia**.
+
+Vale registrar por qué: la disciplina de anotar los SHA en el estado global se adoptó para
+que un sprint se pudiera auditar sin depender de la conversación. Terminó siendo el
+respaldo de la trazabilidad ante la pérdida de los punteros, sin que nadie lo diseñara para
+eso.
+
 ## Alcance y proyección son dos preguntas distintas
 
 **A quién pertenece un recurso** y **qué campos viajan dentro de él** se prueban por
