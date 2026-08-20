@@ -25,3 +25,7 @@ Route::get('/usuarios', fn () => view('usuarios'))->name('usuarios');
 Route::get('/categorias', fn () => view('categorias'))->name('categorias');
 
 Route::get('/productos', fn () => view('productos'))->name('productos');
+
+Route::get('/proveedores', fn () => view('proveedores'))->name('proveedores');
+
+Route::get('/clientes', fn () => view('clientes'))->name('clientes');

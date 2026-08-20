@@ -1,11 +1,5 @@
 <div class="space-y-4">
-    @if ($error)
-        <x-aviso tipo="error">{{ $error }}</x-aviso>
-    @endif
-
-    @if ($exito)
-        <x-aviso tipo="exito">{{ $exito }}</x-aviso>
-    @endif
+    <x-mensajes :error="$error" :exito="$exito" />
 
     <div class="flex items-center justify-between gap-4">
         <label class="flex items-center gap-2 text-sm text-slate-700">
