@@ -16,7 +16,7 @@
 | Formato | XML UBL 2.1 firmado digitalmente | fijado |
 | Respuesta que se conserva | constancia CDR devuelta por SUNAT, almacenada junto al comprobante | fijado |
 | Mecanismo del resumen diario | envío que devuelve un identificador de consulta, con el resultado obtenido en una consulta posterior | fijado |
-| Catálogos que el sistema usa | tipo de documento de identidad, tipo de comprobante, unidad de medida, tipo de afectación de IGV | fijado |
+| Catálogos que el sistema usa | tipo de documento de identidad, tipo de comprobante, unidad de medida, tipo de afectación de IGV | fijado — ver "Catálogo 03" abajo |
 | Tasa de IGV | 18 %, incluida en los precios y desglosada al emitir | fijado |
 | Tope de boleta sin identificar al cliente | S/ 700 | fijado — aprobado por el usuario el 2026-08-19 |
 | Identidad del emisor en **beta** | credenciales de prueba de uso general publicadas por SUNAT. Se confirman contra la documentación vigente al implementar S-06-B, nunca de memoria | fijado — no requiere ningún dato del negocio |
@@ -72,6 +72,42 @@ certificado por extensión, como red de seguridad adicional.
 | El certificado no se puede cargar | `CERTIFICADO_NO_DISPONIBLE`. Ningún comprobante se firma; se registra en `LogError` con severidad `critical` y se muestra en el panel |
 | El certificado está vencido | `CERTIFICADO_VENCIDO`. El sistema avisa con 30 días de anticipación para que no se llegue a este punto (RNF-005) |
 | Se agotan los reintentos | El comprobante queda `PENDIENTE` y visible en la pantalla de seguimiento, que es el mecanismo previsto para la intervención manual (RF-016) |
+
+## Catálogo 03 — código de tipo de unidad de medida comercial
+
+**El anexo oficial de SUNAT no enumera códigos. Delega en un estándar
+internacional.** Verificado el 2026-08-19 leyendo el anexo oficial publicado por
+SUNAT (`https://www2.sunat.gob.pe/facturador/AnexosIyII_Formato1.3.4.xlsx`, hoja
+"Catálogos"): bajo el encabezado del catálogo 03, en lugar de una tabla de códigos,
+el anexo dice literalmente **"UN/ECE Recommendation 20 Revision 13"** y enlaza a
+`https://www.unece.org/fileadmin/DAM/uncefact/recommendations/rec20/rec20_Rev13e_2017.xls`.
+
+Esto corrige una premisa equivocada con la que se estaba trabajando. `implementation-backend`
+reportó honestamente que no había podido verificar "la lista de SUNAT" y pidió no
+aprobar una lista de terceros como si estuviera verificada. Tenía razón en frenar, y
+el motivo por el que no la encontraba es que **esa lista no existe**: quien la
+publica es UN/ECE, no SUNAT, y tiene del orden de mil ochocientos códigos.
+
+Decisiones que se derivan, tomadas por Arquitectura:
+
+1. **La fuente canónica del catálogo 03 es UN/ECE Recommendation 20 Revision 13.**
+   Cualquier verificación futura se hace contra ese documento, no contra guías de
+   terceros ni contra una tabla de SUNAT que no existe.
+2. **El sistema valida contra un subconjunto declarado, no contra los mil ochocientos
+   códigos.** Una comercializadora no vende en unidades astronómicas ni en barriles
+   de petróleo, y aceptar cualquier código volvería inútil la validación: su propósito
+   es que un error de carga no llegue al comprobante.
+3. **Ese subconjunto es una decisión del proyecto, no un hecho sobre SUNAT.** Se
+   documenta como tal, con el motivo de qué se incluye. Ampliarlo cuando el negocio lo
+   necesite es trivial y no rompe nada; el registro tiene que dejar claro que la
+   restricción es nuestra.
+4. **`NIU` (unidad) se mantiene como valor por defecto**, tal como ya declara
+   `docs/contratos/productos.md`.
+
+El subconjunto concreto lo propone `implementation-backend` en el handoff de S-02-B,
+derivado de UN/ECE Rec 20 Rev 13, y lo aprueba Arquitectura antes del cierre del
+sprint. La validación no bloquea el sprint: el mecanismo se implementa contra la lista
+que esté en configuración, y la lista se sustituye al aprobarse.
 
 Aprobado por: Kevin Espíritu (kevinespiritu16@gmail.com) — reaprobado el 2026-08-19 tras separar lo que hace falta en beta de lo que hace falta en producción
 Parte técnica aprobada por (Arquitectura): sesión de Arquitectura del 2026-08-19 — fecha: 2026-08-19
