@@ -381,6 +381,19 @@ quedó igual y la suite pasó — lo que parecía decir que nadie protegía esa 
 detectó verificando el archivo. Es el reverso exacto de la regla de abajo: una deja
 falsa confianza, la otra deja falsa alarma, y las dos se evitan mirando el árbol.
 
+**Después de restaurar, verificar qué se restauró — no qué se pretendía restaurar.** El
+`git checkout` de la restauración se lleva todo lo pendiente en ese archivo, no solo la
+mutación. `implementation-backend` asumió que se había llevado un cambio y se había
+llevado dos: repuso las tres filas de la matriz y no el método que la prueba necesitaba,
+y commiteó con la suite en rojo. Contar los cambios pendientes antes de mutar habría
+bastado.
+
+Lo notable es quién lo cometió: **el mismo rol que había formulado la regla de mutar
+sobre árbol limpio, dos días antes**. Su lectura, que comparto: si una regla de disciplina
+falla en manos de quien la escribió y la tenía presente, el problema no es la atención
+—es que la disciplina no es el lugar correcto para eso—. Es el mismo argumento con el que
+se eligió el hook global sobre la clase base.
+
 **Mutar solo sobre árbol limpio.** La restauración es un `git checkout` del archivo
 mutado, y eso se lleva cualquier trabajo sin commitear que hubiera ahí. `implementation-backend`
 lo vivió en S-02-B: mutó antes de commitear la corrección, restauró, y quedó con un
