@@ -314,6 +314,38 @@ verdad —lo que reabre la decisión de E2E, hoy pospuesta— o se acepta el rec
 manual documentado que el propio RNF-008 describe. Decidirlo con el sprint encima es
 peor que decidirlo ahora.
 
+## Punto de detención — 2026-08-20
+
+Segunda parada, con todo en estado consistente y **una sola acción pendiente del
+usuario**. Quien retome no necesita ninguna conversación: todo está acá, en `AGENTS.md` y
+en Git.
+
+**Lo único bloqueante: el PR #2** — `gobernanza/enmienda-permisos-por-area` hacia
+`develop`. Fusionarlo *es* la aprobación de la enmienda. Detrás de él está todo lo de la
+sección "Bloqueantes".
+
+**Lo primero al retomar, en este orden:**
+
+1. Si el PR #2 está fusionado, avisar a `implementation-backend`: commitea el retiro de
+   los endpoints de ADR-0006 —hecho en su árbol, sin commitear— y repara las 12 pruebas.
+   El diagnóstico línea por línea de las 9 de `RedireccionAlAccesoTest` está en su
+   scratchpad; si esa sesión ya no existe, el arreglo es apuntar el data provider y tres
+   referencias sueltas a `/usuarios` y `/panel`, que sí son pantallas.
+2. Fusionar `feature/permisos-en-componentes`, que lleva el mecanismo y las tareas de la
+   matriz. Hasta que las 12 pruebas estén reparadas, esa rama va en rojo.
+3. `implementation-frontend` saca `HumoDeInstalacion` de la lista de pendientes de
+   `DeclaracionDePermisoTest` **cuando la anotación esté en `develop`**, no antes: su
+   prueba va a fallar sola pidiéndolo.
+4. Abrir S-04-B y S-02-F en paralelo, cada uno con worktree nuevo desde `develop` y su
+   base de carril.
+
+**El PR #1** —`develop` hacia `main`, la primera promoción— sigue abierto y sin fusionar.
+No bloquea nada: `main` simplemente no refleja el proyecto.
+
+**Estado de los carriles:** ninguno a medias. Backend tiene trabajo hecho sin commitear a
+propósito, para no entregar rojo. Frontend está sin worktree y sin cambios. QA sin nada
+pendiente. DevOps sin turno desde S-DO-01.
+
 ## Punto de detención — 2026-08-19
 
 El trabajo se detuvo acá por decisión del usuario, con todo en estado consistente.
