@@ -1,5 +1,7 @@
 <?php
 
+use App\Dominios\Catalogo\Controllers\CategoriaController;
+use App\Dominios\Catalogo\Controllers\ProductoController;
 use App\Dominios\Usuarios\Controllers\SesionController;
 use App\Dominios\Usuarios\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
@@ -20,3 +22,12 @@ Route::post('/logout', [SesionController::class, 'cerrar'])->name('logout');
 Route::get('/usuarios', [UsuarioController::class, 'listar'])->name('usuarios.listar');
 Route::post('/usuarios', [UsuarioController::class, 'crear'])->name('usuarios.crear');
 Route::patch('/usuarios/{id}', [UsuarioController::class, 'actualizar'])->name('usuarios.actualizar');
+
+Route::get('/categorias', [CategoriaController::class, 'listar'])->name('categorias.listar');
+Route::post('/categorias', [CategoriaController::class, 'crear'])->name('categorias.crear');
+Route::patch('/categorias/{id}', [CategoriaController::class, 'actualizar'])->name('categorias.actualizar');
+
+Route::get('/productos', [ProductoController::class, 'listar'])->name('productos.listar');
+Route::post('/productos', [ProductoController::class, 'crear'])->name('productos.crear');
+Route::get('/productos/{id}', [ProductoController::class, 'ver'])->name('productos.ver');
+Route::patch('/productos/{id}', [ProductoController::class, 'actualizar'])->name('productos.actualizar');

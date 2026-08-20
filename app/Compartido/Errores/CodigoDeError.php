@@ -20,6 +20,9 @@ enum CodigoDeError: string
     case CAMPO_FUERA_DE_RANGO = 'CAMPO_FUERA_DE_RANGO';
     case RECURSO_NO_ENCONTRADO = 'RECURSO_NO_ENCONTRADO';
     case DOCUMENTO_DUPLICADO = 'DOCUMENTO_DUPLICADO';
+    case PRODUCTO_CODIGO_DUPLICADO = 'PRODUCTO_CODIGO_DUPLICADO';
+    case PRODUCTO_PRECIO_MAYOR_INVALIDO = 'PRODUCTO_PRECIO_MAYOR_INVALIDO';
+    case PRODUCTO_INACTIVO = 'PRODUCTO_INACTIVO';
 
     public function status(): int
     {
@@ -27,11 +30,14 @@ enum CodigoDeError: string
             self::NO_AUTENTICADO => 401,
             self::NO_AUTORIZADO => 403,
             self::RECURSO_NO_ENCONTRADO => 404,
-            self::DOCUMENTO_DUPLICADO => 409,
+            self::DOCUMENTO_DUPLICADO,
+            self::PRODUCTO_CODIGO_DUPLICADO => 409,
             self::CREDENCIALES_INVALIDAS,
             self::CAMPO_REQUERIDO,
             self::CAMPO_FORMATO_INVALIDO,
-            self::CAMPO_FUERA_DE_RANGO => 422,
+            self::CAMPO_FUERA_DE_RANGO,
+            self::PRODUCTO_PRECIO_MAYOR_INVALIDO,
+            self::PRODUCTO_INACTIVO => 422,
         };
     }
 }

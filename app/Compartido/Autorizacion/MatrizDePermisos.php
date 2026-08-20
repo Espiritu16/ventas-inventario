@@ -90,6 +90,15 @@ final class MatrizDePermisos
         'GET /usuarios' => [Usuario::ROL_ADMINISTRADOR],
         'POST /usuarios' => [Usuario::ROL_ADMINISTRADOR],
         'PATCH /usuarios/{id}' => [Usuario::ROL_ADMINISTRADOR],
+
+        // Catálogo: el vendedor consulta para vender, pero no administra.
+        'GET /categorias' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
+        'POST /categorias' => [Usuario::ROL_ADMINISTRADOR],
+        'PATCH /categorias/{id}' => [Usuario::ROL_ADMINISTRADOR],
+        'GET /productos' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
+        'GET /productos/{id}' => [Usuario::ROL_ADMINISTRADOR, Usuario::ROL_VENDEDOR],
+        'POST /productos' => [Usuario::ROL_ADMINISTRADOR],
+        'PATCH /productos/{id}' => [Usuario::ROL_ADMINISTRADOR],
     ];
 
     public static function identificar(string $metodo, Route $ruta): string
