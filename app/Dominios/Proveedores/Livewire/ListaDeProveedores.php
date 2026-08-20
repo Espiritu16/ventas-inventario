@@ -6,6 +6,7 @@ use App\Compartido\Autorizacion\Permiso;
 use App\Compartido\Datos\DatosDeEntrada;
 use App\Compartido\Documentos\TipoDeDocumento;
 use App\Compartido\Errores\ErrorDeDominio;
+use App\Compartido\Interfaz\MuestraRechazosDeDominio;
 use App\Dominios\Proveedores\Servicios\ProveedorService;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -20,6 +21,8 @@ use Livewire\Component;
 #[Permiso('GET /proveedores')]
 class ListaDeProveedores extends Component
 {
+    use MuestraRechazosDeDominio;
+
     #[Url]
     public string $buscar = '';
 
@@ -54,14 +57,6 @@ class ListaDeProveedores extends Component
      * Es comodidad: el servicio vuelve a validar aunque esto se evite.
      */
     public ?string $avisoDeDocumento = null;
-
-    public ?string $error = null;
-
-    public ?string $errorDeCampo = null;
-
-    public ?string $campoConError = null;
-
-    public ?string $exito = null;
 
     public function updatedBuscar(): void
     {
@@ -181,28 +176,6 @@ class ListaDeProveedores extends Component
     private function opcional(string $valor): ?string
     {
         return $valor === '' ? null : $valor;
-    }
-
-    private function mostrar(ErrorDeDominio $fallo): void
-    {
-        $campo = $fallo->detalle['campo'] ?? null;
-
-        if (is_string($campo)) {
-            $this->campoConError = $campo;
-            $this->errorDeCampo = $fallo->getMessage();
-
-            return;
-        }
-
-        $this->error = $fallo->getMessage();
-    }
-
-    private function limpiarMensajes(): void
-    {
-        $this->error = null;
-        $this->errorDeCampo = null;
-        $this->campoConError = null;
-        $this->exito = null;
     }
 
     private function limpiarFormulario(): void

@@ -44,7 +44,7 @@
                             @endforeach
                         </select>
 
-                        @if ($campoConError === 'tipo_documento')
+                        @if ($this->errorDe('tipo_documento'))
                             <p data-prueba="error-de-campo" class="text-sm text-red-700">{{ $errorDeCampo }}</p>
                         @endif
                     </div>
@@ -53,7 +53,7 @@
                         nombre="numero_documento"
                         etiqueta="Número de documento"
                         wire:model.live.debounce.300ms="numeroDocumento"
-                        :error="$campoConError === 'numero_documento' ? $errorDeCampo : null"
+                        :error="$this->errorDe('numero_documento')"
                     />
 
                     @if ($avisoDeDocumento)
@@ -70,7 +70,7 @@
                     nombre="nombre"
                     etiqueta="Nombre o razón social"
                     wire:model="nombre"
-                    :error="$campoConError === 'nombre' ? $errorDeCampo : null"
+                    :error="$this->errorDe('nombre')"
                 />
 
                 <x-campo
@@ -78,7 +78,7 @@
                     etiqueta="Dirección"
                     wire:model="direccion"
                     ayuda="Opcional."
-                    :error="$campoConError === 'direccion' ? $errorDeCampo : null"
+                    :error="$this->errorDe('direccion')"
                 />
 
                 <div class="grid gap-4 sm:grid-cols-2">
@@ -87,7 +87,7 @@
                         etiqueta="Teléfono"
                         wire:model="telefono"
                         ayuda="Opcional."
-                        :error="$campoConError === 'telefono' ? $errorDeCampo : null"
+                        :error="$this->errorDe('telefono')"
                     />
 
                     <x-campo
@@ -96,7 +96,7 @@
                         tipo="email"
                         wire:model="email"
                         ayuda="Opcional."
-                        :error="$campoConError === 'email' ? $errorDeCampo : null"
+                        :error="$this->errorDe('email')"
                     />
                 </div>
 
