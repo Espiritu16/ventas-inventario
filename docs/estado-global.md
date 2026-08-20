@@ -331,13 +331,30 @@ sección "Bloqueantes".
    El diagnóstico línea por línea de las 9 de `RedireccionAlAccesoTest` está en su
    scratchpad; si esa sesión ya no existe, el arreglo es apuntar el data provider y tres
    referencias sueltas a `/usuarios` y `/panel`, que sí son pantallas.
-2. Fusionar `feature/permisos-en-componentes`, que lleva el mecanismo y las tareas de la
-   matriz. Hasta que las 12 pruebas estén reparadas, esa rama va en rojo.
+   **Las 12 pruebas son dos problemas distintos, no uno.** Las 9 de
+   `RedireccionAlAccesoTest` apuntan a rutas retiradas y hay que cambiarles el destino a
+   `/usuarios` y `/panel`. Las 3 de `LivewireOperativoTest` montan `HumoDeInstalacion` sin
+   autenticar, y lo que les falta es un usuario con permiso sobre `GET /panel`. Quien las
+   trate como un solo problema va a arreglar la mitad. Señalado por `implementation-backend`.
+
+2. Fusionar `feature/permisos-en-componentes`, cuyo HEAD es **`80e682c`** — lleva el
+   mecanismo y las tareas de la matriz, y tiene commits que no están en `develop`. Hasta
+   que las 12 pruebas estén reparadas, esa rama va en rojo. El mecanismo y el retiro viven
+   en un stash con nombre en el árbol de backend, no en commits.
 3. `implementation-frontend` saca `HumoDeInstalacion` de la lista de pendientes de
    `DeclaracionDePermisoTest` **cuando la anotación esté en `develop`**, no antes: su
    prueba va a fallar sola pidiéndolo.
 4. Abrir S-04-B y S-02-F en paralelo, cada uno con worktree nuevo desde `develop` y su
    base de carril.
+
+**Aviso sobre el orden de S-04-B, si la enmienda todavía no entró.** La prueba
+`test_el_listado_no_trae_stock_disponible_todavia`
+(`tests/Feature/Autorizacion/RutasDeCatalogoTest.php:140`) fija la ausencia del campo
+`stockDisponible`, y S-04-B es el sprint que tiene que hacerla **cambiar de sentido**, no
+desaparecer. Vive en un directorio congelado. Si la enmienda no está aprobada cuando ese
+sprint llegue a ese punto, **se bloquea a mitad de camino en vez de al principio**, que es
+peor porque se descubre tarde y con trabajo ya hecho. Señalado por `qa`; si la enmienda
+sigue pendiente, conviene planificar el orden de las unidades contando con esto.
 
 **El PR #1** —`develop` hacia `main`, la primera promoción— sigue abierto y sin fusionar.
 No bloquea nada: `main` simplemente no refleja el proyecto.
@@ -625,6 +642,43 @@ segundo entorno falle al levantar, que sería ruidoso: es que el puerto responda
 aprueba, y aprueba lo que no era. Si alguna vez hacen falta dos entornos a la vez en
 la misma máquina, la salida conocida es parametrizar el puerto publicado
 (`${PUERTO_APP:-8080}:8000`); no se implementó porque hoy ningún caso lo pide.
+
+## Lo que no tiene verificación automática es lo que falla
+
+El 2026-08-20 fallaron dos cosas, y no fueron el código ni los sprints: **el
+procedimiento de aprobación** —se pidió aprobar un texto que no existía como documento— y
+**el canal entre sesiones** —se trasladó un "ya está hecho" que vivía en una rama sin
+fusionar—.
+
+No es casualidad. Todo lo demás en este proyecto tiene algo detrás que lo respalda: una
+prueba, un SHA, un documento versionado. Esas dos partes no tienen nada salvo que alguien
+se acuerde de seguirlas. **Son las dos únicas sin verificación automática, y son las dos
+que fallaron.** Las dos veces el error apareció recién cuando alguien fue a mirar.
+
+La observación es de `implementation-frontend`, que fue quien miró las dos veces.
+
+**La otra mitad, que señaló `implementation-backend`:** el error se encontró porque
+alguien fue a buscar el artefacto en vez de confiar en la afirmación. Lo que lo atrapó no
+fue que quien se equivocó se diera cuenta, fue que otro verificó — el mismo mecanismo que
+funcionó cuando QA encontró pruebas que pasaban por la razón equivocada. **La verificación
+cruzada entre roles es lo único que cubre las partes que no tienen prueba.**
+
+**Y una asimetría que conviene tener presente**, también suya: los errores que uno comete
+sobre sus propias reglas no son distintos de los demás, pero **se sienten peores, y por eso
+dan la tentación de no reportarlos**. Reportarlos rápido es lo que hace que la regla
+siguiente se escriba mejor: la de "verificar qué se restauró" no existiría si él hubiera
+corregido el commit en silencio.
+
+**Corolario, de `devops`:** los huecos que no molestan a nadie son los que sobreviven. El
+suyo con `README.md` se notó porque lo bloqueaba; el de `docker/` no se notó durante un
+sprint entero porque no lo bloqueaba.
+
+Del canal ya salió una regla concreta —referenciar por SHA fusionado, abajo—. Del
+procedimiento de aprobación salió que el borrador viva en una rama antes de pedir la
+aprobación, en vez de en un mensaje. Ninguna de las dos es una verificación automática:
+siguen dependiendo de que alguien las siga. **Queda anotado como cosa a pensar, no como
+resuelto** — vale la pena discutir con el usuario si hay forma de que fallen solas en vez
+de esperar a que alguien vaya a mirar.
 
 ## Regla de despacho — un trabajo ajeno se referencia por SHA fusionado, nunca por "ya está hecho"
 
