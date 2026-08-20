@@ -72,6 +72,37 @@ decirlo. Es la misma exigencia que este proyecto ya le hace a la sonda de concur
 instrumento verifique que midió lo que cree haber medido. Lo observó `qa`, corrigiendo un
 criterio que yo había dado por suficiente.
 
+## Los tres códigos genéricos no se enumeran por fila
+
+**Todo método que recibe datos puede rechazar con `CAMPO_REQUERIDO`, `CAMPO_FORMATO_INVALIDO`
+o `CAMPO_FUERA_DE_RANGO`, y su `detalle` nombra el campo.** No hace falta buscarlos en la fila:
+si el método valida entrada, los tres están disponibles. La columna **Errores** enumera solo
+los códigos **propios** de esa operación — los que la pantalla tiene que tratar de forma
+distinta.
+
+Esto se decidió el 2026-08-20, después de que `implementation-frontend` encontrara que la
+columna tenía dos huecos **sistemáticos**: `CAMPO_FUERA_DE_RANGO` no estaba declarado en
+ninguna fila de catálogo, proveedores ni clientes, y los cuatro servicios lo producen —todos
+usan reglas `between:`, que `ValidadorDeDominio` traduce a ese código—; y
+`CAMPO_FORMATO_INVALIDO` faltaba en los `actualizar` que rechazan cambiar el documento. Al
+verificarlo apareció que era peor: `CompraService` también usa `between:` tres veces, y
+`VentaService` y `ConsultaDeInventarioService` lanzan `CAMPO_FUERA_DE_RANGO` directo.
+
+Esos huecos sobrevivieron a una sincronización hecha a conciencia unas horas antes, y la razón
+es la que importa: **la prueba de consistencia compara firmas, y estos códigos no están en la
+firma.** Ir fila por fila agregando los tres códigos cerraría el estado de hoy y garantizaría
+que vuelvan a faltar en el próximo método que alguien escriba. Es la cuarta vez que este
+proyecto elige declarar el principio en vez de enumerar los casos, como los assets de Livewire
+por patrón, los permisos por área y ADR-0006.
+
+**Lo que esto no cierra, y conviene decirlo:** la columna Errores sigue cubierta por revisión
+humana y por nada más. Comprobar mecánicamente qué códigos puede lanzar un método exige seguir
+las llamadas y adivinar, que es la fragilidad por la que este proyecto ya eligió el mecanismo
+en ejecución sobre la prueba de arquitectura. Lo que cambia es la superficie: quedan por
+revisar los códigos propios de cada operación, que son pocos y específicos, en vez de tres
+genéricos repetidos en cuarenta filas. Lo observó `implementation-frontend` leyendo el
+documento antes de construir contra él.
+
 ---
 
 ## Usuarios — `UsuarioService`
@@ -81,7 +112,7 @@ criterio que yo había dado por suficiente.
 | Método | Entrada | Devuelve | Errores | Estado | Deriva de |
 |---|---|---|---|---|---|
 | `autenticar(string $email, string $password): Usuario` | correo y contraseña | el usuario autenticado | CREDENCIALES_INVALIDAS | implementado | RF-001 |
-| `crear(DatosUsuario $datos): Usuario` | nombre, email, password, rol | el usuario creado | CAMPO_REQUERIDO, CAMPO_FORMATO_INVALIDO, DOCUMENTO_DUPLICADO **(mal nombrado: es un correo repetido, ver la nota al pie)** | implementado | RF-002 |
+| `crear(DatosUsuario $datos): Usuario` | nombre, email, password, rol | el usuario creado | DOCUMENTO_DUPLICADO **(mal nombrado: es un correo repetido, ver la nota al pie)** | implementado | RF-002 |
 | `actualizar(int $id, DatosUsuario $datos, ?Usuario $actor = null): Usuario` | campos a cambiar; `$actor` impide que un administrador se degrade o desactive a sí mismo | el usuario actualizado | RECURSO_NO_ENCONTRADO, DOCUMENTO_DUPLICADO, NO_AUTORIZADO | implementado | RF-002 |
 | `listar(?string $buscar = null, int $pagina = 1): LengthAwarePaginator` | búsqueda y página | página de usuarios, sin el hash de contraseña | — | implementado | RF-002 |
 
@@ -97,12 +128,12 @@ criterio que yo había dado por suficiente.
 
 | Método | Entrada | Devuelve | Errores | Estado | Deriva de |
 |---|---|---|---|---|---|
-| `CategoriaService::crear(DatosDeCatalogo $datos): Categoria` | nombre, descripción | la categoría creada | CAMPO_REQUERIDO, CATEGORIA_NOMBRE_DUPLICADO | implementado | RF-003 |
+| `CategoriaService::crear(DatosDeCatalogo $datos): Categoria` | nombre, descripción | la categoría creada | CATEGORIA_NOMBRE_DUPLICADO | implementado | RF-003 |
 | `CategoriaService::actualizar(int $id, DatosDeCatalogo $datos): Categoria` | campos a cambiar | la categoría actualizada | RECURSO_NO_ENCONTRADO, CATEGORIA_NOMBRE_DUPLICADO | implementado | RF-003 |
 | `CategoriaService::listar(bool $incluirInactivas = false): Collection` | si incluye las inactivas | categorías | — | implementado | RF-003 |
 | `CategoriaService::encontrar(int $id): Categoria` | identificador | la categoría | RECURSO_NO_ENCONTRADO | implementado | RF-003 |
-| `ProductoService::crear(DatosDeCatalogo $datos): Producto` | código, nombre, categoría, unidad, precios, stock mínimo | el producto creado | CAMPO_REQUERIDO, CAMPO_FORMATO_INVALIDO, PRODUCTO_CODIGO_DUPLICADO, PRODUCTO_PRECIO_MAYOR_INVALIDO, RECURSO_NO_ENCONTRADO | implementado | RF-004 |
-| `ProductoService::actualizar(int $id, DatosDeCatalogo $datos, ?Usuario $actor = null): Producto` | campos a cambiar; el código no es modificable. `$actor` queda en la auditoría del cambio de precio | el producto actualizado | RECURSO_NO_ENCONTRADO, CAMPO_FORMATO_INVALIDO, PRODUCTO_PRECIO_MAYOR_INVALIDO | implementado | RF-004 |
+| `ProductoService::crear(DatosDeCatalogo $datos): Producto` | código, nombre, categoría, unidad, precios, stock mínimo | el producto creado | PRODUCTO_CODIGO_DUPLICADO, PRODUCTO_PRECIO_MAYOR_INVALIDO, RECURSO_NO_ENCONTRADO | implementado | RF-004 |
+| `ProductoService::actualizar(int $id, DatosDeCatalogo $datos, ?Usuario $actor = null): Producto` | campos a cambiar; el código no es modificable. `$actor` queda en la auditoría del cambio de precio | el producto actualizado | RECURSO_NO_ENCONTRADO, PRODUCTO_PRECIO_MAYOR_INVALIDO | implementado | RF-004 |
 | `ProductoService::listar(?string $buscar = null, ?int $categoriaId = null, bool $soloActivos = true, int $pagina = 1): LengthAwarePaginator` | búsqueda, categoría, solo activos, página | página de productos | — | implementado | RF-004 |
 | `ProductoService::encontrar(int $id): Producto` | identificador | el producto | RECURSO_NO_ENCONTRADO | implementado | RF-004 |
 
@@ -117,12 +148,12 @@ criterio que yo había dado por suficiente.
 
 | Método | Entrada | Devuelve | Errores | Estado | Deriva de |
 |---|---|---|---|---|---|
-| `ProveedorService::crear(DatosDeEntrada $datos): Proveedor` | RUC, razón social, contacto | el proveedor creado | CAMPO_REQUERIDO, DOCUMENTO_INVALIDO, DOCUMENTO_DUPLICADO | implementado | RF-005 |
-| `ProveedorService::actualizar(int $id, DatosDeEntrada $datos): Proveedor` | campos a cambiar; el documento no es modificable | el proveedor actualizado | RECURSO_NO_ENCONTRADO, CAMPO_REQUERIDO | implementado | RF-005 |
+| `ProveedorService::crear(DatosDeEntrada $datos): Proveedor` | RUC, razón social, contacto | el proveedor creado | DOCUMENTO_INVALIDO, DOCUMENTO_DUPLICADO | implementado | RF-005 |
+| `ProveedorService::actualizar(int $id, DatosDeEntrada $datos): Proveedor` | campos a cambiar; el documento no es modificable | el proveedor actualizado | RECURSO_NO_ENCONTRADO | implementado | RF-005 |
 | `ProveedorService::listar(?string $buscar = null, bool $soloActivos = true, int $pagina = 1): LengthAwarePaginator` | búsqueda, solo activos, página | página de proveedores | — | implementado | RF-005 |
 | `ProveedorService::encontrar(int $id): Proveedor` | identificador | el proveedor | RECURSO_NO_ENCONTRADO | implementado | RF-005 |
-| `ClienteService::crear(DatosDeEntrada $datos): Cliente` | tipo y número de documento, nombre, dirección, contacto | el cliente creado | CAMPO_REQUERIDO, DOCUMENTO_INVALIDO, DOCUMENTO_DUPLICADO | implementado | RF-010 |
-| `ClienteService::actualizar(int $id, DatosDeEntrada $datos): Cliente` | campos a cambiar; el documento no es modificable | el cliente actualizado | RECURSO_NO_ENCONTRADO, CAMPO_REQUERIDO | implementado | RF-010 |
+| `ClienteService::crear(DatosDeEntrada $datos): Cliente` | tipo y número de documento, nombre, dirección, contacto | el cliente creado | DOCUMENTO_INVALIDO, DOCUMENTO_DUPLICADO | implementado | RF-010 |
+| `ClienteService::actualizar(int $id, DatosDeEntrada $datos): Cliente` | campos a cambiar; el documento no es modificable | el cliente actualizado | RECURSO_NO_ENCONTRADO | implementado | RF-010 |
 | `ClienteService::listar(?string $buscar = null, int $pagina = 1): LengthAwarePaginator` | búsqueda, página | página de clientes | — | implementado | RF-010 |
 | `ClienteService::encontrar(int $id): Cliente` | identificador | el cliente | RECURSO_NO_ENCONTRADO | implementado | RF-010 |
 
@@ -141,14 +172,14 @@ rol.
 
 | Método | Entrada | Devuelve | Errores | Estado | Deriva de |
 |---|---|---|---|---|---|
-| `InventarioService::ingresar(int $productoId, string $cantidad, string $costoUnitario, string $codigoLote, string $fechaVencimiento, string $origenTipo, int $origenId, int $usuarioId): Lote` | datos de una línea de compra | el lote creado o incrementado | LOTE_VENCIMIENTO_PASADO, PRODUCTO_INACTIVO, RECURSO_NO_ENCONTRADO, CAMPO_FUERA_DE_RANGO | implementado | RF-006, RF-007 |
+| `InventarioService::ingresar(int $productoId, string $cantidad, string $costoUnitario, string $codigoLote, string $fechaVencimiento, string $origenTipo, int $origenId, int $usuarioId): Lote` | datos de una línea de compra | el lote creado o incrementado | LOTE_VENCIMIENTO_PASADO, PRODUCTO_INACTIVO, RECURSO_NO_ENCONTRADO | implementado | RF-006, RF-007 |
 | `InventarioService::ajustar(int $loteId, string $cantidadNueva, string $motivo, ?string $observacion, int $usuarioId): Lote` | ajuste manual | el lote ajustado | AJUSTE_SIN_MOTIVO, AJUSTE_CANTIDAD_NEGATIVA, RECURSO_NO_ENCONTRADO | implementado | RF-009 |
 | `InventarioService::descontarPorVencimiento(int $productoId, string $cantidad, string $origenTipo, int $origenId, int $usuarioId, ?string $hoy = null): array` | producto y cantidad a sacar | reparto: lista de porciones `(loteId, cantidad, costoUnitario)` en orden de vencimiento | STOCK_INSUFICIENTE, LOTE_VENCIDO, PRODUCTO_INACTIVO, RECURSO_NO_ENCONTRADO | implementado | RF-008, RF-011 |
 | `InventarioService::stockDisponible(int $productoId, ?string $hoy = null): string` | producto | existencia no vencida, como decimal en texto | RECURSO_NO_ENCONTRADO | implementado | RF-008 |
 | `InventarioService::lotesDe(int $productoId): Collection` | producto | sus lotes con existencia | RECURSO_NO_ENCONTRADO | implementado | RF-008 |
 | `ConsultaDeInventarioService::stock(Usuario $actor, ?string $buscar = null, ?int $categoriaId = null, bool $soloConStock = false, int $pagina = 1): LengthAwarePaginator` | actor, búsqueda, categoría, solo con stock, página | productos con su stock y sus lotes por vencimiento; **sin costo si el actor es vendedor** | — | implementado | RF-008 |
-| `ConsultaDeInventarioService::kardex(int $productoId, ?string $desde = null, ?string $hasta = null, int $pagina = 1): LengthAwarePaginator` | producto y rango | página de movimientos con origen y responsable | RECURSO_NO_ENCONTRADO, CAMPO_FUERA_DE_RANGO | implementado | RF-008 |
-| `lotesPorVencer(int $dias)` | días de anticipación | lotes por vencer y vencidos con existencia, ordenados por urgencia | CAMPO_FUERA_DE_RANGO | pendiente S-07-B | RF-018 |
+| `ConsultaDeInventarioService::kardex(int $productoId, ?string $desde = null, ?string $hasta = null, int $pagina = 1): LengthAwarePaginator` | producto y rango | página de movimientos con origen y responsable | RECURSO_NO_ENCONTRADO | implementado | RF-008 |
+| `lotesPorVencer(int $dias)` | días de anticipación | lotes por vencer y vencidos con existencia, ordenados por urgencia | — | pendiente S-07-B | RF-018 |
 | `productosBajoMinimo()` | — | productos activos en o bajo su stock mínimo | — | pendiente S-07-B | RF-019 |
 
 `descontarPorVencimiento` **no** cobra ni registra la venta: solo mueve stock. Debe invocarse
@@ -164,8 +195,8 @@ dentro de la transacción que abre `VentaService`.
 
 | Método | Entrada | Devuelve | Errores | Estado | Deriva de |
 |---|---|---|---|---|---|
-| `registrar(DatosDeEntrada $datos, int $usuarioId): Compra` | proveedor, documento, fecha y líneas con lote y vencimiento | la compra con sus lotes generados | COMPRA_SIN_LINEAS, COMPRA_DOCUMENTO_DUPLICADO, LOTE_VENCIMIENTO_PASADO, PRODUCTO_INACTIVO, CAMPO_REQUERIDO | implementado | RF-006, RF-007 |
-| `listar(?string $desde = null, ?string $hasta = null, ?int $proveedorId = null, int $pagina = 1): LengthAwarePaginator` | rango de fechas, proveedor, página | página de compras | CAMPO_FUERA_DE_RANGO | implementado | RF-006 |
+| `registrar(DatosDeEntrada $datos, int $usuarioId): Compra` | proveedor, documento, fecha y líneas con lote y vencimiento | la compra con sus lotes generados | COMPRA_SIN_LINEAS, COMPRA_DOCUMENTO_DUPLICADO, LOTE_VENCIMIENTO_PASADO, PRODUCTO_INACTIVO | implementado | RF-006, RF-007 |
+| `listar(?string $desde = null, ?string $hasta = null, ?int $proveedorId = null, int $pagina = 1): LengthAwarePaginator` | rango de fechas, proveedor, página | página de compras | — | implementado | RF-006 |
 | `encontrar(int $id): Compra` | identificador | la compra con líneas y lotes | RECURSO_NO_ENCONTRADO | implementado | RF-006 |
 
 ## Ventas — `VentaService`
@@ -175,11 +206,11 @@ dentro de la transacción que abre `VentaService`.
 | Método | Entrada | Devuelve | Errores | Estado | Deriva de |
 |---|---|---|---|---|---|
 | `registrarUnaSolaVez(string $claveDeOperacion, DatosDeEntrada $datos, Usuario $actor): Venta` | clave de idempotencia más lo de `registrar` | la venta; repetir la clave devuelve la misma, no crea otra | los de `registrar` | implementado | RF-011, RF-012, RF-013 |
-| `registrar(DatosDeEntrada $datos, Usuario $actor): Venta` | cliente, tipo de comprobante, medio de pago, líneas con producto, cantidad y tipo de precio | la venta con su reparto por lote y su comprobante en estado `PENDIENTE` | VENTA_SIN_LINEAS, STOCK_INSUFICIENTE, LOTE_VENCIDO, FACTURA_REQUIERE_RUC, BOLETA_REQUIERE_DOCUMENTO, TIPO_PRECIO_INVALIDO, SERIE_NO_CONFIGURADA, PRODUCTO_INACTIVO, CAMPO_REQUERIDO | implementado | RF-011, RF-012, RF-013 |
-| `listar(Usuario $actor, ?string $desde = null, ?string $hasta = null, ?string $estadoComprobante = null, int $pagina = 1): LengthAwarePaginator` | actor, rango, estado de comprobante, página | página de ventas; **acotada a las propias si el actor es vendedor** | CAMPO_FUERA_DE_RANGO | implementado | RF-011, RF-020 |
+| `registrar(DatosDeEntrada $datos, Usuario $actor): Venta` | cliente, tipo de comprobante, medio de pago, líneas con producto, cantidad y tipo de precio | la venta con su reparto por lote y su comprobante en estado `PENDIENTE` | VENTA_SIN_LINEAS, STOCK_INSUFICIENTE, LOTE_VENCIDO, FACTURA_REQUIERE_RUC, BOLETA_REQUIERE_DOCUMENTO, TIPO_PRECIO_INVALIDO, SERIE_NO_CONFIGURADA, PRODUCTO_INACTIVO | implementado | RF-011, RF-012, RF-013 |
+| `listar(Usuario $actor, ?string $desde = null, ?string $hasta = null, ?string $estadoComprobante = null, int $pagina = 1): LengthAwarePaginator` | actor, rango, estado de comprobante, página | página de ventas; **acotada a las propias si el actor es vendedor** | — | implementado | RF-011, RF-020 |
 | `encontrar(int $id, Usuario $actor): Venta` | identificador y actor | la venta con líneas, reparto por lote y estado del comprobante | RECURSO_NO_ENCONTRADO | implementado — **cambia a `array` al integrar `a805f4a`** | RF-011 |
-| `reporteVentas(string $desde, string $hasta)` | rango | total, desglose por comprobante y medio de pago, detalle | CAMPO_FUERA_DE_RANGO | pendiente S-07-B | RF-020 |
-| `reporteUtilidad(string $desde, string $hasta, ?int $productoId)` | rango y producto opcional | ingreso, costo real por lote y utilidad, total y por producto | CAMPO_FUERA_DE_RANGO | pendiente S-07-B | RF-021 |
+| `reporteVentas(string $desde, string $hasta)` | rango | total, desglose por comprobante y medio de pago, detalle | — | pendiente S-07-B | RF-020 |
+| `reporteUtilidad(string $desde, string $hasta, ?int $productoId)` | rango y producto opcional | ingreso, costo real por lote y utilidad, total y por producto | — | pendiente S-07-B | RF-021 |
 
 `registrar` es el método más delicado del sistema. En una sola transacción: valida, descuenta
 por FEFO, escribe kardex, reserva correlativo y crea el comprobante. Si algo falla, no queda
@@ -202,11 +233,11 @@ no `NO_AUTORIZADO`: no se revela que la venta existe.
 | Método | Entrada | Devuelve | Errores | Estado | Deriva de |
 |---|---|---|---|---|---|
 | `SerieComprobanteService::reservarCorrelativo(string $tipoComprobante): array` | tipo de comprobante | el siguiente correlativo, con la fila de la serie bloqueada | SERIE_NO_CONFIGURADA | implementado | RF-014 |
-| `SerieComprobanteService::crear(string $tipo, string $serie)` | tipo y serie | la serie creada | CAMPO_FORMATO_INVALIDO, SERIE_DUPLICADA | **sin sprint** | RF-014 |
+| `SerieComprobanteService::crear(string $tipo, string $serie)` | tipo y serie | la serie creada | SERIE_DUPLICADA | **sin sprint** | RF-014 |
 | `SerieComprobanteService::listar()` | — | series con su correlativo actual | — | **sin sprint** | RF-014 |
-| `ComprobanteService::listar(...)` | estado, rango, página | página de comprobantes, con pendientes y rechazados primero | CAMPO_FORMATO_INVALIDO | pendiente S-06-B | RF-016 |
+| `ComprobanteService::listar(...)` | estado, rango, página | página de comprobantes, con pendientes y rechazados primero | — | pendiente S-06-B | RF-016 |
 | `ComprobanteService::reenviar(int $id)` | identificador | el comprobante encolado de nuevo | COMPROBANTE_NO_REENVIABLE, RECURSO_NO_ENCONTRADO | pendiente S-06-B | RF-016 |
-| `ResumenDiarioService::generar(string $fechaReferencia)` | fecha | el resumen creado y encolado | BOLETA_YA_RESUMIDA, CAMPO_FUERA_DE_RANGO | pendiente S-06-B | RF-017 |
+| `ResumenDiarioService::generar(string $fechaReferencia)` | fecha | el resumen creado y encolado | BOLETA_YA_RESUMIDA | pendiente S-06-B | RF-017 |
 | `ResumenDiarioService::listar(?string $desde, ?string $hasta, int $pagina)` | rango | página de resúmenes con su estado | — | pendiente S-06-B | RF-017 |
 
 `reservarCorrelativo` es de uso interno del backend: lo invoca `VentaService` dentro de su
