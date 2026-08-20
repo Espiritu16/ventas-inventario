@@ -53,10 +53,13 @@ sprints:
   - id: S-03-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: EN_PROGRESO
+    execution_status: COMPLETADO
     branch: sprint/S-03-B
     base_sha: 9304925
-    nota_de_ejecucion: en secuencia tras S-02-B pese a ser paralelizable — comparten database/migrations/ y config/
+    final_sha: 6e8f710393489ee38b51b043fd83538ad7cce4e9
+    merge_sha: 5261b44
+    qa: APROBADO sobre 44ba6e3 con gobernanza caeddd2
+    nota_de_ejecucion: se ejecutó en secuencia tras S-02-B pese a ser paralelizable — comparten database/migrations/ y config/
     depends_on: [S-01-B]
     parallelizable_with: [S-02-B, S-01-F]
   - id: S-04-B
@@ -714,7 +717,45 @@ porque revela que el healthcheck depende del render HTML de esa ruta, y esa ruta
 puede responder distinto según el `Accept`. Sirve si alguna vez aparece un contenedor
 `unhealthy` con la aplicación aparentemente sana.
 
-## Siguiente fase — ola 3
+## Ola 3 — CERRADA (2026-08-19)
+
+S-02-B, S-01-F y S-03-B completados y fusionados. S-01-F fue rechazado una vez; los
+otros dos se aprobaron a la primera.
+
+Lo que deja la ola, más allá de sus entregables:
+
+- **La regla transversal de permisos en componentes**, encontrada en tres pisos
+  sucesivos y con la forma del error nombrada. Es la regla más importante que produjo el
+  proyecto hasta ahora.
+- **El patrón de las dos fuentes sincronizadas**, con cuatro instancias.
+- **Cuatro reglas nuevas para la práctica de mutación**, todas nacidas de errores reales
+  cometidos al aplicarla.
+- **Tres documentos aprobados corregidos porque afirmaban cosas que no se sostenían**: el
+  motivo del índice parcial, el código de error del campo `codigo`, y el tamaño del
+  catálogo 03 de SUNAT.
+
+## Siguiente fase — ola 4
+
+**S-04-B** (compras, lotes, kardex y ajustes) y **S-02-F** (pantallas de catálogo,
+proveedores, clientes y usuarios). Dependencias satisfechas: los dos dependen de S-02-B
+y S-03-B, y S-02-F además de S-01-F.
+
+**Hay una dependencia cruzada que impide arrancarlos en paralelo de inmediato.** La
+enmienda de S-02-F exige el mecanismo que hace fallar a un componente que escribe sin
+declarar permiso, y ese mecanismo vive en `app/Compartido/`, que es ruta de
+`implementation-backend`. Si S-02-F lo necesitara mientras S-04-B corre, dos sesiones
+escribirían el mismo árbol.
+
+Secuencia decidida:
+
+1. Los dos frentes proponen juntos la forma del mecanismo. Arquitectura aprueba.
+2. `implementation-backend` lo implementa como tarea corta, antes de abrir S-04-B.
+3. Recién entonces S-04-B y S-02-F corren en paralelo, cada uno en su worktree y con su
+   base de carril.
+
+Frontend puede avanzar mientras tanto lo que no dependa del mecanismo.
+
+## Ola 3 — despacho original
 
 **S-02-B, S-03-B y S-01-F**, declarados paralelizables entre sí en el roadmap.
 
