@@ -75,6 +75,7 @@ las pruebas verifican, no el texto visible.
 
 | Código | HTTP status | Cuándo se usa |
 |---|---|---|
+| SERIE_DUPLICADA | 409 | ya existe una serie con ese identificador para ese tipo de comprobante |
 | SERIE_NO_CONFIGURADA | 422 | no existe una serie activa para el tipo de comprobante solicitado |
 | CORRELATIVO_EN_CONFLICTO | 409 | no se pudo reservar el correlativo por concurrencia; la operación se reintenta y solo se informa si el reintento también falla |
 | TRANSICION_COMPROBANTE_INVALIDA | 409 | se intenta un cambio de estado no permitido por el ciclo de vida de RF-013 |

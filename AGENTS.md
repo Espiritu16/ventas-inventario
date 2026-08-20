@@ -47,7 +47,7 @@ que se ejecuta solo, sin nada en paralelo.
 - No puede escribir: `resources/views/`, `resources/css/`, `resources/js/`, `routes/web.php`, ni ninguna subcarpeta `Livewire/` — **salvo en S-00**, donde crea el andamiaje inicial de esas rutas (entry points de Vite, layout base vacío y `routes/web.php` con la ruta raíz), tal como declara la excepción del encabezado de este rol. A partir de S-01-F, esas rutas pasan a ser exclusivas de `implementation-frontend`
 
 #### implementation-frontend (sprints con sufijo `-F`)
-- Puede escribir código y pruebas: `app/Dominios/*/Livewire/`, `resources/views/`, `resources/css/`, `resources/js/`, `routes/web.php`, `tests/Feature/Livewire/`
+- Puede escribir código y pruebas: `app/Dominios/*/Livewire/`, `resources/views/`, `resources/css/`, `resources/js/`, `routes/web.php`, `tests/Feature/Livewire/`, `app/Compartido/Interfaz/`
 - Puede escribir bootstrap/configuración cuando el RFC lo autoriza: `package.json`, `pnpm-lock.yaml`, `vite.config.js`, `tailwind.config.js`
 - Consume las firmas de `docs/contratos/servicios-de-dominio.md`; **no las cambia**. Si necesita una firma distinta, escala a Arquitectura y el sprint queda bloqueado hasta que se apruebe
 - No puede escribir: `app/Dominios/*/` fuera de `Livewire/`, `database/`, `config/`, `app/Http/Middleware/`
@@ -198,6 +198,7 @@ vez de uno por uno, y los contratos por ADR en vez de enmienda por dominio.
 | `devops` | Todo `docker/` y `.dockerignore` |
 | `coordinacion` | El campo `status` de la cabecera de los handoffs al cerrar un sprint; `docs/decisiones/` y `docs/chats-de-rol.md` |
 | `qa` | La práctica de mutación como obligación del rol, no como decisión registrada |
+| `implementation-frontend` | `app/Compartido/Interfaz/`, para lo que comparten componentes de dominios distintos |
 
 Además, los navegadores de validación pasan de "Chrome y Edge" a "motor Blink, declarando
 cuál se usó".
@@ -209,6 +210,31 @@ Cinco directorios de prueba con doce archivos dentro no tienen dueño: `tests/Fe
 `tests/recursos/` (1). Con ellos, doce pruebas que nadie puede reparar, el retiro de los
 endpoints que exige ADR-0006, el mecanismo de permisos en componentes, y los sprints S-04-B
 y S-02-F.
+
+### Enmienda 2026-08-20 — `app/Compartido/Interfaz/` para `implementation-frontend`
+
+`implementation-frontend` no tenía **ningún** sitio donde poner algo compartido entre
+componentes de dominios distintos. Sus rutas son o de un dominio (`app/Dominios/*/Livewire/`)
+o de presentación (`resources/`); lo transversal en PHP caía en `app/Compartido/`, que es de
+`implementation-backend`.
+
+Apareció al entregar S-02-F: el método que decide si un rechazo se muestra junto al campo o
+como aviso de la operación quedó **byte a byte idéntico en las cuatro pantallas**. No lo
+extrajeron por no invadir ruta ajena ni inventar un dominio falso, y lo señalaron en vez de
+resolverlo por su cuenta.
+
+**Esa lógica no es un detalle de implementación de una pantalla: es el consumo de una regla
+transversal aprobada** — `docs/errores/manejo-errores.md` fija que un error de campo nombra su
+campo en `detalle`, precisamente para que la pantalla sepa dónde ponerlo. Una regla con una
+sola fuente no debería tener cuatro consumidores que la reimplementan.
+
+Tampoco corresponde a `implementation-backend`: el método manipula estado de un componente
+Livewire —qué campo quedó marcado, qué mensaje se muestra dónde— que son conceptos de la
+interfaz. Ponerlo del otro lado le daría a backend código sobre el estado visual.
+
+Es el mismo hueco que resolvió esta enmienda para los cinco directorios de prueba sin dueño,
+un nivel más arriba: **un artefacto legítimo que ninguna área declarada cubre**. Con cuatro
+copias es tolerable; S-03-F suma tres pantallas más.
 
 ### Qué NO cambia
 
