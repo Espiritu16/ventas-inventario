@@ -2,9 +2,9 @@
 project: ventas-inventario
 source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
-active_phase: ola-2
-active_status: LISTO
-last_completed_phase: S-00
+active_phase: ola-3
+active_status: PLANIFICADO
+last_completed_phase: ola-2 (S-01-B, S-DO-01)
 bootstrap_status: EN_PROGRESO
 planning_horizon_status: COMPLETA
 current_rfc_batch: []
@@ -125,7 +125,12 @@ sprints:
   - id: S-DO-01
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: LISTO
+    execution_status: COMPLETADO
+    branch: sprint/S-DO-01
+    base_sha: b99b936
+    final_sha: 3fc99a7bf8e1615b66a54d0f54b5bacc9749106e
+    merge_sha: 24320bd
+    qa: APROBADO sobre 605c240 con gobernanza c917aec
     depends_on: [S-00]
     parallelizable_with: [S-01-B]
   - id: S-QA-01
@@ -366,7 +371,50 @@ S-DO-02 debe cumplir y su RFC todavía no las declara.
 - Ninguno para planificar ni para ejecutar. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
 - Condición futura, no bloqueante: el RUC real, la razón social, la dirección fiscal, el usuario SOL real y el certificado digital comprado se necesitan solo para el paso a producción, que exige autorización explícita del usuario. Ver `docs/integraciones/sunat.md`.
 
-## Siguiente fase habilitada — ola 2
+## Ola 2 — CERRADA (2026-08-19)
+
+S-01-B y S-DO-01 completados y fusionados. Los dos fueron rechazados en su primera
+validación y aprobados tras corregir; ningún defecto era estructural.
+
+Lo que la ola deja, más allá de sus entregables: **cinco casos del mismo patrón de
+configuración divergente** (ver arriba), y una garantía que resultó cierta en un
+entorno y falsa en el otro — la revocación de `update`/`delete` sobre `auditorias`
+funcionaba contra la instalación local y no existía dentro del contenedor, porque la
+aplicación se conectaba como superusuario. QA verificó al cerrar que ahora los dos
+entornos coinciden **tanto en lo que protegen como en lo que dejan abierto**: SEG-02
+es el mismo hueco en ambos, con la misma causa.
+
+Regla que se deriva, aplicable a S-DO-02 y a cualquier ambiente futuro: **una
+garantía verificada en un entorno no está verificada en el otro.** Cada ambiente
+nuevo revalida las garantías que dice sostener, no las hereda.
+
+Dos cosas que QA declaró explícitamente como NO verificadas, y que no se dan por
+buenas: el tiempo de detección de ~30 s del healthcheck (coherente con la
+configuración leída, pero no medido de forma independiente), y el comportamiento de
+`/up` al retroceder a un commit intermedio, donde responde 500 en HTML y 200 en JSON.
+Esto último no se reprodujo en el código entregado y no pide acción; queda anotado
+porque revela que el healthcheck depende del render HTML de esa ruta, y esa ruta
+puede responder distinto según el `Accept`. Sirve si alguna vez aparece un contenedor
+`unhealthy` con la aplicación aparentemente sana.
+
+## Siguiente fase — ola 3
+
+**S-02-B, S-03-B y S-01-F**, declarados paralelizables entre sí en el roadmap.
+
+Antes de habilitarla hay que resolver una limitación que no es técnica: los dos
+sprints `-B` corresponden al mismo rol y hoy existe **un solo chat de Backend**. El
+roadmap declara que pueden correr en paralelo, pero el paralelismo entre sprints
+exige una sesión por carril; un chat no atiende dos sprints a la vez. Las opciones
+son abrir un segundo chat de Backend o ejecutar S-02-B y S-03-B en secuencia dentro
+del mismo. Es decisión del usuario y está pendiente.
+
+Aislamiento ya resuelto para cuando se habilite: un worktree por carril fuera del
+árbol compartido, y una base por carril según la convención de arriba
+(`ventas_inventario_<carril>_test`), que el `CREATEDB` otorgado el 2026-08-19 hace
+posible. Falta inventariar los puertos **mirando la máquina**, no razonando sobre
+ella, con el entorno contenerizado ya en juego.
+
+## Ola 2 — inventario que se usó
 
 **S-01-B** (`implementation-backend`) y **S-DO-01** (`devops`) en paralelo, ambos
 `LISTO`, ambos partiendo de `develop@<sha de cierre de S-00>`. Es el primer
