@@ -26,7 +26,9 @@ class CategoriaService
 
         $this->garantizarNombreUnico($campos['nombre']);
 
-        return Categoria::query()->create($campos);
+        // Se relee para devolver los valores por defecto de la base —hoy
+        // `activo`— y no un null que la fila no tiene.
+        return Categoria::query()->create($campos)->refresh();
     }
 
     public function actualizar(int $id, DatosDeCatalogo $datos): Categoria
