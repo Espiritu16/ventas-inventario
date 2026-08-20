@@ -76,9 +76,11 @@ sprints:
   - id: S-05-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: LISTO
+    execution_status: COMPLETADO
     branch: sprint/S-05-B
     base_sha: a2d2f48
+    final_sha: d51de537a8a6a79883f43129a9409255e9b97016
+    qa: APROBADO sobre d51de53 con gobernanza 1650dfd
     depends_on: [S-04-B]
     parallelizable_with: [S-03-F]
   - id: S-06-B
@@ -323,6 +325,45 @@ con teclado. Para S-09-B no: o se decide una herramienta que controle el teclado
 verdad —lo que reabre la decisión de E2E, hoy pospuesta— o se acepta el recorrido
 manual documentado que el propio RNF-008 describe. Decidirlo con el sprint encima es
 peor que decidirlo ahora.
+
+## Punto de detención — 2026-08-20, tercera parada
+
+Se para con **S-05-B cerrado y una tarea corta pendiente que bloquea a S-05-F**.
+
+| Carril | Estado |
+|---|---|
+| **S-05-B** | **COMPLETADO** y fusionado. QA aprobó `d51de53` sin rechazo previo |
+| **S-02-F** | Rama `sprint/S-02-F` en `e87aded`, entorno listo, **sin código escrito** |
+| QA | Sin trabajo asignado |
+| DevOps | Sin turno |
+
+### Lo primero al retomar — una tarea corta de `implementation-backend`
+
+**Proyectar el costo fuera de la respuesta del vendedor en `VentaService::encontrar()`**,
+y fijarlo con una prueba. El contrato ya está enmendado (`docs/contratos/ventas.md`); falta
+el código.
+
+Por qué es lo primero: **debe estar antes de que S-05-F pinte esa pantalla**. Hoy no es
+explotable —ADR-0006 retiró el endpoint y ninguna pantalla consume ese método—, así que
+este es el mejor momento para cerrarlo y el peor para que se olvide.
+
+QA verificó además que **ninguna prueba lo cubre**: las dos de vendedor en ventas
+comprueban el alcance —no ve ajenas, sí ve las propias— y ninguna mira la proyección.
+
+### Después de eso
+
+1. Despachar **S-05-F** (seguimiento de comprobantes y resúmenes diarios) y **S-06-B**
+   (emisión electrónica contra beta de SUNAT), que el roadmap declara paralelizables.
+2. **Aviso obligatorio antes de S-06-B**, ya vencido en su plazo: hacen falta RUC y razón
+   social del emisor, dirección fiscal, usuario secundario SOL y el **certificado digital
+   de pruebas**. Todo de ambiente beta. Conseguirlos es trámite; ver "Avisos al usuario".
+3. **Segunda promoción a `main`**: `main` tiene la ola 1-3; desde entonces entraron S-02-B,
+   S-01-F, S-03-B, S-04-B, S-05-B y toda la gobernanza. Es un lote coherente.
+
+### Lo que S-06-B hereda y no está en su RFC
+
+La verificación de `NIU` contra el ambiente beta, ya enmendada en ese RFC: el primer envío
+real debe incluir un ítem con ese código y comprobarse que el CDR lo acepta.
 
 ## Punto de detención — 2026-08-20, segunda parada del día
 
