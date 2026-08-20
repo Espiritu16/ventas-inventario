@@ -38,16 +38,27 @@ final class FundacionDeInterfazTest extends TestCase
 
     /**
      * Si alguien quita la comprobación de rol del menú, esta prueba falla:
-     * el ítem aparecería para todos. Es la que la práctica de mutación busca.
+     * los ítems aparecerían para todos. Es la que la práctica de mutación
+     * busca.
+     *
+     * Se afirma sección por sección y no que el menú esté vacío. Cuando este
+     * proyecto tenía una sola pantalla, "el vendedor no ve nada" y "el
+     * vendedor no ve Usuarios" eran indistinguibles; al aparecer Clientes
+     * —que sí le corresponde— la primera dejó de ser cierta sin que la regla
+     * hubiera cambiado. Afirmar lo incidental hace que la prueba caduque por
+     * algo que no es su tema.
      */
-    public function test_el_vendedor_no_ve_la_seccion_de_usuarios(): void
+    public function test_el_vendedor_solo_ve_las_secciones_que_le_corresponden(): void
     {
         $this->actingAs(Usuario::factory()->create(['rol' => Usuario::ROL_VENDEDOR]));
 
         $html = $this->renderizar('<x-menu />');
 
-        $this->assertStringNotContainsString('Usuarios', $html);
-        $this->assertStringContainsString('menu-vacio', $html);
+        foreach (['Usuarios', 'Categorías', 'Productos', 'Proveedores'] as $ajena) {
+            $this->assertStringNotContainsString($ajena, $html, "El vendedor no debería ver «{$ajena}».");
+        }
+
+        $this->assertStringContainsString('Clientes', $html, 'El vendedor sí atiende clientes.');
     }
 
     /**
