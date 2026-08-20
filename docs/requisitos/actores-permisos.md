@@ -241,6 +241,14 @@ tabla es la pantalla que expone esa operación**, no un endpoint que devuelva da
 un cliente. La autorización se aplica igual sobre ella, desde el servidor y con
 deny-by-default: ocultar un ítem del menú no es control de acceso.
 
+**Estas filas siguen vigentes aunque las rutas HTTP ya no existan — no las borres.**
+ADR-0006 retiró los endpoints de dominio del enrutador, pero la matriz no declara rutas:
+declara **quién puede hacer qué**. Lo que cambió es quién consume estas filas: antes el
+middleware sobre una ruta, ahora el mecanismo de permisos en componentes. Si alguien las
+borrara "porque la ruta ya no existe", las pantallas se quedarían sin permiso declarado y
+**fallarían todas** — que es el comportamiento correcto del mecanismo aplicado sobre una
+matriz vaciada por error. Señalado por `implementation-backend` al ejecutar el retiro.
+
 **Las filas cuyo verbo no es `GET` describen operaciones, no rutas HTTP.** Crear y
 actualizar ocurren dentro de la pantalla, invocando el servicio de dominio en el mismo
 proceso; no existe una ruta `POST /usuarios` ni `PATCH /usuarios/{id}` que atender. La
