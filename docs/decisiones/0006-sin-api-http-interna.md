@@ -50,8 +50,44 @@ llama. Un endpoint sin consumidor es superficie que nadie usa, y este proyecto y
 deja abierta.
 
 **Los contratos por dominio describen pantallas.** Su `Request`/`Response` describe lo que
-la pantalla acepta y muestra. Las filas cuyo verbo no es `GET` describen **operaciones**,
-no rutas: expresan quién puede hacer qué, que es lo que la matriz de permisos declara.
+la pantalla acepta y muestra.
+
+### Pantalla u operación: lo decide el destino, no el verbo
+
+La regla **no** es "`GET` es pantalla y el resto operación". Es:
+
+- **Pantalla**: un destino al que la persona navega. Cuáles existen lo declara
+  `docs/frontend/experiencia.md`, que aprueba el usuario. Esa es la autoridad.
+- **Operación**: algo que ocurre **dentro** de una pantalla, sin cambiar de destino.
+  Puede ser `GET` — leer el detalle de un producto para abrir su formulario de edición es
+  un `GET` y no es una pantalla, porque `experiencia.md` dice que el catálogo se gestiona
+  "en la misma pantalla, sin cambiar de ruta".
+
+Una fila de la matriz cuyo recurso no corresponde a ninguna pantalla de `experiencia.md`
+describe una operación. Si alguien cree que necesita una pantalla nueva, eso se agrega a
+`experiencia.md` y lo aprueba el usuario, no se deduce de que la fila diga `GET`.
+
+### Al cambiar el significado de los recursos hay que reauditar la matriz
+
+Este ADR **cambió el sentido de toda la columna de recursos** de la matriz de permisos.
+Las filas se escribieron cuando cada recurso era un endpoint JSON, y sus condiciones de
+alcance —"sin columna de costo", "sin margen"— describían **proyecciones de campos en una
+respuesta**, no acceso a una pantalla completa.
+
+Con el cambio, tres filas pasaron a significar algo que nadie decidió: el vendedor tenía
+`Sí` sobre `GET /categorias`, `GET /productos` y `GET /productos/{id}`, escrito cuando eso
+era el endpoint que la caja consultaba. Al volverse esos recursos **la pantalla de gestión
+de catálogo**, esas filas le daban acceso a una pantalla que `experiencia.md` declara solo
+para administrador — con las columnas de costo ocultas, pero con los botones de alta y
+edición a la vista y el rechazo recién al intentar escribir.
+
+Corregido el 2026-08-19: las tres pasan a `No`. **El acceso del vendedor no se pierde**:
+lo que necesita es buscar productos en la caja, que es otra pantalla (`/ventas/nueva`, sí
+suya) e invoca el mismo servicio bajo el permiso de esa pantalla.
+
+Es el patrón de siempre un piso más arriba: **algo que era correcto sigue escrito igual y
+ya no significa lo mismo, y nada falla al leerlo**. Lo detectó `implementation-frontend`
+al pasar el ADR por sus cuatro pantallas antes de implementar.
 
 ## Consecuencias
 

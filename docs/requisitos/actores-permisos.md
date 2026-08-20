@@ -141,6 +141,13 @@ Se implementa antes de abrir S-04-B y S-02-F.
   componente. El hook consulta las dos fuentes: la lista para saber si exige sesión, el
   atributo para saber qué permiso pide una vez que hay sesión.
 
+**El hook se registra en `register()`, nunca en `boot()`.** Livewire engancha sus hooks
+una sola vez, con los que conoce en ese momento; registrado más tarde, **el hook no
+corre**. Y no falla: deja de comprobar, en silencio, con todo en verde.
+`implementation-backend` lo tuvo así un rato al implementarlo. Es el peor caso de la
+familia que este proyecto viene coleccionando, porque **el mecanismo que falla en
+silencio es justamente el que existe para impedir que las cosas fallen en silencio.**
+
 **Condición de aceptación, no opcional:** el rechazo que nace en `render()` llega hoy
 envuelto en `ViewException`. Si por HTTP eso se tradujera en un **500** en vez del código
 de la taxonomía con su estado, el mecanismo estaría incumpliendo RNF-014 justo en el
@@ -265,14 +272,14 @@ S-01-F, y la propia tabla de infraestructura ya exigía esa página al declarar 
 | Vendedor | vendedor | GET /usuarios | listar | — | No | RF-002 |
 | Vendedor | vendedor | POST /usuarios | crear | — | No | RF-002 |
 | Administrador | administrador | GET /categorias | listar | — | Sí | RF-003 |
-| Vendedor | vendedor | GET /categorias | listar | — | Sí | RF-003 |
+| Vendedor | vendedor | GET /categorias | listar | **No** desde la pantalla de catálogo. Sí lee categorías dentro de la pantalla de caja, bajo el permiso de esa pantalla | No | RF-003 |
 | Administrador | administrador | POST /categorias | crear | — | Sí | RF-003 |
 | Administrador | administrador | PATCH /categorias/{id} | actualizar | — | Sí | RF-003 |
 | Vendedor | vendedor | POST /categorias | crear | — | No | RF-003 |
 | Administrador | administrador | GET /productos | listar | — | Sí | RF-004 |
-| Vendedor | vendedor | GET /productos | listar | sin columna de costo ni de margen | Sí | RF-004, RF-011 |
+| Vendedor | vendedor | GET /productos | listar | **No** desde la pantalla de catálogo, que `docs/frontend/experiencia.md` declara solo para administrador. Sí busca productos dentro de la pantalla de caja (`/ventas/nueva`), que sí es suya, invocando el mismo servicio bajo el permiso de esa pantalla y sin costo ni margen | No | RF-004, RF-011 |
 | Administrador | administrador | GET /productos/{id} | ver | — | Sí | RF-004 |
-| Vendedor | vendedor | GET /productos/{id} | ver | sin costo ni margen | Sí | RF-004 |
+| Vendedor | vendedor | GET /productos/{id} | ver | **No** como pantalla — no existe una pantalla de detalle de producto. Es una operación dentro del listado, y para el vendedor ocurre dentro de la caja | No | RF-004 |
 | Administrador | administrador | POST /productos | crear | — | Sí | RF-004 |
 | Administrador | administrador | PATCH /productos/{id} | actualizar | — | Sí | RF-004 |
 | Vendedor | vendedor | POST /productos | crear | — | No | RF-004 |
