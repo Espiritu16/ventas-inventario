@@ -990,6 +990,23 @@ Lo que deja la ola, más allá de sus entregables:
   motivo del índice parcial, el código de error del campo `codigo`, y el tamaño del
   catálogo 03 de SUNAT.
 
+## Alcance y proyección son dos preguntas distintas
+
+**A quién pertenece un recurso** y **qué campos viajan dentro de él** se prueban por
+separado, y cubrir la primera no cubre la segunda.
+
+`implementation-backend` lo formuló al reconocer el costo visible al vendedor: *"miré el
+acote de a quién pertenece la venta, no qué campos viaja adentro"*. Sus dos pruebas de
+vendedor comprobaban el alcance —no ve ventas ajenas, sí ve las propias— y ninguna miraba
+la proyección. QA lo confirmó de forma independiente.
+
+Es fácil de cometer porque la primera pregunta se siente como la difícil: el acote por
+propiedad es la regla explícita del contrato, la que uno va a buscar. La proyección suele
+estar en una cláusula aparte, o —como acá— no estar.
+
+**Al validar o al escribir pruebas de un recurso acotado, son dos aserciones distintas**, y
+la de proyección es la que se olvida.
+
 ## La unicidad protege el dato; el bloqueo protege la operación
 
 Son garantías distintas y **una prueba que solo mire integridad da por cubierto un
@@ -1008,6 +1025,13 @@ ventas que fallan.
 
 La prueba comprueba las tres cosas por separado: integridad del dato, que la operación no
 muera, y que el bloqueo esté.
+
+**El daño es peor de lo que la primera descripción sugería.** Se escribió como "tres
+clientes sin comprobante después de que se les cobró", y `qa` precisó que el rollback
+revierte también el descuento de stock: la venta no queda a medias en los datos. Eso suena
+a mitigación y no lo es — significa que **no queda ningún rastro de esas ventas**. El
+cajero cobró, el sistema dice que no pasó nada, y no hay nada que reconciliar después: hay
+que rehacerlas de memoria. La integridad intacta es justamente lo que borra la evidencia.
 
 ## Dos formas en que una prueba de concurrencia pasa sin probar nada
 
