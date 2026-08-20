@@ -241,6 +241,45 @@ Escalado al usuario como decisión de alcance: es transversal y no cae en un sol
 
 ---
 
+# Verificar un hecho vecino no es verificar la pregunta
+
+**Registrado el 2026-08-20, después de que la misma forma apareciera cuatro veces en una
+tarde, en los tres roles y en Arquitectura.** No es falta de rigor: las cuatro veces se
+verificó algo *de verdad*, y las cuatro veces lo verificado no era lo que se estaba afirmando.
+
+| Quién | Qué comprobó | Qué afirmó | Por qué no se seguía |
+|---|---|---|---|
+| `implementation-backend` | un `grep` de seis líneas después de cada llamada al validador | que `$codigosPorCampo` no tenía consumidores | tenía dos, y los dos caían fuera de la ventana |
+| Arquitectura | que el enum no menciona nombres de regla | que **eso** era lo que impedía el falso positivo | lo impedía el prefijo `CodigoDeError::`; nunca se leyó qué contaba el detector |
+| `qa` | que los `case` viven fuera de los métodos | que eso distinguía una declaración de una traducción | el enum ya usa `self::CAMPO_*` **dentro** de un método, y no es una traducción |
+| `implementation-backend` | nada — venía razonado | que cada mitad de la conjunción del guardián sostenía un caso propio | quitar el mínimo de dos códigos **no hacía fallar ninguna prueba** |
+
+**Lo que las une: se razonó sobre lo que el mecanismo *debería* mirar en vez de leer lo que
+mira.** Y en los cuatro casos la comprobación hecha era cierta, lo que las vuelve difíciles de
+detectar: no hay un dato falso del que tirar, hay un dato verdadero contestando otra pregunta.
+
+Las tres reglas que salen, y las tres se pagaron el mismo día:
+
+1. **Antes de afirmar por qué algo funciona, leé el mecanismo.** No alcanza con comprobar una
+   propiedad del artefacto sobre el que el mecanismo opera. Fue lo que resolvió los cuatro
+   casos, y siempre del mismo modo: alguien fue a leer el código en vez de deducirlo.
+2. **La ventana de la búsqueda es parte de la búsqueda.** Un resultado vacío solo dice que no
+   había nada *dentro de la ventana*. Vale para un `grep` acotado, para un `lsof` sin
+   privilegios, y para un patrón mal escapado — que le pasó a Arquitectura media hora después
+   de señalárselo a otro.
+3. **Una afirmación sobre cobertura que se escribe en el código se mide, no se argumenta.** La
+   cuarta fila iba a quedar escrita como comentario en el propio detector, razonada y sonando
+   bien. Al medirla resultó que una de las dos condiciones no la sostenía **nada**, y era
+   exactamente el tipo de condición que alguien borra en seis meses porque parece de más y no
+   ve que rompa nada. Ahora cada mitad tiene una prueba que se cae si desaparece.
+
+**El correctivo no es "prestar más atención".** Las cuatro veces el error lo encontró **otro
+rol**, no quien lo cometió, y ninguno de los cuatro se sentía inseguro al afirmarlo. Lo que
+funcionó fue tener alguien mirando con otra pregunta en la cabeza — y que quien se equivocó lo
+contara en vez de corregirlo en silencio, porque eso cambia qué va a mirar el siguiente.
+
+---
+
 # Estado del proyecto
 
 ## Progreso
