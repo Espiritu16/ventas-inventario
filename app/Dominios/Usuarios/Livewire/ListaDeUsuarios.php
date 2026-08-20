@@ -61,11 +61,6 @@ class ListaDeUsuarios extends Component
 
     public ?string $exito = null;
 
-    public function mount(): void
-    {
-        $this->exigirPermiso('GET /usuarios');
-    }
-
     public function updatedBuscar(): void
     {
         // Al cambiar la búsqueda se vuelve a la primera página: conservar la
@@ -236,8 +231,23 @@ class ListaDeUsuarios extends Component
         $this->campoConError = null;
     }
 
+    /**
+     * La comprobación vive acá, donde se sirven los datos, y no en `mount()`.
+     *
+     * `mount()` corre una sola vez: en cada interacción posterior el componente
+     * se hidrata desde el snapshot que el navegador guardó y `render()` vuelve
+     * a consultar sin pasar por el montaje. Comprobar solo al montar protege la
+     * primera carga y nada más — a quien se le cambie el rol con la pantalla
+     * abierta seguiría viendo el listado hasta recargar.
+     *
+     * El middleware tampoco lo cubre: el endpoint de actualización de Livewire
+     * exige sesión activa pero no comprueba rol, porque es el mismo endpoint
+     * para todos los componentes.
+     */
     public function render()
     {
+        $this->exigirPermiso('GET /usuarios');
+
         return view('livewire.usuarios.lista-de-usuarios', [
             'usuarios' => app(UsuarioService::class)->listar(
                 $this->buscar === '' ? null : $this->buscar,

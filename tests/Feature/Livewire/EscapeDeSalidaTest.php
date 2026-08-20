@@ -7,6 +7,7 @@ use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -69,10 +70,34 @@ final class EscapeDeSalidaTest extends TestCase
     }
 
     /**
-     * Ninguna vista de este frente desactiva el escape. Si alguna necesitara
-     * hacerlo alguna vez, tendría que justificarse acá y no pasar inadvertida.
+     * Ninguna vista de este frente desactiva el escape, por ninguna de las vías
+     * que existen para hacerlo.
+     *
+     * `{!! !!}` es la más conocida, pero no la única: `HtmlString` y `->toHtml()`
+     * marcan una cadena como segura, `@php echo` y `html_entity_decode`
+     * esquivan a Blade por completo, y `Js::from`/`@js(` inyectan en contexto
+     * JavaScript, donde el escape de HTML no protege. Barrer solo la primera
+     * dejaría las otras cinco sin cubrir el día que alguien las use.
+     *
+     * Vías sugeridas por QA durante la validación, a partir de su propio
+     * barrido.
+     *
+     * @return array<int, array{0: string, 1: string}>
      */
-    public function test_ninguna_vista_desactiva_el_escape_de_blade(): void
+    public static function viasQueDesactivanElEscape(): array
+    {
+        return [
+            'echo sin escapar' => ['/\{!!.*!!\}/s', '{!! !!}'],
+            'cadena marcada como segura mediante HtmlString' => ['/\bHtmlString\b/', 'HtmlString'],
+            'cadena marcada como segura con toHtml' => ['/->toHtml\(/', '->toHtml()'],
+            'salida cruda esquivando a Blade' => ['/@php\s+echo\b/s', '@php echo'],
+            'decodificacion de entidades' => ['/\bhtml_entity_decode\s*\(/', 'html_entity_decode()'],
+            'inyeccion en contexto JavaScript' => ['/\bJs::from\s*\(|@js\s*\(/', 'Js::from() o @js()'],
+        ];
+    }
+
+    #[DataProvider('viasQueDesactivanElEscape')]
+    public function test_ninguna_vista_desactiva_el_escape(string $patron, string $via): void
     {
         $culpables = [];
 
@@ -85,11 +110,11 @@ final class EscapeDeSalidaTest extends TestCase
                 continue;
             }
 
-            if (preg_match('/\{!!.*!!\}/s', (string) file_get_contents($archivo->getPathname()))) {
+            if (preg_match($patron, (string) file_get_contents($archivo->getPathname()))) {
                 $culpables[] = str_replace(resource_path('views/'), '', $archivo->getPathname());
             }
         }
 
-        $this->assertSame([], $culpables, 'Estas vistas desactivan el escape de Blade con {!! !!}.');
+        $this->assertSame([], $culpables, "Estas vistas desactivan el escape con {$via}.");
     }
 }

@@ -133,4 +133,74 @@ final class EscaladaPorComponenteTest extends TestCase
 
         $this->assertDatabaseHas('usuarios', ['email' => 'ana@ejemplo.pe']);
     }
+
+    // --- Lectura: el permiso se comprueba al servir los datos, no al montar ---
+
+    /**
+     * El defecto que QA encontró por HTTP y que este sprint tuvo que corregir.
+     *
+     * `mount()` corre una sola vez. En cada interacción posterior el componente
+     * se hidrata desde el snapshot y `render()` vuelve a consultar sin pasar
+     * por el montaje, así que un permiso comprobado solo al montar protege la
+     * primera carga y nada más. A un administrador degradado a vendedor con la
+     * pantalla abierta, el listado le seguía respondiendo con los nombres y
+     * correos de todos hasta que recargara.
+     */
+    public function test_un_administrador_degradado_deja_de_ver_el_listado(): void
+    {
+        $admin = Usuario::factory()->administrador()->create();
+        Usuario::factory()->create(['nombre' => 'Secreto Confidencial']);
+
+        $this->actingAs($admin);
+
+        $componente = Livewire::test(ListaDeUsuarios::class);
+        $componente->assertSee('Secreto Confidencial');
+
+        // Se le cambia el rol con la pantalla ya abierta.
+        $admin->update(['rol' => Usuario::ROL_VENDEDOR]);
+
+        $rechazo = $this->rechazoDe(fn () => $componente->set('buscar', 'Secreto')->html());
+
+        $this->assertSame('NO_AUTORIZADO', $rechazo->codigo->value);
+    }
+
+    /**
+     * El caso vecino, que parecía el mismo y no lo era: a un usuario
+     * desactivado lo frena además el middleware, que comprueba `activo`. Al
+     * degradado no lo frenaba nadie. Se cubren los dos por separado para que
+     * no vuelvan a confundirse.
+     */
+    public function test_un_administrador_desactivado_deja_de_ver_el_listado(): void
+    {
+        $admin = Usuario::factory()->administrador()->create();
+        Usuario::factory()->create(['nombre' => 'Secreto Confidencial']);
+
+        $this->actingAs($admin);
+
+        $componente = Livewire::test(ListaDeUsuarios::class);
+        $componente->assertSee('Secreto Confidencial');
+
+        $admin->update(['activo' => false]);
+
+        $rechazo = $this->rechazoDe(fn () => $componente->set('buscar', 'Secreto')->html());
+
+        $this->assertSame('NO_AUTORIZADO', $rechazo->codigo->value);
+    }
+
+    /** Cambiar de página tampoco vuelve a servir datos a quien ya no puede verlos. */
+    public function test_un_degradado_tampoco_puede_paginar(): void
+    {
+        $admin = Usuario::factory()->administrador()->create();
+        Usuario::factory()->count(3)->create();
+
+        $this->actingAs($admin);
+
+        $componente = Livewire::test(ListaDeUsuarios::class);
+
+        $admin->update(['rol' => Usuario::ROL_VENDEDOR]);
+
+        $rechazo = $this->rechazoDe(fn () => $componente->set('pagina', 2)->html());
+
+        $this->assertSame('NO_AUTORIZADO', $rechazo->codigo->value);
+    }
 }
