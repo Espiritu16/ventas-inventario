@@ -757,7 +757,24 @@ S-DO-02 debe cumplir y su RFC todavía no las declara.
 - **Árbol de trabajo único.** Las cinco sesiones comparten `/Users/sankef/ventas-inventario`. Hoy funciona porque S-00 corre solo, pero cualquier ola con dos sprints simultáneos exige worktrees dedicados por carril, acordados antes del despacho.
 
 ## Bloqueantes
-- Ninguno para planificar ni para ejecutar. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
+
+**BLOQUEADO — la enmienda de permisos por área espera aprobación del usuario.**
+Redactada como borrador en la rama `gobernanza/enmienda-permisos-por-area` (`6912398`),
+sin fusionar. Detiene hoy:
+
+| Qué | Detalle |
+|---|---|
+| 12 pruebas rojas | 9 en `RedireccionAlAccesoTest`, 3 en `LivewireOperativoTest`, en directorios sin dueño |
+| El retiro de los endpoints de ADR-0006 | Hecho en el árbol de backend, sin commitear |
+| El mecanismo de permisos en componentes | Implementado y verificado, no fusionable |
+| S-04-B y S-02-F | Sin abrir |
+
+Cinco directorios de prueba con doce archivos no tienen dueño declarado, desde S-00:
+`tests/Feature/Autorizacion/`, `tests/Feature/Fundacion/`, `tests/Feature/Interfaz/`,
+`tests/Soporte/` y `tests/recursos/`. No es un hueco que abriera el mecanismo — el
+mecanismo se topó con él.
+
+- Sin bloqueo para el resto de la planificación. S-06-B se desarrolla y S-QA-01 valida contra el ambiente **beta**, con credenciales y certificado de prueba: no hacen falta datos del negocio.
 - Condición futura, no bloqueante: el RUC real, la razón social, la dirección fiscal, el usuario SOL real y el certificado digital comprado se necesitan solo para el paso a producción, que exige autorización explícita del usuario. Ver `docs/integraciones/sunat.md`.
 
 ## Ola 2 — CERRADA (2026-08-19)
