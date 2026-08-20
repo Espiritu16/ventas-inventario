@@ -4,19 +4,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Unidades de medida — Catálogo 03
+    | Unidades de medida — subconjunto adoptado
     |--------------------------------------------------------------------------
     |
     | Códigos que pueden viajar en el comprobante electrónico. SUNAT rechaza el
-    | documento entero si recibe uno que no está en su catálogo, así que la
+    | documento entero si recibe uno que su catálogo no admite, así que la
     | validación ocurre al crear el producto y no al emitir: descubrirlo recién
     | en la caja significaría una venta que no se puede facturar.
     |
-    | PROPUESTA, pendiente de aprobación de Arquitectura. La lista tiene los 62
-    | códigos que las guías de referencia reproducen del Catálogo 03, pero el
-    | servidor de SUNAT no fue accesible al implementar este sprint, así que
-    | NO está verificada contra la fuente oficial. Antes de emitir contra el
-    | ambiente beta en S-06-B hay que confirmarla contra el anexo vigente.
+    | El Catálogo 03 de SUNAT no enumera códigos: delega en UN/ECE
+    | Recommendation 20 Rev 13, que tiene del orden de mil ochocientos. Esta
+    | lista es un SUBCONJUNTO que adopta el proyecto —decisión nuestra, no un
+    | hecho sobre SUNAT—, porque aceptar los mil ochocientos volvería inútil la
+    | validación: existe para que un error de carga no llegue al comprobante, y
+    | una comercializadora no vende en unidades astronómicas.
+    |
+    | Ampliarlo cuando el negocio lo pida es trivial: agregar el código acá.
+    |
+    | Estado: PROPUESTA pendiente de aprobación de Arquitectura. Los códigos
+    | provienen de una guía de referencia para Perú y NO se pudieron contrastar
+    | contra Rec 20: el archivo de UN/ECE devuelve 403 y los anexos de SUNAT no
+    | fueron legibles desde acá. Ver el handoff de S-02-B.
     |
     */
 
