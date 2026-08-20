@@ -7,6 +7,7 @@ use App\Compartido\Documentos\TipoDeDocumento;
 use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
 use App\Compartido\Errores\ValidadorDeDominio;
+use App\Compartido\Idempotencia\RegistroDeOperaciones;
 use App\Dominios\Catalogo\Modelos\Producto;
 use App\Dominios\Clientes\Modelos\Cliente;
 use App\Dominios\Comprobantes\Modelos\Comprobante;
@@ -47,7 +48,25 @@ class VentaService
     public function __construct(
         private readonly InventarioService $inventario,
         private readonly SerieComprobanteService $series,
+        private readonly RegistroDeOperaciones $operaciones = new RegistroDeOperaciones,
     ) {}
+
+    /**
+     * Registra la venta una sola vez por clave de operación (RF-011).
+     *
+     * Es la puerta que debe usar la caja. Un doble clic o una recarga producen
+     * dos peticiones idénticas, y una venta duplicada descuenta stock real y
+     * consume un correlativo tributario: ninguna de las dos cosas se deshace
+     * sola, y el cliente se llevó una sola bolsa.
+     */
+    public function registrarUnaSolaVez(string $claveDeOperacion, DatosDeEntrada $datos, Usuario $actor): Venta
+    {
+        return $this->operaciones->unaSolaVez(
+            $claveDeOperacion,
+            $datos->todos(),
+            fn () => $this->registrar($datos, $actor),
+        );
+    }
 
     public function registrar(DatosDeEntrada $datos, Usuario $actor): Venta
     {
