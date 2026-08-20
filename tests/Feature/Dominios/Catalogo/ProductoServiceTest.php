@@ -74,6 +74,36 @@ final class ProductoServiceTest extends TestCase
         );
     }
 
+    public static function codigosMalFormados(): array
+    {
+        return [
+            'vacío' => ['', CodigoDeError::CAMPO_REQUERIDO],
+            'con símbolos' => ['AB#123', CodigoDeError::CAMPO_FORMATO_INVALIDO],
+            'con espacios' => ['ARR 001', CodigoDeError::CAMPO_FORMATO_INVALIDO],
+            'con acentos' => ['ARRÓZ', CodigoDeError::CAMPO_FORMATO_INVALIDO],
+            'de más de 40 caracteres' => [str_repeat('A', 41), CodigoDeError::CAMPO_FUERA_DE_RANGO],
+        ];
+    }
+
+    /**
+     * Un código mal escrito no es un código repetido.
+     *
+     * Se cubre porque no lo estaba y el hueco tenía consecuencia: el servicio
+     * declaraba `PRODUCTO_CODIGO_DUPLICADO` como código del campo `codigo`, y
+     * eso alcanzaba a todos sus fallos, no solo al duplicado. Un código vacío
+     * respondía «ya existe» con el mensaje «el campo es obligatorio» al lado.
+     *
+     * La cobertura de formato existía para precios y unidad de medida, pero no
+     * para el código, así que nada lo veía.
+     */
+    #[DataProvider('codigosMalFormados')]
+    public function test_rechaza_un_codigo_mal_escrito_sin_confundirlo_con_uno_repetido(
+        string $codigo,
+        CodigoDeError $esperado,
+    ): void {
+        $this->assertRechaza(fn () => $this->servicio->crear($this->datos(['codigo' => $codigo])), $esperado);
+    }
+
     public function test_rechaza_una_categoria_inexistente(): void
     {
         $this->assertRechaza(

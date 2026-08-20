@@ -268,8 +268,7 @@ class VentaService
                     'producto_id' => ['required', 'integer', 'min:1'],
                     'cantidad' => ['required', 'regex:'.self::FORMATO_CANTIDAD],
                     'tipo_precio' => ['required', 'string'],
-                ],
-                ['tipo_precio' => CodigoDeError::TIPO_PRECIO_INVALIDO]
+                ]
             );
         }
 

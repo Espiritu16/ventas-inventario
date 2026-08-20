@@ -49,8 +49,7 @@ class ProductoService
                 'precio_menor' => ['required', 'regex:'.self::FORMATO_PRECIO],
                 'precio_mayor' => ['required', 'regex:'.self::FORMATO_PRECIO],
                 'stock_minimo' => ['sometimes', 'required', 'regex:'.self::FORMATO_CANTIDAD],
-            ],
-            ['codigo' => CodigoDeError::PRODUCTO_CODIGO_DUPLICADO]
+            ]
         );
 
         $this->garantizarUnidadValida($campos['unidad_medida']);
