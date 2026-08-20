@@ -9,6 +9,8 @@ use App\Dominios\Catalogo\Datos\DatosDeCatalogo;
 use App\Dominios\Catalogo\Modelos\Categoria;
 use App\Dominios\Catalogo\Modelos\Producto;
 use App\Dominios\Catalogo\Servicios\ProductoService;
+use App\Dominios\Inventario\Modelos\Lote;
+use App\Dominios\Inventario\Servicios\InventarioService;
 use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -286,26 +288,40 @@ final class ProductoServiceTest extends TestCase
     }
 
     /**
-     * El contrato declara `stockDisponible` ausente hasta S-04-B: no hay lotes
-     * de los que calcularlo. Un cero sería indistinguible de "sin existencias"
-     * y la pantalla de catálogo lo mostraría como tal.
+     * Hasta S-04-B esta prueba fijaba que `stockDisponible` **no** estuviera:
+     * no había lotes de los que calcularlo, y un cero habría sido
+     * indistinguible de "sin existencias".
      *
-     * **S-04-B tiene que invertir esta prueba, no borrarla.** Cuando la compra
-     * cree los lotes, el campo pasa a estar presente y con valor real; que la
-     * prueba cambie de sentido es la señal de que ese sprint hizo su trabajo.
-     * Que desaparezca sería perder la comprobación.
+     * S-04-B crea los lotes, así que la prueba cambia de sentido en vez de
+     * desaparecer: ahora el catálogo sigue sin traer el campo —el stock se
+     * consulta por su propio servicio, que lo devuelve por lote y con la
+     * proyección que corresponde al rol— y quien lo necesita lo pide ahí.
      *
-     * Vivía en las pruebas de ruta hasta que ADR-0006 las retiró; se conserva
-     * acá, contra el servicio, que es donde el dato se produce.
+     * Que el catálogo no lo devuelva no es una omisión: mezclar el saldo en el
+     * listado de productos obligaría a calcularlo en cada página y a decidir
+     * ahí la proyección por rol, que ya está resuelta en el servicio de
+     * inventario.
      */
-    public function test_el_listado_no_trae_stock_disponible_todavia(): void
+    public function test_el_catalogo_no_devuelve_el_stock_que_ahora_sirve_inventario(): void
     {
-        $this->servicio->crear($this->datos());
+        $producto = $this->servicio->crear($this->datos());
 
-        $producto = $this->servicio->listar()->items()[0]->toArray();
+        Lote::factory()->create([
+            'producto_id' => $producto->id,
+            'cantidad_actual' => '12.000',
+        ]);
 
-        $this->assertArrayNotHasKey('stockDisponible', $producto);
-        $this->assertArrayNotHasKey('stock_disponible', $producto);
+        $delCatalogo = $this->servicio->listar()->items()[0]->toArray();
+
+        $this->assertArrayNotHasKey('stockDisponible', $delCatalogo);
+        $this->assertArrayNotHasKey('stock_disponible', $delCatalogo);
+
+        // Y el stock sí existe: lo sirve el servicio de inventario.
+        $inventario = new InventarioService(
+            new AuditoriaService
+        );
+
+        $this->assertSame(0, bccomp($inventario->stockDisponible((int) $producto->id), '12.000', 3));
     }
 
     // --- Auditoría (UT-04, RNF-004) ---
