@@ -42,15 +42,21 @@ sprints:
   - id: S-02-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: LISTO
+    execution_status: COMPLETADO
     branch: sprint/S-02-B
     base_sha: b1c7b13
+    final_sha: 9c5c605105eade23f5b4e5ff250fa740f7efebc1
+    merge_sha: 64d21e4
+    qa: APROBADO sobre 67bd7d5 con gobernanza 92c1d1c
     depends_on: [S-01-B]
     parallelizable_with: [S-03-B, S-01-F]
   - id: S-03-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: EN_PROGRESO
+    branch: sprint/S-03-B
+    base_sha: 9304925
+    nota_de_ejecucion: en secuencia tras S-02-B pese a ser paralelizable — comparten database/migrations/ y config/
     depends_on: [S-01-B]
     parallelizable_with: [S-02-B, S-01-F]
   - id: S-04-B
@@ -86,9 +92,12 @@ sprints:
   - id: S-01-F
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: LISTO
+    execution_status: COMPLETADO
     branch: sprint/S-01-F
     base_sha: b1c7b13
+    final_sha: 2b26c193654d19d97a753b46afccb0c2a7a48294
+    merge_sha: c6f7add
+    qa: APROBADO sobre 0450853 con gobernanza 9304925
     depends_on: [S-01-B]
     parallelizable_with: [S-02-B, S-03-B]
   - id: S-02-F
@@ -208,6 +217,20 @@ una que responde "nada" porque no hay nada. Una comprobación de salud tiene que
 un registro sobre él. Y si puede fallar por falta de permisos, tiene que distinguir ese
 caso del caso sano, o mentirá exactamente cuando más importa. Es el mismo falso verde
 del healthcheck que devolvía 200 sirviendo una advertencia, con otra cara.
+
+## Nota para cuando el barrido de escape bloquee un uso legítimo
+
+`qa` verificó que el barrido de las seis vías de salida cruda **es completo para el
+contexto JavaScript**, y por una razón que conviene tener escrita: dentro de un bloque
+`<script>` un `{{ }}` no es explotable, porque las entidades HTML no se decodifican ahí
+—una carga sale inerte, corrompiendo el dato sin ejecutar—. La única forma de meter
+JavaScript ejecutable desde un dato es desactivar el escape explícitamente, y esas seis
+vías son exactamente ese conjunto.
+
+**Pero una de ellas, `@js()` / `Js::from()`, es la forma correcta de pasar datos a
+JavaScript.** El día que alguien la necesite legítimamente, la prueba lo va a bloquear.
+Es defendible —obliga a que ese uso pase por revisión— pero **no es un falso positivo**:
+si ocurre, la respuesta es revisar el caso y decidir, no relajar el barrido por reflejo.
 
 ## Huecos de cobertura abiertos — S-02-B, aprobados con ellos a la vista
 
@@ -540,6 +563,33 @@ segundo entorno falle al levantar, que sería ruidoso: es que el puerto responda
 aprueba, y aprueba lo que no era. Si alguna vez hacen falta dos entornos a la vez en
 la misma máquina, la salida conocida es parametrizar el puerto publicado
 (`${PUERTO_APP:-8080}:8000`); no se implementó porque hoy ningún caso lo pide.
+
+## Patrón recurrente — dos valores que hay que mantener iguales
+
+Cuatro veces, y las cuatro se resolvieron igual: **reemplazar dos fuentes que alguien
+debe mantener sincronizadas por una sola, derivada de donde nace el dato.**
+
+1. **El prefijo de Livewire.** Se iba a fijar por configuración y declarar la cadena en
+   la gobernanza. Se deriva de `APP_KEY`, así que la declaración habría sido correcta en
+   una máquina y falsa en todas las demás. Se resolvió leyéndolo de la misma fuente que
+   registra las rutas.
+2. **El nombre del componente de acceso.** Se declara por la clase y el nombre de
+   invocación se deriva del registro de componentes, no de una cadena escrita a mano.
+3. **El coste del señuelo de bcrypt.** Es una constante precalculada con coste 12
+   mientras los hashes reales usan el configurado; hoy coinciden por casualidad.
+   Pendiente en S-08-B: derivarlo del coste vigente.
+4. **La comprobación de permiso en `mount()` y en `render()`.** Se retiró la del montaje
+   en lugar de dejar ambas.
+
+Sobre la cuarta, el argumento que la cierra es de `qa` y es más fuerte que "no agregaba
+mucha cobertura": **`mount()` corre una vez y siempre antes de un `render()`, así que su
+conjunto de casos es un subconjunto estricto del de `render()`**. No agrega ninguno.
+Dejarla sería un segundo lugar que mantener a cambio de cero casos nuevos.
+
+**Cuándo sí vale tener dos capas:** cuando son independientes y fallan por causas
+distintas. Eso ya existe acá — el componente comprueba el permiso y el servicio no
+confía en el componente. Dos comprobaciones idénticas dentro del mismo objeto, una
+contenida en la otra, no son dos capas: son una escrita dos veces.
 
 ## Patrón recurrente — la configuración declarada y la conexión real divergen
 
