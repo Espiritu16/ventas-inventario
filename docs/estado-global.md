@@ -217,15 +217,23 @@ que se rompa sin que nadie se entere.
 
 | # | Qué no está fijado | Consecuencia si se rompe | Propietario |
 |---|---|---|---|
-| H-1 | La rama de Livewire en el middleware de acceso. Quitar `esDeLivewire()` hace que un componente sin sesión reciba 302 a `/login` en vez de 401, **y la suite sigue verde** | Un componente Livewire recibiría un redirect que no sabe manejar. El síntoma aparecería en una pantalla de otro sprint, lejos de la causa | `implementation-backend` |
+| ~~H-1~~ | ~~La rama de Livewire en el middleware de acceso.~~ **CERRADO en S-01-F.** `implementation-frontend` escribió `test_livewire_recibe_el_codigo_y_no_un_redirect` en `tests/Feature/Livewire/`, que es su ruta declarada, y verificó por mutación que es la única de 233 que falla al quitar la rama | — | cerrado |
 | H-2 | La clave foránea de categoría en `RESTRICT`. Cambiarla a `CASCADE` no lo detecta nadie | Borrar una categoría arrastraría sus productos. Hoy **ninguna ruta ni método borra categorías**, así que protege contra algo que aún no se puede hacer | `implementation-backend` |
 
-H-1 importa más y su momento es ahora: S-01-F construye componentes Livewire. Una prueba
-que pida `POST {prefijo}/update` sin sesión y afirme 401 —no 302— lo cierra.
+**H-1 quedó cerrado sin necesitar la enmienda**, y el cómo importa: yo lo di por
+bloqueado porque supuse que la prueba tenía que vivir en `tests/Feature/Autorizacion/`,
+un directorio sin dueño. `implementation-frontend` notó que lo que se protege es el
+comportamiento observable **desde el lado de Livewire**, y eso cae en
+`tests/Feature/Livewire/`, que sí es su ruta declarada. No hizo falta tocar nada de
+backend.
 
-**Las dos están bloqueadas por la enmienda de permisos por área**: viven en
-`tests/Feature/Autorizacion/`, que ningún rol tiene declarado. Es la misma enmienda que
-bloquea la corrección de la raíz.
+La lección es sobre el bloqueo, no sobre la prueba: **antes de declarar algo bloqueado
+por permisos, conviene preguntarse desde qué lado se observa la garantía**, no solo
+dónde vive el código que la implementa. Puede haber un dueño legítimo que la suposición
+inicial descarta.
+
+**H-2 sigue bloqueado por la enmienda de permisos por área**, junto con la corrección de
+la raíz.
 
 QA consideró rechazar por H-1 y explicó por qué no lo hizo, en vez de decidirlo por
 omisión: `RECHAZADO` está definido como no conformidad reproducida, regresión,
