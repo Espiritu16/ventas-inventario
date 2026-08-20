@@ -3,7 +3,7 @@ project: ventas-inventario
 source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
 active_phase: ola-3
-active_status: PLANIFICADO
+active_status: EN_PROGRESO
 last_completed_phase: ola-2 (S-01-B, S-DO-01)
 bootstrap_status: EN_PROGRESO
 planning_horizon_status: COMPLETA
@@ -42,7 +42,9 @@ sprints:
   - id: S-02-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: LISTO
+    branch: sprint/S-02-B
+    base_sha: b1c7b13
     depends_on: [S-01-B]
     parallelizable_with: [S-03-B, S-01-F]
   - id: S-03-B
@@ -84,7 +86,9 @@ sprints:
   - id: S-01-F
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: LISTO
+    branch: sprint/S-01-F
+    base_sha: b1c7b13
     depends_on: [S-01-B]
     parallelizable_with: [S-02-B, S-03-B]
   - id: S-02-F
@@ -157,6 +161,40 @@ sprints:
 - Repositorio publicado en https://github.com/Espiritu16/ventas-inventario
 - Ejecución iniciada el 2026-08-19. Los cinco chats de rol están abiertos y conectados por canal directo con el Coordinador.
 - **Tres sprints completados**: S-00 (fundación), S-01-B (acceso, usuarios y control de permisos) y S-DO-01 (entorno reproducible). Los tres fusionados en `develop`. Cada uno fue rechazado una vez por QA y aprobado tras corregir.
+
+## Ola 3 — habilitada el 2026-08-19 (reanudación)
+
+**Decisión: S-02-B y S-03-B van en SECUENCIA, no en paralelo.** El roadmap los declara
+paralelizables y sigue siendo cierto a nivel de dependencias funcionales, pero
+comparten `database/migrations/` y `config/`, así que dos sesiones simultáneas
+chocarían en el árbol. Renunciar al paralelo por una razón operativa real es una salida
+válida y no contradice el roadmap. Decisión del Coordinador sobre la recomendación
+registrada, autorizada por el usuario al ordenar la reanudación.
+
+Habilitados ahora, en dos carriles:
+
+| Carril | Sprint | Rol | Rama | Worktree |
+|---|---|---|---|---|
+| 1 | **S-02-B** — catálogo: categorías y productos | `implementation-backend` | `sprint/S-02-B` | scratchpad de sesión |
+| 2 | **S-01-F** — base de la interfaz y pantalla de acceso | `implementation-frontend` | `sprint/S-01-F` | scratchpad de sesión |
+
+Ambos parten de `develop@b1c7b13`. **S-03-B queda en `PLANIFICADO`** y se habilita al
+cerrar S-02-B, en el mismo carril.
+
+### Inventario de estado externo — hecho mirando la máquina
+
+| Recurso | Estado real | Decisión |
+|---|---|---|
+| PostgreSQL local | Corriendo, conecta con el rol de la aplicación | Base por carril: `ventas_inventario_s02b_test` y `ventas_inventario_s01f_test` |
+| Puerto 8000 | Libre | Para quien levante `artisan serve`; se coordina si los dos lo quieren a la vez |
+| Puerto 8080 | Libre | Entorno contenerizado, si alguno lo usa |
+| Puerto 5173 | Libre | Vite en modo desarrollo, que S-01-F probablemente use |
+| Contenedores ajenos | `reservas-canchas-mysql` en 3307 | De otro proyecto; no interfiere |
+
+Nota de método sobre este inventario: `lsof` reportó el 5432 como libre y la base
+**sí** estaba corriendo y aceptando conexiones. La comprobación válida fue conectarse,
+no consultar un listado de puertos. Es el mismo patrón de configuración divergente
+registrado más arriba, esta vez cometido por el Coordinador al inventariar.
 
 ## Punto de detención — 2026-08-19
 
