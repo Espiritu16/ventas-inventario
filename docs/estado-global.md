@@ -92,7 +92,11 @@ sprints:
   - id: S-07-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: LISTO
+    branch: sprint/S-07-B
+    base_sha: 4299e8c
+    habilitado: 2026-08-20 — dependencias satisfechas (S-05-B COMPLETADO), RFC aprobado, sin decisiones abiertas
+    despacho: subagente
     depends_on: [S-05-B]
     parallelizable_with: [S-06-B, S-08-B, S-04-F]
   - id: S-08-B
