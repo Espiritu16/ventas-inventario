@@ -5,6 +5,7 @@ namespace Tests\Feature\Dominios\Inventario;
 use App\Compartido\Auditoria\AuditoriaService;
 use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
+use App\Compartido\Fechas\RangoDeFechas;
 use App\Dominios\Catalogo\Modelos\Producto;
 use App\Dominios\Inventario\Modelos\Lote;
 use App\Dominios\Inventario\Modelos\MovimientoInventario;
@@ -124,11 +125,58 @@ final class ConsultaDeInventarioTest extends TestCase
         }
     }
 
-    public function test_un_rango_invertido_se_rechaza(): void
+    /**
+     * El código no alcanza: la pantalla muestra el mensaje junto al campo que
+     * lo produjo y para saber cuál es lee `detalle.campo`. Sin ese dato el
+     * rechazo se degrada a aviso general de la consulta.
+     *
+     * Los dos rechazos del rango nombran campos distintos —`desde` el
+     * invertido, `hasta` el que excede el máximo—, así que ninguna de las dos
+     * aserciones puede pasar por un campo puesto al azar.
+     */
+    public function test_un_rango_invertido_se_rechaza_nombrando_la_fecha_inicial(): void
     {
         try {
             $this->consulta->kardex((int) $this->producto->id, '2026-08-20', '2026-08-01');
             $this->fail('Se aceptó un rango invertido.');
+        } catch (ErrorDeDominio $error) {
+            $this->assertSame(CodigoDeError::CAMPO_FUERA_DE_RANGO, $error->codigo);
+            $this->assertSame('desde', $error->detalle['campo'] ?? null, 'El rechazo debe nombrar su campo.');
+        }
+    }
+
+    public function test_un_rango_mas_largo_que_el_maximo_se_rechaza_nombrando_la_fecha_final(): void
+    {
+        try {
+            $this->consulta->kardex((int) $this->producto->id, '2025-01-01', '2026-08-01');
+            $this->fail('Se aceptó un rango más largo que el máximo.');
+        } catch (ErrorDeDominio $error) {
+            $this->assertSame(CodigoDeError::CAMPO_FUERA_DE_RANGO, $error->codigo);
+            $this->assertSame('hasta', $error->detalle['campo'] ?? null, 'El rechazo debe nombrar su campo.');
+        }
+    }
+
+    /**
+     * El kardex tiene un tope de amplitud y nada lo probaba: se podía mover sin
+     * que fallara ninguna prueba, que es la mitad del hueco de los dos topes que
+     * había que mantener iguales. Se prueba en el borde y derivado de la
+     * constante compartida, no con un número escrito a mano.
+     */
+    public function test_el_rango_maximo_del_kardex_entra_y_un_dia_mas_se_rechaza(): void
+    {
+        $desde = '2026-01-01';
+        $ultimo = Carbon::parse($desde)->addDays(RangoDeFechas::MAXIMO_DIAS - 1)->format('Y-m-d');
+        $unoMas = Carbon::parse($desde)->addDays(RangoDeFechas::MAXIMO_DIAS)->format('Y-m-d');
+
+        $this->assertSame(
+            0,
+            $this->consulta->kardex((int) $this->producto->id, $desde, $ultimo)->total(),
+            'De '.$desde." a {$ultimo} son ".RangoDeFechas::MAXIMO_DIAS.' días contando los dos extremos: entran.'
+        );
+
+        try {
+            $this->consulta->kardex((int) $this->producto->id, $desde, $unoMas);
+            $this->fail("Un día más que el tope tendría que rechazarse: {$desde} a {$unoMas}.");
         } catch (ErrorDeDominio $error) {
             $this->assertSame(CodigoDeError::CAMPO_FUERA_DE_RANGO, $error->codigo);
         }

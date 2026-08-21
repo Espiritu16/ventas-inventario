@@ -2,14 +2,14 @@
 project: ventas-inventario
 source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
-active_phase: ola-4
+active_phase: olas 5 y 6, parciales — S-05-B y S-07-B cerrados; S-03-F, S-06-B, S-08-B y S-04-F sin despachar
 active_status: EN_PROGRESO
-last_completed_phase: ola-2 (S-01-B, S-DO-01)
+last_completed_phase: ola-4 (S-04-B, S-02-F) — es la última ola completa; las olas 1 a 4 están todas cerradas
 bootstrap_status: EN_PROGRESO
 planning_horizon_status: COMPLETA
 current_rfc_batch: []
 planning_scope: [RF-001, RF-002, RF-003, RF-004, RF-005, RF-006, RF-007, RF-008, RF-009, RF-010, RF-011, RF-012, RF-013, RF-014, RF-015, RF-016, RF-017, RF-018, RF-019, RF-020, RF-021, RNF-001, RNF-002, RNF-003, RNF-004, RNF-005, RNF-006, RNF-007, RNF-008, RNF-010, RNF-011, RNF-012, RNF-013, RNF-014]
-updated_at: 2026-08-19
+updated_at: 2026-08-21
 repositories:
   - name: ventas-inventario
     path: ventas-inventario
@@ -98,15 +98,14 @@ sprints:
   - id: S-07-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: BLOQUEADO
+    execution_status: COMPLETADO
     branch: sprint/S-07-B
     base_sha: 4299e8c
-    final_sha: 187f8899384c3d61c215533828ac6b3393317c68
-    punta: 4bb532a
-    publicada: sí — origin/sprint/S-07-B, sin fusionar
-    qa: RECHAZADO sobre 187f889 con gobernanza f2ac46a — tres huecos de verificación, código sin defecto
+    final_sha: 8cffe930a72e3b065679f6c29342371f2a7b13ef
+    merge_sha: 36ad724
+    qa: APROBADO sobre 579c756 con gobernanza be96639 — segunda entrega; el 579c756 es el final_sha con develop integrado, que es lo que se fusiona
+    qa_primer_intento: RECHAZADO sobre 187f889 con gobernanza f2ac46a — tres huecos de verificación, código sin defecto
     worktree_path: retirado
-    bloqueo: el usuario detuvo el avance del proyecto el 2026-08-20; no se despacha corrección
     despacho: subagente
     depends_on: [S-05-B]
     parallelizable_with: [S-06-B, S-08-B, S-04-F]
@@ -195,6 +194,179 @@ sprints:
     depends_on: [S-QA-01, S-DO-01]
     parallelizable_with: []
 ---
+
+# Cierre de la jornada — 2026-08-21
+
+El reposo del 2026-08-20 quedó levantado y todo lo que dejó abierto está cerrado, salvo dos
+cosas que **dependen del usuario** y una que se decidió no cerrar: ver "Lo que queda esperando"
+al final.
+
+## S-07-B — `COMPLETADO`, en la segunda entrega
+
+`qa` emitió **APROBADO** sobre `579c756` con gobernanza `be96639`, tras haber rechazado
+`187f889`. Entre las dos entregas **no se tocó el comportamiento**: lo rechazado era la
+verificación, y eso fue exactamente lo que se corrigió.
+
+| | Cómo se cerró |
+|---|---|
+| **G1** | Dos pruebas que fijan el reloj a las **23:40 de Lima**, cruzando el límite UTC-5. Las tres mutaciones —costo, ingreso, las dos— ponen algo rojo, incluida la asimétrica |
+| **G2** | Lista blanca exacta de claves, **más** una segunda capa que verifica que ningún valor de la fila iguale el costo ni el importe derivado |
+| **G3** | Fuente única `app/Compartido/Fechas/RangoDeFechas::MAXIMO_DIAS`, más una prueba unitaria que la compara contra el contrato |
+
+**Ocho mutaciones lo demuestran, y una vale por sí sola:** en G2, la que esconde el importe
+dentro de un campo ya declarado **pasa la lista blanca**; la que muerde es la segunda capa. Sin
+ella la fuga habría pasado entera. Una defensa de dos capas que se justifica porque **fallan por
+causas distintas**, que es el único caso en que este proyecto acepta duplicar una comprobación.
+
+**Y las pruebas nuevas no pasan por una propiedad accidental de su dato.** Movido el reloj de las
+23:40 a las 10:00 de Lima sobre producción limpia, fallan — y fallan en su **aserción-guardia**,
+no en el resultado: se niegan a pasar si su dato no cruza el límite UTC. Es el instrumento
+verificando que midió lo que cree haber medido. Es la inversión exacta del defecto que denunció
+el primer rechazo, donde el reloj de la corrida hacía pasar la prueba.
+
+### Lo que S-07-B decidió no unificar, y por qué estuvo bien
+
+Había un tercer `366`, en `AlertasDeInventarioTest`. **No se unificó**, y `qa` auditó ese
+razonamiento en vez de aceptarlo: ese `366` es `DIAS_POR_VENCER_MAXIMO + 1`, y los dos límites
+nacen separados en `docs/contratos/inventario.md` con orígenes distintos —el tope del kardex como
+«derivado: límite propuesto», el plazo de alerta como RF-018—.
+
+**Coinciden en el número y no en el significado.** Unificarlos habría atado un límite de amplitud
+de consulta a un plazo de alerta que responde a otro requisito, y mover uno habría movido el otro
+en silencio. Es el reverso del patrón de dos fuentes: **la trampa simétrica de unificar dos
+valores que se parecen**, cuando la regla existe para unificar dos que son el mismo. Vale
+registrarla, porque la regla escrita empuja en la dirección equivocada en este caso.
+
+## El defecto vivo del kardex — cerrado
+
+`ConsultaDeInventarioService::fueraDeRango()` ya nombra su campo. Estaba en producción de `main`
+y llevaba desde el 2026-08-20 esperando. Lo que lo mantuvo invisible era que **ninguna prueba lo
+cubría**: la del rango invertido solo miraba el código de error, y el límite de 366 días no tenía
+ninguna.
+
+## Aislamiento de base — el arreglo estructural que la ola 3 había dejado pendiente
+
+`phpunit.xml` fijaba la base de pruebas y estaba versionado, así que dos carriles se destruían
+entre sí con `migrate:fresh`. Ahora se deriva por árbol de trabajo, con dos guardas.
+
+**La demostración que justifica el endurecimiento:** con la guarda vieja —solo exigía que el
+nombre terminara en `_test`— una suite apuntada por `DB_URL` a una base ajena **pasa en verde** y
+deja esa base borrada y reconstruida. No falla: aprueba, y aprueba lo que no era.
+
+Se ejerció de verdad ese mismo día: cuatro árboles distintos corrieron la suite con cuatro bases
+distintas sin coordinación de nadie, y la validación de `qa` fue independiente **por
+construcción** y no por acordarse de exportar una variable.
+
+## Un modo de falla nuevo, que casi produce un falso verde
+
+Enlazar `vendor/` por symlink en un worktree hace que el autoload de Composer resuelva `$baseDir`
+**fuera del árbol**, porque lo calcula en tiempo de ejecución desde `__DIR__`. Los dos primeros
+carriles estuvieron cargando el `app/` y el `tests/` del checkout principal.
+
+Acá se delató ruidosamente. **El caso peligroso es el simétrico:** dos árboles con el mismo código
+y distintas pruebas, o un carril verificando el trabajo de otro y aprobándolo. Ahí no hay error,
+hay verde. La comprobación de una línea está en "Retoma — 2026-08-21".
+
+## Lo que queda esperando
+
+| Qué | De quién depende |
+|---|---|
+| **PR #29** — dueño para `worktree_path` y `.claude/settings.json` | Del usuario: toca permisos de `AGENTS.md`. Mientras no se apruebe, los ocho `worktree_path` vencidos **no los puede corregir nadie** |
+| **Datos de SUNAT para S-06-B** — RUC, razón social, dirección fiscal, usuario secundario SOL y certificado digital **de pruebas** | Del usuario. El aviso está vencido en su plazo desde el cierre de S-05-B |
+| `TraduccionesCubrenLoQueSeValidaTest` no ve los campos ajenos a `ValidadorDeDominio` | Nadie lo tomó. Es limitación estructural del guardián, no defecto |
+| `producto_id` en el código contra `productoId` en el contrato del kardex | Decisión de Arquitectura. Preexistente, no bloqueante |
+| La redacción del guardián de G2 promete más de lo que cumple | Anotado con su reproducción en `docs/evidencia/S-07-B/` |
+| `ventas_inventario_anot_test` y seis bases de carriles viejos, huérfanas en el clúster | Del usuario: borrar una base es destructivo y no se hace por iniciativa propia |
+
+**Sprints con dependencias satisfechas y sin despachar:** S-06-B (esperando los datos de SUNAT),
+S-08-B, S-03-F, S-04-F y ahora S-06-F, que dependía de S-07-B. Ninguno se habilitó: el usuario
+pidió un camino concreto y este documento no declara habilitado lo que nadie decidió despachar.
+
+# Retoma — 2026-08-21
+
+El usuario levantó el reposo y pidió avanzar implementando. El camino que fijó: cerrar
+G1/G2/G3 de S-07-B, validar de nuevo, integrar el sprint, y corregir el defecto vivo de
+`fueraDeRango()`. Antes de todo eso, resolver el aislamiento de la base de pruebas.
+
+## Lo que la reconstrucción confirmó, y lo que corrigió
+
+`develop` y `main` tienen **árbol idéntico**; `main` solo lleva por encima los cinco commits
+de promoción. La lección de la sección anterior —que el reposo tiene que ser legible desde la
+rama por defecto— quedó efectivamente aplicada, no solo escrita.
+
+Los tres huecos de S-07-B se comprobaron **contra el árbol real**, uno por uno, antes de
+encargar nada: `VentaService::RANGO_MAXIMO_DIAS` y `ConsultaDeInventarioService::RANGO_MAXIMO_DIAS`
+valen 366 los dos (G3); el guardián de G2 sigue siendo un `assertStringNotContainsString`; y
+`reporteUtilidad` sigue sin ninguna prueba que fije el reloj —la única `Carbon::setTestNow` del
+archivo está en la línea 137 y es de `reporteVentas`, exactamente como `qa` lo reportó—. Es lo
+que exige la regla de no despachar un encargo sin verificar que el problema existe: un despacho
+que afirma un problema inexistente no produce un "no encontré nada", induce a fabricar algo que
+encaje.
+
+## `sprint/S-07-B` se puso al día con `develop` antes de implementar encima
+
+La rama nació en `4299e8c` y arrastraba en su árbol el `AGENTS.md` anterior a la enmienda de
+permisos por área, al despacho por subagente y a la barrera de escritura cruzada. Es el caso
+exacto que el mecanismo de dos anclas existe para cubrir, y con despacho por subagente conviene
+cerrarlo de raíz en vez de confiarlo al segundo ancla: **un subagente lee lo que el árbol dice.**
+
+El conflicto de contenido en `docs/contratos/servicios-de-dominio.md` cayó donde el reposo lo
+había anotado. Se resolvió tomando de `develop` la fila de `encontrar` —ya devuelve `array` y se
+proyecta por rol, así que la nota "cambia a `array` al integrar" estaba caduca— y del sprint las
+dos de reportes, con las firmas comprobadas contra `VentaService` antes de fijarlas.
+
+Se aprovechó para cerrar la otra divergencia anotada, que estaba esperando exactamente este
+momento: `docs/contratos/ventas.md` no declaraba `CAMPO_FORMATO_INVALIDO` en los dos reportes y
+el código lo lanza cuando la fecha no es `AAAA-MM-DD`. Ahora sí, y la columna de errores de las
+dos filas nuevas del contrato de servicios dice lo que `rangoDelReporte()` lanza de verdad
+—`CAMPO_REQUERIDO`, `CAMPO_FORMATO_INVALIDO`, `CAMPO_FUERA_DE_RANGO`— en vez del guion que traía.
+
+Verificado tras el merge: Feature **539/539 con 1157 aserciones**, las mismas cifras que
+reportaron el implementador y `qa`. El merge no movió nada del comportamiento.
+
+## Un symlink de `vendor/` produce un falso rojo primero y un falso verde después
+
+Al montar los worktrees se enlazó `vendor/` por symlink al checkout principal, para ahorrar los
+diez minutos de bootstrap que el reposo registra como costo por despacho. **No sirve, y falla de
+la peor manera.**
+
+El autoload de Composer calcula `$baseDir = dirname(dirname(__DIR__))` **en tiempo de ejecución**,
+y `__DIR__` resuelve a través del enlace. El resultado es que `'App\\'` y `'Tests\\'` apuntan al
+`app/` y al `tests/` **del checkout principal**, no a los del worktree.
+
+Acá se delató ruidosamente —33 `Call to undefined method` sobre métodos que sí existen en la
+rama— porque el árbol enlazado no tenía el código del sprint. **El caso peligroso es el
+contrario:** dos árboles con el mismo código y distintas pruebas, o un carril verificando la
+corrección de otro carril y aprobándola. Ahí no hay error, hay verde.
+
+Se comprueba en una línea, y conviene hacerlo al montar cualquier worktree:
+
+```
+php -r 'require "vendor/autoload.php"; echo (new ReflectionClass("App\\Dominios\\Ventas\\Servicios\\VentaService"))->getFileName(), PHP_EOL;'
+```
+
+La ruta que imprime tiene que estar dentro del worktree. La salida que lo destapó imprimía
+`/Users/sankef/ventas-inventario/app/...` desde un árbol en `/Users/sankef/ventas-inventario-carriles/s07b`.
+
+**La forma es la ya registrada como recurrente:** una herramienta que responde algo verdadero
+sobre una pregunta vecina. `ls -l vendor` habría dicho "es un enlace, apunta al principal", que
+es cierto y suena inofensivo; la pregunta que importaba era desde qué árbol se carga la clase.
+Es la misma familia que `lsof` devolviendo vacío por falta de permisos y que `git status`
+respondiendo "limpio" para la rama que hay y no para la que uno cree que hay.
+
+`node_modules` sí puede enlazarse: su contenido no depende de la ruta del proyecto, y
+`pnpm build` escribe en el `public/build/` del árbol que lo invoca.
+
+## Puerto 4000
+
+Lo ocupaba un `vite --port=4000` de este mismo repositorio, huérfano de una sesión anterior
+(22 h 40 min de antigüedad). El usuario autorizó matarlo y se mató; el puerto quedó libre,
+comprobado volviendo a mirar.
+
+Es la contracara del riesgo que ya está registrado —un proceso de **otro** proyecto se reporta y
+no se mata—: este era propio, y aun así vivía fuera de cualquier worktree y de cualquier sprint.
+Un servidor de desarrollo no aparece en ningún inventario de cierre porque no es un artefacto
+del repositorio.
 
 # Segunda promoción del día — 2026-08-20
 
@@ -917,6 +1089,16 @@ advisories.
 
 ## Aislamiento de base por carril — decidido antes de la ola 3
 
+> **Superseded el 2026-08-21 en su mecanismo, no en su convención.** El nombre ya no lo
+> fija cada carril a mano en su `.env`: lo **deriva** `tests/EntornoDePruebas.php` por árbol
+> de trabajo, y `phpunit.xml` dejó de declarar `DB_DATABASE`. La convención de nombre que
+> esta sección fijó sigue vigente y es la que el mecanismo respeta. Lo que caducó son las
+> "Reglas de uso" de abajo, corregidas en su sitio. Ver "Retoma — 2026-08-21".
+>
+> El motivo del cambio es el que esta sección ya insinuaba sin poder resolver: fijar la base
+> en el `.env` de cada worktree **depende de que alguien se acuerde**, y este proyecto tiene
+> registrado ocho veces que esa clase de mitigación falla en silencio.
+
 El usuario otorgó `CREATEDB` al rol `ventas_inventario` el 2026-08-19 (verificado:
 `rolcreatedb = t`). Con eso, cada carril paralelo puede crear su propia base de
 pruebas y la serialización por turnos deja de ser necesaria. Los turnos manuales
@@ -940,15 +1122,18 @@ estaría mal es el nombre.
 
 Reglas de uso:
 
-- Cada carril fija su base en el `.env` de **su propio worktree**, que no se versiona.
-  Ningún carril toca la base de otro.
+- ~~Cada carril fija su base en el `.env` de su propio worktree.~~ **Ya no.** El nombre se
+  deriva solo del árbol de trabajo; no hay que exportar ni editar nada. Un carril que
+  igualmente exporte `DB_DATABASE` manda sobre la derivación, que es lo que deja funcionar
+  a CI y a quien quiera apuntar a una base concreta.
 - `ventas_inventario_test` queda como la base por defecto de quien trabaje sin
-  paralelismo. No es de nadie en particular.
+  paralelismo. No es de nadie en particular, y sigue pasando las dos guardas.
 - `ventas_inventario` es la base de aplicación y ninguna suite la toca jamás. Esa es
-  precisamente la garantía que la salvaguarda existe para dar.
-- El carril crea su base al empezar y puede dejarla al terminar; no se exige
-  limpiarla, porque `RefreshDatabase` la recompone y su nombre dice a qué sprint
-  pertenece.
+  precisamente la garantía que las salvaguardas existen para dar, y ahora está demostrada
+  por ejecución: apuntar la suite ahí aborta con código 1 y la base queda intacta.
+- El carril crea su base al empezar —lo hace el bootstrap, no la persona— y puede dejarla
+  al terminar; no se exige limpiarla, porque `RefreshDatabase` la recompone y su nombre
+  dice de qué árbol es.
 
 Esto no reemplaza el inventario de estado externo que hay que hacer en cada ola: la
 base era un recurso compartido, no el único. Puertos, caché y directorios temporales
@@ -1592,11 +1777,16 @@ quedan en `PLANIFICADO` hasta que sus dependencias se completen.
 
 ## Referencias
 - Roadmap: este documento, sección "Roadmap del horizonte"
-- Prompts de apertura de los chats de rol: docs/chats-de-rol.md
+- Despacho por rol, y prompts para los chats que sí se abren a mano: docs/despacho-de-roles.md
 - Contrato entre backend y frontend: docs/contratos/servicios-de-dominio.md
-- Handoffs de sprint: docs/handoffs/
-- Handoff activo: docs/handoffs/S-00.md, en la rama `sprint/S-00`
+- Handoffs de sprint: docs/handoffs/ — la fuente que no envejece es `ls docs/handoffs/`
 - Decisiones y contratos: docs/decisiones/, docs/contratos/, docs/persistencia/modelo.md
+
+Esta sección **no nombra el handoff activo**, a propósito. Lo hizo, y quedó apuntando a
+`S-00` durante nueve sprints. Cuál está activo es estado vigente y vive en un solo sitio:
+el bloque `sprints:` del principio. Un índice que además lo repita es una segunda fuente
+que alguien tiene que mantener igual, que es el patrón que este documento lleva nueve
+instancias registrando.
 
 ---
 
@@ -1777,6 +1967,10 @@ re-entregar está en la lista de abajo.
 
 ## Defecto vivo en `develop`, anterior a S-07-B y no corregido
 
+> **Cerrado el 2026-08-21**, PR #26. `fueraDeRango()` ya nombra su campo, y la cobertura que
+> faltaba —el límite de 366 días no tenía ninguna— existe. Lo que sigue abajo es el registro de
+> por qué se dejó abierto durante el reposo, no un pendiente.
+
 `ConsultaDeInventarioService::fueraDeRango()` construye `CAMPO_FUERA_DE_RANGO` **sin
 `['campo' => …]`**, y `docs/errores/manejo-errores.md` fija que un error de campo nombra su
 campo en `detalle` — sin él la pantalla degrada el error a aviso general de la operación.
@@ -1786,6 +1980,12 @@ Afecta al kardex, que está en producción de `main`. Lo encontró `qa` validand
 Se registra para que quien retome no lo redescubra.
 
 ## Divergencias que NO se corrigieron, y por qué
+
+> **Las dos primeras se cerraron el 2026-08-21 al integrar S-07-B**, que es exactamente cuando
+> esta sección decía que correspondía hacerlo: `docs/contratos/ventas.md` ya declara
+> `CAMPO_FORMATO_INVALIDO` en los dos reportes, y el conflicto de contenido de
+> `servicios-de-dominio.md` se resolvió al poner la rama al día. La tercera —el guardián de
+> traducciones que no ve los campos ajenos a `ValidadorDeDominio`— **sigue abierta**.
 
 - **`docs/contratos/ventas.md` no declara `CAMPO_FORMATO_INVALIDO`** para los dos reportes, y el
   código de S-07-B lo lanza. **No se corrige hoy**: ese código no está en `develop`, y agregarlo
@@ -1874,6 +2074,12 @@ resuelto. Se declara acá para que no vuelva a depender de que
 alguien verifique a tiempo.
 
 ## Artefactos efímeros que se pierden
+
+> **Las dos sondas se habían rescatado antes de escribir esto**, y están en
+> `docs/evidencia/S-07-B/`. El párrafo de abajo describe el riesgo, que era real y volvió a
+> aparecer: la segunda validación produjo otra reproducción única, rescatada el 2026-08-21 en
+> `limite-residual-del-guardian-G2.md`. **Es la regla, no la excepción:** toda validación que
+> encuentra algo produce evidencia que muere con su sesión si nadie la baja al árbol.
 
 `qa` dejó dos sondas fuera del árbol, en el scratchpad de su sesión, que reproducen G1 y G2.
 **No están versionadas y ese directorio no sobrevive.** Convertirlas en pruebas es trabajo de
