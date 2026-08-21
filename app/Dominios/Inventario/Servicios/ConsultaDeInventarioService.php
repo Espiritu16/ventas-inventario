@@ -95,14 +95,14 @@ class ConsultaDeInventarioService
         $desde ??= now()->timezone($zona)->subDays(self::DIAS_POR_DEFECTO)->format('Y-m-d');
 
         if ($desde > $hasta) {
-            throw $this->fueraDeRango('La fecha inicial no puede ser posterior a la final.');
+            throw $this->fueraDeRango('La fecha inicial no puede ser posterior a la final.', 'desde');
         }
 
         $inicio = Carbon::parse($desde.' 00:00:00', $zona)->utc();
         $fin = Carbon::parse($hasta.' 23:59:59.999999', $zona)->utc();
 
         if ($inicio->diffInDays($fin) > self::RANGO_MAXIMO_DIAS) {
-            throw $this->fueraDeRango('El rango no puede superar los '.self::RANGO_MAXIMO_DIAS.' días.');
+            throw $this->fueraDeRango('El rango no puede superar los '.self::RANGO_MAXIMO_DIAS.' días.', 'hasta');
         }
 
         return MovimientoInventario::query()
@@ -136,8 +136,8 @@ class ConsultaDeInventarioService
         return $presentado;
     }
 
-    private function fueraDeRango(string $mensaje): ErrorDeDominio
+    private function fueraDeRango(string $mensaje, string $campo): ErrorDeDominio
     {
-        return new ErrorDeDominio(CodigoDeError::CAMPO_FUERA_DE_RANGO, $mensaje);
+        return new ErrorDeDominio(CodigoDeError::CAMPO_FUERA_DE_RANGO, $mensaje, ['campo' => $campo]);
     }
 }
