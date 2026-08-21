@@ -21,6 +21,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-00
     base_sha: 99cd0618ec05f8386202813a2efa232724ec0bd8
     final_sha: ae2b0f73804c8b383dd970d91c1be379e305bc94
@@ -32,6 +33,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-01-B
     base_sha: b99b936
     final_sha: 4156f116103cdf843bfeef84ab72798ca012760b
@@ -43,6 +45,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-02-B
     base_sha: b1c7b13
     final_sha: 9c5c605105eade23f5b4e5ff250fa740f7efebc1
@@ -54,6 +57,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-03-B
     base_sha: 9304925
     final_sha: 6e8f710393489ee38b51b043fd83538ad7cce4e9
@@ -66,6 +70,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-04-B
     base_sha: e87aded
     final_sha: 4ddac6f1ee83f7782354a2953a0e4f47cb37b48c
@@ -77,6 +82,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-05-B
     base_sha: a2d2f48
     final_sha: d51de537a8a6a79883f43129a9409255e9b97016
@@ -92,7 +98,16 @@ sprints:
   - id: S-07-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: PLANIFICADO
+    execution_status: BLOQUEADO
+    branch: sprint/S-07-B
+    base_sha: 4299e8c
+    final_sha: 187f8899384c3d61c215533828ac6b3393317c68
+    punta: 4bb532a
+    publicada: sí — origin/sprint/S-07-B, sin fusionar
+    qa: RECHAZADO sobre 187f889 con gobernanza f2ac46a — tres huecos de verificación, código sin defecto
+    worktree_path: retirado
+    bloqueo: el usuario detuvo el avance del proyecto el 2026-08-20; no se despacha corrección
+    despacho: subagente
     depends_on: [S-05-B]
     parallelizable_with: [S-06-B, S-08-B, S-04-F]
   - id: S-08-B
@@ -105,6 +120,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-01-F
     base_sha: b1c7b13
     final_sha: 2b26c193654d19d97a753b46afccb0c2a7a48294
@@ -115,10 +131,13 @@ sprints:
   - id: S-02-F
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: LISTO
+    execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-02-F
     base_sha: e87aded
-    nota_de_ejecucion: despachado y con entorno listo, sin código escrito todavía
+    final_sha: 0f436a4f2a3b6b045fff5c12a8070e9ad946cfa4
+    merge_sha: 476d2c0
+    qa: APROBADO sobre bd2f393 (final_sha 0f436a4) con gobernanza b1ca4ad
     depends_on: [S-02-B, S-03-B, S-01-F]
     parallelizable_with: [S-04-B]
   - id: S-03-F
@@ -155,6 +174,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-DO-01
     base_sha: b99b936
     final_sha: 3fc99a7bf8e1615b66a54d0f54b5bacc9749106e
@@ -510,6 +530,26 @@ con teclado. Para S-09-B no: o se decide una herramienta que controle el teclado
 verdad —lo que reabre la decisión de E2E, hoy pospuesta— o se acepta el recorrido
 manual documentado que el propio RNF-008 describe. Decidirlo con el sprint encima es
 peor que decidirlo ahora.
+
+## Cómo se leen las secciones "Punto de detención"
+
+**Son instantáneas fechadas, no estado vigente.** Cada una describe el proyecto en el momento
+exacto en que se paró, y era cierta entonces. **Ninguna se actualiza después**: reescribirlas
+falsificaría el registro de qué se sabía en ese momento, que es justamente para lo que sirven.
+
+El estado vigente vive en **un solo sitio**: el bloque `sprints:` legible por máquina al
+principio de este documento. Ante cualquier contradicción entre una parada y ese bloque, manda
+el bloque — y ante una contradicción entre el bloque y Git, manda Git (Invariante 1).
+
+**Por qué esto necesita estar escrito.** La tercera parada dice que S-02-F tiene "entorno
+listo, **sin código escrito**". Era exacto cuando se anotó y hoy es lo contrario: ese sprint
+entregó 22 archivos y está en `main`. Con chats humanos alguien recuerda la diferencia; **un
+subagente lee lo que el documento dice.** Bajo el modelo de despacho por subagente, una
+instantánea sin fechar su alcance es una instrucción equivocada esperando a alguien.
+
+Se declara la regla una vez en lugar de poner un aviso en cada parada: hay cuatro, y la quinta
+nacería sin aviso. Es la quinta vez que este proyecto elige declarar el principio en vez de
+enumerar los casos.
 
 ## Punto de detención — 2026-08-20, tercera parada
 
@@ -1633,6 +1673,232 @@ que se ejecuta solo.
 7. **Ola 7** — S-05-F, S-06-F y S-09-B en paralelo.
 8. **Ola 8** — S-QA-01.
 9. **Ola 9** — S-DO-02.
+
+---
+
+# REPOSO — el proyecto se detuvo el 2026-08-20
+
+**Decisión del usuario, no un bloqueo técnico.** Pidió que el proyecto llegara a un punto
+estable y se detuviera ahí. No hay sprints en vuelo, no hay trabajo sin publicar y no se
+habilitó ningún sprint nuevo pese a que cuatro tienen sus dependencias satisfechas.
+
+## Qué significa "punto estable" acá — tres reglas fijadas por el usuario
+
+1. **Un sprint `BLOQUEADO` también es reposo.** Si QA rechaza y la corrección vuelve a fallar,
+   no se sigue intentando: se deja `BLOQUEADO` con la evidencia de qué falla y por qué. **Un
+   bloqueo documentado es un estado estable; un sprint que se reintenta indefinidamente no lo
+   es.**
+2. **Un subagente que no devuelve outcome** —murió, se cortó, lleva demasiado sin responder—
+   se cierra `BLOQUEADO` con causa `despacho sin respuesta`. No queda figurando `EN_PROGRESO`
+   esperando algo que no va a llegar, y antes de cualquier re-despacho se inventaría qué dejó
+   en el árbol.
+3. **El reposo no se afirma, se verifica.** Antes de darlo por cerrado se corren las
+   comprobaciones contra Git y se muestra la salida, no la conclusión.
+
+## S-07-B — `BLOQUEADO`, y por decisión, no por defecto
+
+`qa` emitió **RECHAZADO** sobre `187f889` con gobernanza `f2ac46a`. Cifras propias idénticas a
+las del implementador: pint verde, Unit 23/23, Feature 539/539 con 1157 aserciones, build ok.
+
+**La implementación no tiene ningún defecto de comportamiento.** Las cuatro unidades cumplen su
+criterio de cierre, comprobado por ejecución. Lo rechazado es la **verificación**: tres
+mecanismos reales sobreviven mutados con la suite entera en verde.
+
+| | Hueco | Evidencia |
+|---|---|---|
+| **G1** | `reporteUtilidad` no tiene ninguna cobertura de su rango de fechas | Quitar el `whereBetween` del costo, del ingreso, o de los dos: **539/539 verde** en las tres formas. El asimétrico es el peligroso — ingreso de un período contra costo de otro, y la utilidad sale mal sin que nada se vea raro |
+| **G2** | El guardián de "sin costo" del tablero no detecta una fuga derivada | Es un `assertStringNotContainsString('costo', …)`. Un campo `valor_en_riesgo` = cantidad × costo pasa entero, y el costo se recupera dividiendo por el campo que viaja al lado. **Quinta superficie sobre el mismo dato**, en la única pantalla que vendedor y administrador comparten |
+| **G3** | Dos topes de 366 días que hay que mantener iguales | Cambiar uno a 400 deja la suite verde. El comentario "Mismo tope que el kardex" es la firma del patrón |
+
+**Dónde vive cada uno.** Todo esto está en `sprint/S-07-B@187f889`, **no en `develop`** — el
+sprint no se fusionó. Para mirarlo: `git show sprint/S-07-B:<ruta>` o un worktree desde ese SHA.
+
+| | Archivo | Qué mutar para verlo |
+|---|---|---|
+| **G1** | `app/Dominios/Ventas/Servicios/VentaService.php` | quitar el `whereBetween('ventas.fecha')` del agregado de costo (≈424), del de ingreso (≈412), o de los dos |
+| **G2** | `tests/Feature/Dominios/Inventario/AlertasDeInventarioTest.php`, prueba `test_la_alerta_de_vencimiento_no_lleva_costo` | agregar a `lotesPorVencer` un campo `valor_en_riesgo` = cantidad × costo unitario |
+| **G3** | `VentaService::RANGO_MAXIMO_DIAS` y el tope equivalente del kardex | cambiar uno de los dos a 400 |
+
+**La reproducción ejecutable de G1 está rescatada** en `docs/evidencia/S-07-B/`, junto con las
+comprobaciones que sí salieron bien y las instrucciones para volver a correrlas. G2 no tiene
+sonda: se demostró mutando el código de producción.
+
+**Y una lectura del handoff que la medición contradice.** El implementador escribió que "siete
+de treinta y tres rojas es señal de que la regla de zona horaria está cubierta en varios
+sitios". `qa` replicó cinco de esas siete con el reloj a las 10:00 de Lima: **números
+idénticos, mutación invisible**. Lo que las siete medían era que la corrida ocurrió dentro de
+la ventana que el bug afecta — los commits son de las 21:07 y 21:10 de Lima. **Una sola prueba
+fija el reloj**, y es de `reporteVentas`; `reporteUtilidad` tiene cero.
+
+Es la forma ya registrada en "Verificar un hecho vecino no es verificar la pregunta": la
+medición era verdadera y contestaba otra pregunta. Es la quinta instancia.
+
+**No se despachó corrección.** El usuario detuvo el avance, y su instrucción para este caso fue
+explícita: rechazo → `BLOQUEADO` con la evidencia, sin reintentar. Lo que haría falta para
+re-entregar está en la lista de abajo.
+
+## Defecto vivo en `develop`, anterior a S-07-B y no corregido
+
+`ConsultaDeInventarioService::fueraDeRango()` construye `CAMPO_FUERA_DE_RANGO` **sin
+`['campo' => …]`**, y `docs/errores/manejo-errores.md` fija que un error de campo nombra su
+campo en `detalle` — sin él la pantalla degrada el error a aviso general de la operación.
+Afecta al kardex, que está en producción de `main`. Lo encontró `qa` validando otro sprint.
+
+**Queda sin corregir a propósito**: tocar código contradice la decisión de detener el proyecto.
+Se registra para que quien retome no lo redescubra.
+
+## Divergencias que NO se corrigieron, y por qué
+
+- **`docs/contratos/ventas.md` no declara `CAMPO_FORMATO_INVALIDO`** para los dos reportes, y el
+  código de S-07-B lo lanza. **No se corrige hoy**: ese código no está en `develop`, y agregarlo
+  al contrato declararía como vigente un comportamiento que el árbol no respalda — exactamente
+  la regla que este proyecto ya tiene escrita. Se corrige cuando S-07-B se integre, no antes.
+- **`git merge-tree f2ac46a 187f889` da conflicto de contenido** en
+  `docs/contratos/servicios-de-dominio.md`: la corrección de `encontrar` y las cuatro filas del
+  sprint caen en la misma zona. Anotado para quien integre.
+- **`TraduccionesCubrenLoQueSeValidaTest` no ve los campos que no pasan por
+  `ValidadorDeDominio`.** Ya son tres los sitios que lo esquivan. Es una limitación estructural
+  del guardián, no un defecto de nadie.
+
+## Lo que costó el despacho por subagente — primera vez que se ejerce
+
+Dos despachos, 446k tokens y 140 llamadas a herramientas entre ambos. **Lo caro no fueron los
+documentos que se pasaron por ruta, sino lo nombrado sin ubicar y lo no nombrado.**
+
+| Qué faltó | Consecuencia |
+|---|---|
+| La práctica de mutación se nombró por cadena de búsqueda dentro de un archivo de 1.747 líneas | Búsqueda cara en el archivo más grande del repositorio. Cabía pegar el párrafo |
+| **Nada sobre zona horaria** — no está en `AGENTS.md`, ni en el RFC, ni acá | Para un sprint que es enteramente reportes por rango de fechas, ese era **el** riesgo central. El implementador lo encontró a ciegas |
+| `phpunit.xml` fija `ventas_inventario_test` y el carril se pisa por variable de entorno | Los dos subagentes tuvieron que descubrirlo. `qa` además tuvo que demostrar empíricamente que la variable pisa |
+| El orden real de verificación: **`pnpm build` antes de la suite Feature** | Sin el manifiesto de Vite fallan 16 pruebas por 500. `AGENTS.md` lista el build al final; la primera corrida de `qa` se fue entera en eso |
+| El worktree nace sin `.env`, sin `vendor/` y sin `node_modules/` | ~10 minutos de bootstrap por despacho |
+| La ruta del worktree del implementador no se le dio a `qa` | "No reutilices su árbol" quedó como suposición en vez de comprobable |
+| No se dijo **cómo calificar un hueco de cobertura con código correcto** | Es literalmente la diferencia entre `aprobado` y `rechazado` en este sprint. `qa` lo derivó de la obligación de mutación |
+
+**La regla que sale:** un subagente reconstruye contexto **desde archivos, no desde una
+conversación**. Con chats humanos un índice que miente causa extrañeza; a un subagente le
+cuesta lecturas y lo manda a buscar lo que ya estaba escrito. Lo demostró
+`docs/handoffs/README.md`, que negaba nueve sprints ejecutados y mandó al implementador a
+inferir un formato que ese mismo archivo declara.
+
+## Riesgo estructural declarado — una sesión alcanza repositorios que no son suyos
+
+**Apareció el 2026-08-20 y no es una casualidad afortunada: es una propiedad del entorno.**
+
+El usuario pidió alinear también el `AGENTS.md` de `hurioscan`, otro proyecto suyo. Al ir a
+hacerlo, este Coordinador encontró que **su chat ya tenía la rama
+`gobernanza/agents-modelo-subagentes` con el cambio hecho** y el árbol limpio. No se tocó nada.
+
+**De dónde salió ese acceso, verificado:**
+
+- Ni `ventas-inventario/AGENTS.md` ni `hurioscan/AGENTS.md` mencionan al otro. No hay contrato
+  compartido, no hay dueño declarado, no hay relación de ningún tipo entre los dos proyectos.
+- No hay configuración de proyecto que autorice directorios adicionales.
+- El acceso viene de que **la herramienta de shell opera sobre el sistema de archivos con los
+  permisos del usuario**, sin confinamiento al directorio del proyecto. Desde acá se enumeran
+  todos los repositorios del home.
+
+**Por qué importa:** dos Coordinadores, cada uno gobernando su repositorio, **pueden escribir en
+el árbol del otro**. Y el árbol de `hurioscan` estaba parado en una rama de gobernanza ajena —
+escribir ahí habría commiteado sobre trabajo de otra sesión.
+
+**Lo que lo evitó hoy fue verificar antes de escribir, y esa es exactamente la clase de
+mitigación que este proyecto tiene registrada como insuficiente:** las que dependen de
+acordarse fallan en silencio. `git status` habría respondido "limpio" —para la rama que había,
+no para la que uno cree que hay— que es el fallo que la propia skill nombra.
+
+### Mitigación aplicada el 2026-08-20 — y qué vale exactamente
+
+`.claude/settings.json` en este repositorio deniega **escribir** en `hurioscan` y en
+`reservas-canchas`, y los caminos habituales para llegar a ellos: `Write`/`Edit` sobre sus
+rutas, y `cd` / `git -C` hacia ellas, en forma absoluta y relativa.
+
+Es un settings **propio del repositorio**, no global: solo aplica a sesiones abiertas acá. Un
+deny global no serviría — no distingue una sesión de este proyecto de una de administración que
+legítimamente inspecciona varios repositorios.
+
+**Leer sigue permitido**, porque una referencia cross-repo puede ser legítima. Lo que se corta
+es escribir.
+
+> **Es una barrera contra el descuido, no un aislamiento, y conviene no confiarla más de lo que
+> vale.** No cubre una ruta construida dinámicamente, ni todas las formas de llegar a esos
+> árboles. **Contra el accidente sirve** —escribir en el árbol de otro creyendo que es el
+> propio, que es exactamente lo que casi pasa el 2026-08-20—; **contra la intención, no.**
+>
+> Y no reemplaza verificar antes de escribir: la vuelve una segunda capa en vez de la única.
+
+**Nota de gobernanza sin resolver:** `.claude/settings.json` **no tiene dueño declarado** en
+`AGENTS.md`. Los archivos de configuración de la raíz son de `implementation-backend`, pero
+este es un artefacto de permisos y gobernanza, no de la aplicación. Lo escribió Coordinación
+por instrucción directa del usuario. Es la misma clase de hueco que produjo la enmienda de
+permisos por área: un artefacto legítimo que ninguna declaración cubre. Queda anotado, no
+resuelto. Se declara acá para que no vuelva a depender de que
+alguien verifique a tiempo.
+
+## Artefactos efímeros que se pierden
+
+`qa` dejó dos sondas fuera del árbol, en el scratchpad de su sesión, que reproducen G1 y G2.
+**No están versionadas y ese directorio no sobrevive.** Convertirlas en pruebas es trabajo de
+`implementation` y no se hizo porque el proyecto está detenido. Quien retome las rederiva desde
+la descripción de G1 y G2 de arriba.
+
+---
+
+# Autonomía delegada al Coordinador — vigente desde el 2026-08-20
+
+**Otorgada por Kevin Espíritu (kevinespiritu16@gmail.com) el 2026-08-20**, tras revisar el
+criterio del Coordinador en la limpieza de siete worktrees y en la corrección de la entrada de
+S-02-F. Alcance exacto, no ampliable por analogía.
+
+## Se ejecuta sin consultar, y se reporta después
+
+| Acción | Condición |
+|---|---|
+| Corregir una divergencia entre el estado global y Git | Con la evidencia registrada en el commit. Deriva del Invariante 1: Git manda, y un documento gobernado que afirma algo falso se corrige **de inmediato**, no cuando alguien lo autorice |
+| Habilitar un sprint (`PLANIFICADO` → `LISTO`) | Su RFC aprobado y sus dependencias satisfechas |
+| Despachar un subagente | Solo para sprints **sin decisiones abiertas** — los que las tienen se bloquearían enseguida y piden chat |
+| Empujar una rama de trabajo, **abrir el PR y fusionarlo** | Con la verificación **ejecutada** y en verde, salida real a la vista. **Fusionar significa PR, nunca empujar directo a `develop` o `main`** |
+| Limpiar worktrees y ramas de sprints cerrados | Comprobado antes que no retienen commits sin fusionar, cambios sin commitear ni archivos sin rastrear |
+
+## Fusionar es abrir el PR, no empujar directo — aclaración del 2026-08-20
+
+La autorización original decía "empujar una rama de trabajo, abrir el PR y fusionarlo", y el
+Coordinador la leyó como que podía empujar directo a `develop`. **No puede.** `git push origin
+develop` y `git push origin main` están **denegados a propósito en la configuración de
+permisos**, precisamente para forzar que todo pase por PR.
+
+Eso no es una restricción externa que haya que rodear ni reportar como impedimento: **es la
+política funcionando.** Un push denegado a una rama compartida no es un obstáculo, es la
+respuesta correcta.
+
+El flujo lo declara `AGENTS.md`, no una preferencia del momento: **rama de trabajo
+`gobernanza/<tema>`, PR hacia `develop`, y el Coordinador integra.** El Invariante 11 dice lo
+mismo para el caso concreto de este documento: la declaración de roadmap/estado se trata como
+un mini-sprint de gobernanza propio del Coordinador — se commitea en su rama y se fusiona,
+nunca se escribe directo en la rama compartida.
+
+Ocurrió el 2026-08-20 con los tres commits que corrigieron S-02-F, registraron esta autonomía y
+habilitaron S-07-B: fueron directos a `develop` local. **El contenido era correcto y no se
+revierte**; lo que se corrige es el camino. Es la segunda vez en el día que este proyecto
+encuentra la misma forma —una convención propia que se sabía y no se aplicó— y la primera en
+que quien la incumple es quien la escribió.
+
+## Sigue exigiendo aprobación del usuario
+
+- **Un RFC nuevo o enmendado** — presentado como documento completo, nunca como resumen.
+- **`AGENTS.md`**, en cualquier enmienda.
+- **Cualquier waiver** de un invariante (Invariante 13).
+- **Un cambio que pueda romper lo que funciona**: migración destructiva, contrato o permisos
+  incompatibles, borrado de datos.
+- **Cualquier cosa que salga hacia usuarios reales**: despliegue, publicación, emisión en
+  producción.
+
+## Por qué está escrito acá y no solo en la conversación
+
+Una delegación que vive en un chat se pierde al compactarse el contexto, y la sesión siguiente
+vuelve a pedir permiso para lo mismo — o peor, actúa sin él creyendo que lo tiene. **El alcance
+de una autorización es exactamente el tipo de hecho que este documento existe para conservar.**
+Lo pidió el usuario con esa razón explícita.
 
 ---
 
