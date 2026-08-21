@@ -1710,6 +1710,19 @@ mecanismos reales sobreviven mutados con la suite entera en verde.
 | **G2** | El guardián de "sin costo" del tablero no detecta una fuga derivada | Es un `assertStringNotContainsString('costo', …)`. Un campo `valor_en_riesgo` = cantidad × costo pasa entero, y el costo se recupera dividiendo por el campo que viaja al lado. **Quinta superficie sobre el mismo dato**, en la única pantalla que vendedor y administrador comparten |
 | **G3** | Dos topes de 366 días que hay que mantener iguales | Cambiar uno a 400 deja la suite verde. El comentario "Mismo tope que el kardex" es la firma del patrón |
 
+**Dónde vive cada uno.** Todo esto está en `sprint/S-07-B@187f889`, **no en `develop`** — el
+sprint no se fusionó. Para mirarlo: `git show sprint/S-07-B:<ruta>` o un worktree desde ese SHA.
+
+| | Archivo | Qué mutar para verlo |
+|---|---|---|
+| **G1** | `app/Dominios/Ventas/Servicios/VentaService.php` | quitar el `whereBetween('ventas.fecha')` del agregado de costo (≈424), del de ingreso (≈412), o de los dos |
+| **G2** | `tests/Feature/Dominios/Inventario/AlertasDeInventarioTest.php`, prueba `test_la_alerta_de_vencimiento_no_lleva_costo` | agregar a `lotesPorVencer` un campo `valor_en_riesgo` = cantidad × costo unitario |
+| **G3** | `VentaService::RANGO_MAXIMO_DIAS` y el tope equivalente del kardex | cambiar uno de los dos a 400 |
+
+**La reproducción ejecutable de G1 está rescatada** en `docs/evidencia/S-07-B/`, junto con las
+comprobaciones que sí salieron bien y las instrucciones para volver a correrlas. G2 no tiene
+sonda: se demostró mutando el código de producción.
+
 **Y una lectura del handoff que la medición contradice.** El implementador escribió que "siete
 de treinta y tres rojas es señal de que la regla de zona horaria está cubierta en varios
 sitios". `qa` replicó cinco de esas siete con el reloj a las 10:00 de Lima: **números
