@@ -24,7 +24,7 @@
 ## Roles activos en este repositorio
 
 ### coordinacion
-- Puede escribir gobernanza y planificación: `AGENTS.md`, `docs/estado-global.md`, `docs/rfcs/`, `docs/decisiones/`, `docs/chats-de-rol.md`
+- Puede escribir gobernanza y planificación: `AGENTS.md`, `docs/estado-global.md`, `docs/rfcs/`, `docs/decisiones/`, `docs/despacho-de-roles.md`
 - Puede escribir en `docs/handoffs/`: las secciones de resultados QA/DevOps y el campo `status` de la cabecera al cerrar el sprint. El resto del handoff es del rol que lo ejecutó — cerrar un sprint es atribución del Coordinador, así que registrar ese cierre también lo es
 - Puede redactar borradores documentales dentro de: `docs/requisitos/`, `docs/frontend/experiencia.md`, `docs/integraciones/`, `README.md`
 - No puede: implementar código, autoaprobar al usuario, sustituir la aprobación de Arquitectura, emitir el veredicto QA ni ejecutar trabajo DevOps
@@ -153,12 +153,35 @@ El contrato de SUNAT es **EXTERNO/REFERENCIADO**: Arquitectura no aprueba el
 contrato del tercero, solo la forma de integrarlo, documentada en
 `docs/integraciones/sunat.md`.
 
-## Chats de rol previstos
+## Despacho de trabajo por rol
 
-El usuario abre estos chats a mano cuando empiece la ejecución. Los prompts de
-apertura ya están redactados en `docs/chats-de-rol.md`.
+**El despacho por defecto de un sprint habilitado es un subagente**, no un chat. Lo despacha el
+Coordinador con la herramienta de agentes: el subagente lee este `AGENTS.md`, el RFC del sprint
+y su handoff, trabaja en su propio worktree y cierra declarando **exactamente un outcome** de
+una lista cerrada —`terminado`/`parcial`/`bloqueado` para implementación y devops,
+`aprobado`/`rechazado`/`bloqueado` para QA—. El contexto de un sprint no vive en una
+conversación sino en el repositorio, así que no hace falta una sesión persistente para
+ejecutarlo.
 
-| Chat | Rol | Sprints que atiende |
+**Un chat de rol, que abre el usuario a mano, queda para tres casos:** un sprint cuyas
+decisiones se resuelven conversando en vez de ejecutando; desbloquear lo que un subagente
+devolvió como `bloqueado`; o cuando el usuario quiere seguir el razonamiento en vivo y no solo
+recibir el resultado. Los prompts para esos casos están en `docs/despacho-de-roles.md`.
+
+**Un subagente no tiene canal con el usuario.** Ante algo que exija su aprobación —un RFC, el
+`AGENTS.md`, un waiver— o ante una ambigüedad con dos salidas de consecuencias distintas,
+cierra `bloqueado` diciendo qué falta y quién lo resuelve. Esa es la diferencia real con un
+chat: un chat pregunta, un subagente se detiene y devuelve el bloqueo. Por eso un sprint con
+decisiones abiertas es mal candidato para despacho automático.
+
+**Lo que no cambió:** el aislamiento por worktree, las rutas de escritura disjuntas por rol y
+el despacho con dos anclas —`final_sha` del código y `gobierna: develop@<sha>`— rigen igual
+para un subagente que para un chat.
+
+La tabla siguiente sigue valiendo como reparto de responsabilidad por rol, se ejecute como
+subagente o como chat.
+
+| Rol | Quién es | Sprints que atiende |
 |---|---|---|
 | Coordinación + Arquitectura | `coordinacion` + `arquitectura` | todos: gobierna, aprueba y cierra |
 | Backend | `implementation-backend` | S-00, S-01-B, S-02-B, S-03-B, S-04-B, S-05-B, S-06-B, S-07-B, S-08-B, S-09-B |
@@ -196,7 +219,7 @@ vez de uno por uno, y los contratos por ADR en vez de enmienda por dominio.
 |---|---|
 | `implementation-backend` | Todo `tests/` excepto `tests/Feature/Livewire/`; todo `public/`; `pint.json` y los archivos de configuración de la raíz |
 | `devops` | Todo `docker/` y `.dockerignore` |
-| `coordinacion` | El campo `status` de la cabecera de los handoffs al cerrar un sprint; `docs/decisiones/` y `docs/chats-de-rol.md` |
+| `coordinacion` | El campo `status` de la cabecera de los handoffs al cerrar un sprint; `docs/decisiones/` y `docs/despacho-de-roles.md` |
 | `qa` | La práctica de mutación como obligación del rol, no como decisión registrada |
 | `implementation-frontend` | `app/Compartido/Interfaz/`, para lo que comparten componentes de dominios distintos |
 
@@ -260,4 +283,4 @@ copias es tolerable; S-03-F suma tres pantallas más.
 - RFCs por sprint: docs/rfcs/
 - Handoffs de sprint: docs/handoffs/
 - Contrato entre backend y frontend: docs/contratos/servicios-de-dominio.md
-- Prompts de apertura de chats de rol: docs/chats-de-rol.md
+- Despacho por rol, y prompts para los chats que sí se abren a mano: docs/despacho-de-roles.md

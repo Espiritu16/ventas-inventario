@@ -1,0 +1,152 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Compartido\Auditoria\AuditoriaService;
+use App\Compartido\Datos\DatosDeEntrada;
+use App\Dominios\Catalogo\Modelos\Producto;
+use App\Dominios\Clientes\Modelos\Cliente;
+use App\Dominios\Comprobantes\Modelos\SerieComprobante;
+use App\Dominios\Comprobantes\Servicios\SerieComprobanteService;
+use App\Dominios\Inventario\Modelos\MovimientoInventario;
+use App\Dominios\Inventario\Servicios\ConsultaDeInventarioService;
+use App\Dominios\Inventario\Servicios\InventarioService;
+use App\Dominios\Usuarios\Modelos\Usuario;
+use App\Dominios\Ventas\Servicios\VentaService;
+use Database\Seeders\SeriesComprobanteSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Tests\TestCase;
+
+class QaSonda2S07BTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private InventarioService $inventario;
+    private VentaService $ventas;
+    private ConsultaDeInventarioService $consulta;
+    private Producto $producto;
+    private Cliente $cliente;
+    private Usuario $vendedor;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->inventario = new InventarioService(new AuditoriaService);
+        $this->ventas = new VentaService($this->inventario, new SerieComprobanteService);
+        $this->consulta = new ConsultaDeInventarioService($this->inventario);
+        $this->producto = Producto::factory()->create(['nombre' => 'Leche', 'precio_menor' => '10.0000', 'precio_mayor' => '8.0000', 'stock_minimo' => '5.000']);
+        $this->cliente = Cliente::factory()->create();
+        $this->vendedor = Usuario::factory()->create(['rol' => 'vendedor']);
+        $this->seed(SeriesComprobanteSeeder::class);
+    }
+
+    private function ingresar(string $cant, string $costo, string $lote, int $meses = 6): void
+    {
+        $this->inventario->ingresar((int) $this->producto->id, $cant, $costo, $lote,
+            now()->addMonths($meses)->format('Y-m-d'), MovimientoInventario::ORIGEN_COMPRA, 1, (int) $this->vendedor->id);
+    }
+
+    private function vender(string $cant): void
+    {
+        $this->ventas->registrar(DatosDeEntrada::desde([
+            'cliente_id' => $this->cliente->id,
+            'tipo_comprobante' => SerieComprobante::TIPO_BOLETA,
+            'metodo_pago' => 'efectivo',
+            'lineas' => [['producto_id' => $this->producto->id, 'cantidad' => $cant, 'tipo_precio' => 'menor']],
+        ]), $this->vendedor);
+    }
+
+    private function hoy(): string
+    {
+        return now()->timezone(config('app.timezone_visualizacion'))->format('Y-m-d');
+    }
+
+    /**
+     * (A) El mismo caso que `test_el_costo_es_la_suma_de_las_porciones...`,
+     * pero con el reloj a las 10:00 de Lima en vez de la hora en que se validó.
+     */
+    public function test_sonda_reloj_de_la_manana(): void
+    {
+        $this->travelTo(Carbon::parse('2026-08-20 10:00:00', 'America/Lima'));
+
+        $this->ingresar('10.000', '2.0000', 'L-BARATO', 2);
+        $this->ingresar('10.000', '5.0000', 'L-CARO', 9);
+        $this->vender('12.000');
+
+        $r = $this->ventas->reporteUtilidad($this->hoy(), $this->hoy());
+        fwrite(STDERR, "\n[A] reloj 10:00 Lima -> ingreso={$r['ingreso']} costo={$r['costo']} utilidad={$r['utilidad']}\n");
+        $this->assertSame(0, bccomp($r['ingreso'], '120.00', 2));
+        $this->assertSame(0, bccomp($r['costo'], '30.00', 2));
+    }
+
+    /** (B) Los tipos que salen: el contrato exige `string`, no `float`. */
+    public function test_sonda_tipos_decimales(): void
+    {
+        $this->ingresar('7.000', '0.1000', 'L-A', 1);
+        $this->ingresar('7.000', '0.2000', 'L-B', 9);
+        $this->vender('9.000');
+
+        $u = $this->ventas->reporteUtilidad($this->hoy(), $this->hoy());
+        $v = $this->ventas->reporteVentas($this->hoy(), $this->hoy());
+        $bajo = $this->consulta->productosBajoMinimo();
+        $porVencer = $this->consulta->lotesPorVencer(400 > 365 ? 365 : 365);
+
+        $tipo = fn ($x) => get_debug_type($x);
+        fwrite(STDERR, "\n[B] utilidad: ingreso=".$tipo($u['ingreso'])." costo=".$tipo($u['costo'])." utilidad=".$tipo($u['utilidad'])
+            ." | por_producto.cantidad=".$tipo($u['por_producto'][0]['cantidad'])." .ingreso=".$tipo($u['por_producto'][0]['ingreso'])." .costo=".$tipo($u['por_producto'][0]['costo'])."\n");
+        fwrite(STDERR, "[B] ventas: total=".$tipo($v['total'])." | desglose.total=".$tipo($v['por_comprobante'][0]['total'])
+            ." | rechazadas.total=".$tipo($v['rechazadas']['total'])." | detalle.total=".$tipo($v['ventas'][0]['total'])."\n");
+        fwrite(STDERR, "[B] bajoMinimo: stock_disponible=".$tipo($bajo[0]['stock_disponible'] ?? null)." stock_minimo=".$tipo($bajo[0]['stock_minimo'] ?? null)."\n");
+        fwrite(STDERR, "[B] porVencer: cantidad_actual=".$tipo($porVencer[0]['cantidad_actual'] ?? null)." dias=".$tipo($porVencer[0]['dias_para_vencer'] ?? null)."\n");
+        fwrite(STDERR, "[B] valores: utilidad.costo={$u['costo']} ventas.total={$v['total']}\n");
+        $this->assertTrue(true);
+    }
+
+    /** (C) Qué recibe de hecho un vendedor de los cuatro métodos. */
+    public function test_sonda_proyeccion_por_rol(): void
+    {
+        $this->ingresar('3.000', '2.5000', 'L-A', 1);
+        $this->vender('1.000');
+
+        $pv = $this->consulta->lotesPorVencer(365);
+        $bm = $this->consulta->productosBajoMinimo();
+        $rv = $this->ventas->reporteVentas($this->hoy(), $this->hoy());
+        $ru = $this->ventas->reporteUtilidad($this->hoy(), $this->hoy());
+
+        fwrite(STDERR, "\n[C] lotesPorVencer campos: ".implode(', ', array_keys($pv[0]))."\n");
+        fwrite(STDERR, "[C] lotesPorVencer fila: ".json_encode($pv[0])."\n");
+        fwrite(STDERR, "[C] productosBajoMinimo campos: ".implode(', ', array_keys($bm[0] ?? []))."\n");
+        fwrite(STDERR, "[C] productosBajoMinimo fila: ".json_encode($bm[0] ?? null)."\n");
+        fwrite(STDERR, "[C] reporteVentas campos: ".implode(', ', array_keys($rv))."\n");
+        fwrite(STDERR, "[C] reporteVentas.ventas[0]: ".json_encode($rv['ventas'][0])."\n");
+        fwrite(STDERR, "[C] reporteUtilidad: ".json_encode($ru)."\n");
+        $this->assertTrue(true);
+    }
+
+    /**
+     * (A2) Replica de las otras pruebas que cayeron con la mutación de zona
+     * horaria, con el reloj a las 10:00 de Lima en vez de a las 21:xx.
+     */
+    public function test_sonda_reloj_manana_replica_de_las_otras(): void
+    {
+        $this->travelTo(Carbon::parse('2026-08-20 10:00:00', 'America/Lima'));
+
+        $this->ingresar('100.000', '5.0000', 'L-001', 6);
+        $this->vender('2.000');
+        $this->vender('3.000');
+
+        $v = $this->ventas->reporteVentas($this->hoy(), $this->hoy());
+        fwrite(STDERR, "\n[A2] reloj 10:00 -> ventas.cantidad={$v['cantidad']} total={$v['total']}\n");
+        $this->assertSame(2, $v['cantidad'], 'replica de test_el_total_coincide_con_la_suma_de_las_ventas_del_rango');
+        $this->assertSame(0, bccomp($v['total'], '50.00', 2));
+
+        $this->assertNotSame([], $v['por_comprobante'], 'replica de test_desglosa_por_tipo_de_comprobante_y_por_medio_de_pago');
+        $this->assertSame(0, bccomp($v['por_comprobante'][0]['total'], '50.00', 2));
+
+        $u = $this->ventas->reporteUtilidad($this->hoy(), $this->hoy());
+        fwrite(STDERR, "[A2] reloj 10:00 -> utilidad ingreso={$u['ingreso']} costo={$u['costo']}\n");
+        $this->assertSame(0, bccomp($u['costo'], '25.00', 2), 'replica de test_el_costo_no_sigue_al_lote / desglosa_por_producto');
+        $this->assertCount(1, $u['por_producto']);
+    }
+}

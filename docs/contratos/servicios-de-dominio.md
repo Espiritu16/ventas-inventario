@@ -245,9 +245,9 @@ dentro de la transacción que abre `VentaService`.
 | `registrarUnaSolaVez(string $claveDeOperacion, DatosDeEntrada $datos, Usuario $actor): Venta` | clave de idempotencia más lo de `registrar` | la venta; repetir la clave devuelve la misma, no crea otra | los de `registrar` | implementado | RF-011, RF-012, RF-013 |
 | `registrar(DatosDeEntrada $datos, Usuario $actor): Venta` | cliente, tipo de comprobante, medio de pago, líneas con producto, cantidad y tipo de precio | la venta con su reparto por lote y su comprobante en estado `PENDIENTE` | VENTA_SIN_LINEAS, STOCK_INSUFICIENTE, LOTE_VENCIDO, FACTURA_REQUIERE_RUC, BOLETA_REQUIERE_DOCUMENTO, TIPO_PRECIO_INVALIDO, SERIE_NO_CONFIGURADA, PRODUCTO_INACTIVO | implementado | RF-011, RF-012, RF-013 |
 | `listar(Usuario $actor, ?string $desde = null, ?string $hasta = null, ?string $estadoComprobante = null, int $pagina = 1): LengthAwarePaginator` | actor, rango, estado de comprobante, página | página de ventas; **acotada a las propias si el actor es vendedor** | — | implementado | RF-011, RF-020 |
-| `encontrar(int $id, Usuario $actor): Venta` | identificador y actor | la venta con líneas, reparto por lote y estado del comprobante | RECURSO_NO_ENCONTRADO | implementado — **cambia a `array` al integrar `a805f4a`** | RF-011 |
-| `reporteVentas(string $desde, string $hasta): array` | rango de fechas civiles de Lima | total, desglose por comprobante y por medio de pago, subtotal de rechazadas y detalle | — | implementado | RF-020 |
-| `reporteUtilidad(string $desde, string $hasta, ?int $productoId = null): array` | rango y producto opcional | ingreso, costo real por lote y utilidad, total y por producto | — | implementado | RF-021 |
+| `encontrar(int $id, Usuario $actor): array` | identificador y actor | la venta con líneas, reparto por lote y estado del comprobante, **proyectada por rol**: el vendedor no recibe el costo, ni del reparto ni del lote | RECURSO_NO_ENCONTRADO | implementado | RF-011 |
+| `reporteVentas(string $desde, string $hasta): array` | rango de fechas civiles de Lima | total, desglose por comprobante y por medio de pago, subtotal de rechazadas y detalle | CAMPO_REQUERIDO, CAMPO_FORMATO_INVALIDO, CAMPO_FUERA_DE_RANGO | implementado | RF-020 |
+| `reporteUtilidad(string $desde, string $hasta, ?int $productoId = null): array` | rango de fechas civiles de Lima y producto opcional | ingreso, costo real por lote y utilidad, total y por producto | CAMPO_REQUERIDO, CAMPO_FORMATO_INVALIDO, CAMPO_FUERA_DE_RANGO | implementado | RF-021 |
 
 `registrar` es el método más delicado del sistema. En una sola transacción: valida, descuenta
 por FEFO, escribe kardex, reserva correlativo y crea el comprobante. Si algo falla, no queda
@@ -256,12 +256,16 @@ nada.
 `encontrar(id, actor)` con una venta ajena para un vendedor produce `RECURSO_NO_ENCONTRADO`,
 no `NO_AUTORIZADO`: no se revela que la venta existe.
 
-> **El cambio de retorno de `encontrar` está aprobado y todavía no integrado.** `a805f4a`
-> —aprobado por `qa` el 2026-08-20— lo pasa de `Venta` a `array<string, mixed>` para dejar el
-> costo fuera de lo que ve el vendedor: el modelo entero lo llevaba en el reparto y en el lote.
-> **Hasta que ese commit esté en `develop`, la firma vigente es la que dice la fila.** Esta
-> línea se borra cuando se integre; citar la firma nueva antes de eso es exactamente el error
-> que este proyecto ya cometió dos veces al despachar contra trabajo sin fusionar.
+> **`encontrar` devuelve una proyección, no el modelo.** Se cambió de `Venta` a
+> `array<string, mixed>` para dejar el costo fuera de lo que ve el vendedor: el modelo entero
+> lo llevaba en dos sitios sobre la misma porción —en el reparto y en el lote del que salió—,
+> así que taparlo en uno no lo tapaba. Integrado en `develop` el 2026-08-20 vía PR #4.
+>
+> **La forma elegida es enumerar lo que sale, no ocultar lo que no debe salir**, y la prueba
+> fija el **conjunto exacto de claves** que recibe cada rol en los seis niveles. Con eso, un
+> campo nuevo en el modelo no se filtra solo: hace fallar la prueba y obliga a mirarlo. `qa`
+> demostró por qué hacía falta esa forma — una prueba que solo buscara el costo por su nombre
+> o por su valor exacto deja pasar un costo con otro nombre y otra precisión.
 
 ## Comprobantes — `SerieComprobanteService`, `ComprobanteService`, `ResumenDiarioService`
 
