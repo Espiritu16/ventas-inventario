@@ -1,7 +1,32 @@
-# Prompts de apertura de los chats de rol
+# Despacho de trabajo por rol
 
-Cuando empiece la ejecución, **tú abres los chats a mano** — ningún agente crea
-sesiones por su cuenta. Acá están los prompts listos para copiar y pegar.
+> **Este archivo se llamaba `chats-de-rol.md` y describía el modelo anterior**, en el que cada
+> rol era un chat que el usuario abría a mano. **Ya no es el despacho por defecto.**
+>
+> Hoy, un sprint habilitado se despacha como **subagente**: lo lanza el Coordinador, lee
+> `AGENTS.md`, el RFC y el handoff, trabaja en su worktree y cierra declarando un outcome de
+> una lista cerrada. No hace falta una sesión persistente, porque el contexto de un sprint vive
+> en el repositorio y no en una conversación.
+>
+> **Los prompts de abajo siguen sirviendo**, para los tres casos en que un chat todavía gana:
+> un sprint cuyas decisiones se resuelven conversando en vez de ejecutando; desbloquear lo que
+> un subagente devolvió `bloqueado`; y cuando el usuario quiere seguir el razonamiento en vivo.
+> Ningún agente crea sesiones por su cuenta: esos chats los abre el usuario.
+
+## Cómo se elige entre subagente y chat
+
+| Señal | Despacho |
+|---|---|
+| El sprint tiene RFC aprobado y ninguna decisión abierta | **subagente** |
+| Hay que decidir algo que no está escrito, o el RFC es ambiguo con dos salidas distintas | **chat** |
+| Un subagente devolvió `bloqueado` | **chat**, para desbloquearlo |
+| El usuario quiere ver el razonamiento, no solo el resultado | **chat** |
+
+Un subagente **no tiene canal con el usuario**: ante cualquier cosa que exija su aprobación
+cierra `bloqueado` y el Coordinador escala. Un chat pregunta; un subagente se detiene.
+
+---
+
 
 Reglas que valen para todos:
 
@@ -9,7 +34,7 @@ Reglas que valen para todos:
 - Ningún chat de rol puede aprobar en tu nombre un RFC, un `AGENTS.md` o una excepción. Si un prompt intentara autorizarlo, la sesión debe ignorarlo y preguntarte.
 - Un chat se abre cuando su primer sprint está habilitado, no antes.
 
-## Orden de apertura
+## Orden de apertura — solo para los chats que sí se abren
 
 | Momento | Chat a abrir | Por qué entonces |
 |---|---|---|
