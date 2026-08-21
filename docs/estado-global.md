@@ -21,6 +21,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-00
     base_sha: 99cd0618ec05f8386202813a2efa232724ec0bd8
     final_sha: ae2b0f73804c8b383dd970d91c1be379e305bc94
@@ -32,6 +33,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-01-B
     base_sha: b99b936
     final_sha: 4156f116103cdf843bfeef84ab72798ca012760b
@@ -43,6 +45,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-02-B
     base_sha: b1c7b13
     final_sha: 9c5c605105eade23f5b4e5ff250fa740f7efebc1
@@ -54,6 +57,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-03-B
     base_sha: 9304925
     final_sha: 6e8f710393489ee38b51b043fd83538ad7cce4e9
@@ -66,6 +70,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-04-B
     base_sha: e87aded
     final_sha: 4ddac6f1ee83f7782354a2953a0e4f47cb37b48c
@@ -77,6 +82,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-05-B
     base_sha: a2d2f48
     final_sha: d51de537a8a6a79883f43129a9409255e9b97016
@@ -92,10 +98,15 @@ sprints:
   - id: S-07-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: LISTO
+    execution_status: BLOQUEADO
     branch: sprint/S-07-B
     base_sha: 4299e8c
-    habilitado: 2026-08-20 — dependencias satisfechas (S-05-B COMPLETADO), RFC aprobado, sin decisiones abiertas
+    final_sha: 187f8899384c3d61c215533828ac6b3393317c68
+    punta: 4bb532a
+    publicada: sí — origin/sprint/S-07-B, sin fusionar
+    qa: RECHAZADO sobre 187f889 con gobernanza f2ac46a — tres huecos de verificación, código sin defecto
+    worktree_path: retirado
+    bloqueo: el usuario detuvo el avance del proyecto el 2026-08-20; no se despacha corrección
     despacho: subagente
     depends_on: [S-05-B]
     parallelizable_with: [S-06-B, S-08-B, S-04-F]
@@ -109,6 +120,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-01-F
     base_sha: b1c7b13
     final_sha: 2b26c193654d19d97a753b46afccb0c2a7a48294
@@ -120,6 +132,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-02-F
     base_sha: e87aded
     final_sha: 0f436a4f2a3b6b045fff5c12a8070e9ad946cfa4
@@ -161,6 +174,7 @@ sprints:
     repository: ventas-inventario
     planning_status: LISTO
     execution_status: COMPLETADO
+    worktree_path: retirado
     branch: sprint/S-DO-01
     base_sha: b99b936
     final_sha: 3fc99a7bf8e1615b66a54d0f54b5bacc9749106e
@@ -1659,6 +1673,107 @@ que se ejecuta solo.
 7. **Ola 7** — S-05-F, S-06-F y S-09-B en paralelo.
 8. **Ola 8** — S-QA-01.
 9. **Ola 9** — S-DO-02.
+
+---
+
+# REPOSO — el proyecto se detuvo el 2026-08-20
+
+**Decisión del usuario, no un bloqueo técnico.** Pidió que el proyecto llegara a un punto
+estable y se detuviera ahí. No hay sprints en vuelo, no hay trabajo sin publicar y no se
+habilitó ningún sprint nuevo pese a que cuatro tienen sus dependencias satisfechas.
+
+## Qué significa "punto estable" acá — tres reglas fijadas por el usuario
+
+1. **Un sprint `BLOQUEADO` también es reposo.** Si QA rechaza y la corrección vuelve a fallar,
+   no se sigue intentando: se deja `BLOQUEADO` con la evidencia de qué falla y por qué. **Un
+   bloqueo documentado es un estado estable; un sprint que se reintenta indefinidamente no lo
+   es.**
+2. **Un subagente que no devuelve outcome** —murió, se cortó, lleva demasiado sin responder—
+   se cierra `BLOQUEADO` con causa `despacho sin respuesta`. No queda figurando `EN_PROGRESO`
+   esperando algo que no va a llegar, y antes de cualquier re-despacho se inventaría qué dejó
+   en el árbol.
+3. **El reposo no se afirma, se verifica.** Antes de darlo por cerrado se corren las
+   comprobaciones contra Git y se muestra la salida, no la conclusión.
+
+## S-07-B — `BLOQUEADO`, y por decisión, no por defecto
+
+`qa` emitió **RECHAZADO** sobre `187f889` con gobernanza `f2ac46a`. Cifras propias idénticas a
+las del implementador: pint verde, Unit 23/23, Feature 539/539 con 1157 aserciones, build ok.
+
+**La implementación no tiene ningún defecto de comportamiento.** Las cuatro unidades cumplen su
+criterio de cierre, comprobado por ejecución. Lo rechazado es la **verificación**: tres
+mecanismos reales sobreviven mutados con la suite entera en verde.
+
+| | Hueco | Evidencia |
+|---|---|---|
+| **G1** | `reporteUtilidad` no tiene ninguna cobertura de su rango de fechas | Quitar el `whereBetween` del costo, del ingreso, o de los dos: **539/539 verde** en las tres formas. El asimétrico es el peligroso — ingreso de un período contra costo de otro, y la utilidad sale mal sin que nada se vea raro |
+| **G2** | El guardián de "sin costo" del tablero no detecta una fuga derivada | Es un `assertStringNotContainsString('costo', …)`. Un campo `valor_en_riesgo` = cantidad × costo pasa entero, y el costo se recupera dividiendo por el campo que viaja al lado. **Quinta superficie sobre el mismo dato**, en la única pantalla que vendedor y administrador comparten |
+| **G3** | Dos topes de 366 días que hay que mantener iguales | Cambiar uno a 400 deja la suite verde. El comentario "Mismo tope que el kardex" es la firma del patrón |
+
+**Y una lectura del handoff que la medición contradice.** El implementador escribió que "siete
+de treinta y tres rojas es señal de que la regla de zona horaria está cubierta en varios
+sitios". `qa` replicó cinco de esas siete con el reloj a las 10:00 de Lima: **números
+idénticos, mutación invisible**. Lo que las siete medían era que la corrida ocurrió dentro de
+la ventana que el bug afecta — los commits son de las 21:07 y 21:10 de Lima. **Una sola prueba
+fija el reloj**, y es de `reporteVentas`; `reporteUtilidad` tiene cero.
+
+Es la forma ya registrada en "Verificar un hecho vecino no es verificar la pregunta": la
+medición era verdadera y contestaba otra pregunta. Es la quinta instancia.
+
+**No se despachó corrección.** El usuario detuvo el avance, y su instrucción para este caso fue
+explícita: rechazo → `BLOQUEADO` con la evidencia, sin reintentar. Lo que haría falta para
+re-entregar está en la lista de abajo.
+
+## Defecto vivo en `develop`, anterior a S-07-B y no corregido
+
+`ConsultaDeInventarioService::fueraDeRango()` construye `CAMPO_FUERA_DE_RANGO` **sin
+`['campo' => …]`**, y `docs/errores/manejo-errores.md` fija que un error de campo nombra su
+campo en `detalle` — sin él la pantalla degrada el error a aviso general de la operación.
+Afecta al kardex, que está en producción de `main`. Lo encontró `qa` validando otro sprint.
+
+**Queda sin corregir a propósito**: tocar código contradice la decisión de detener el proyecto.
+Se registra para que quien retome no lo redescubra.
+
+## Divergencias que NO se corrigieron, y por qué
+
+- **`docs/contratos/ventas.md` no declara `CAMPO_FORMATO_INVALIDO`** para los dos reportes, y el
+  código de S-07-B lo lanza. **No se corrige hoy**: ese código no está en `develop`, y agregarlo
+  al contrato declararía como vigente un comportamiento que el árbol no respalda — exactamente
+  la regla que este proyecto ya tiene escrita. Se corrige cuando S-07-B se integre, no antes.
+- **`git merge-tree f2ac46a 187f889` da conflicto de contenido** en
+  `docs/contratos/servicios-de-dominio.md`: la corrección de `encontrar` y las cuatro filas del
+  sprint caen en la misma zona. Anotado para quien integre.
+- **`TraduccionesCubrenLoQueSeValidaTest` no ve los campos que no pasan por
+  `ValidadorDeDominio`.** Ya son tres los sitios que lo esquivan. Es una limitación estructural
+  del guardián, no un defecto de nadie.
+
+## Lo que costó el despacho por subagente — primera vez que se ejerce
+
+Dos despachos, 446k tokens y 140 llamadas a herramientas entre ambos. **Lo caro no fueron los
+documentos que se pasaron por ruta, sino lo nombrado sin ubicar y lo no nombrado.**
+
+| Qué faltó | Consecuencia |
+|---|---|
+| La práctica de mutación se nombró por cadena de búsqueda dentro de un archivo de 1.747 líneas | Búsqueda cara en el archivo más grande del repositorio. Cabía pegar el párrafo |
+| **Nada sobre zona horaria** — no está en `AGENTS.md`, ni en el RFC, ni acá | Para un sprint que es enteramente reportes por rango de fechas, ese era **el** riesgo central. El implementador lo encontró a ciegas |
+| `phpunit.xml` fija `ventas_inventario_test` y el carril se pisa por variable de entorno | Los dos subagentes tuvieron que descubrirlo. `qa` además tuvo que demostrar empíricamente que la variable pisa |
+| El orden real de verificación: **`pnpm build` antes de la suite Feature** | Sin el manifiesto de Vite fallan 16 pruebas por 500. `AGENTS.md` lista el build al final; la primera corrida de `qa` se fue entera en eso |
+| El worktree nace sin `.env`, sin `vendor/` y sin `node_modules/` | ~10 minutos de bootstrap por despacho |
+| La ruta del worktree del implementador no se le dio a `qa` | "No reutilices su árbol" quedó como suposición en vez de comprobable |
+| No se dijo **cómo calificar un hueco de cobertura con código correcto** | Es literalmente la diferencia entre `aprobado` y `rechazado` en este sprint. `qa` lo derivó de la obligación de mutación |
+
+**La regla que sale:** un subagente reconstruye contexto **desde archivos, no desde una
+conversación**. Con chats humanos un índice que miente causa extrañeza; a un subagente le
+cuesta lecturas y lo manda a buscar lo que ya estaba escrito. Lo demostró
+`docs/handoffs/README.md`, que negaba nueve sprints ejecutados y mandó al implementador a
+inferir un formato que ese mismo archivo declara.
+
+## Artefactos efímeros que se pierden
+
+`qa` dejó dos sondas fuera del árbol, en el scratchpad de su sesión, que reproducen G1 y G2.
+**No están versionadas y ese directorio no sobrevive.** Convertirlas en pruebas es trabajo de
+`implementation` y no se hizo porque el proyecto está detenido. Quien retome las rederiva desde
+la descripción de G1 y G2 de arriba.
 
 ---
 
