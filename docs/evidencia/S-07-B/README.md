@@ -13,6 +13,7 @@ accidente.
 |---|---|
 | `sonda-G1-rango-de-fechas.php.txt` | **G1**: `VentaService::reporteUtilidad()` no tiene ninguna cobertura de su rango de fechas. Pasa sobre el código limpio y falla mutado |
 | `sonda-comprobaciones-de-qa.php.txt` | Las comprobaciones que **sí salieron bien**: tipos decimales, proyección por rol, y la réplica con el reloj en la mañana que dejó invisible la mutación de zona horaria |
+| `limite-residual-del-guardian-G2.md` | De la **segunda** validación, la del 2026-08-21: hasta dónde llega el guardián nuevo de G2 y dónde deja de llegar. Observación no bloqueante; `qa` aprobó igual |
 
 **G2 no tiene sonda**: se demostró agregando un campo al código de producción y viendo pasar la
 suite entera, no con un archivo aparte. Cómo reproducirlo está descrito en la sección REPOSO de
