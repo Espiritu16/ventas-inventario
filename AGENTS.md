@@ -249,7 +249,7 @@ juntos porque son el mismo hueco, no dos casualidades.
 
 | Artefacto | Quién lo escribe de hecho | Por qué ninguna declaración lo cubre |
 |---|---|---|
-| `worktree_path`, en la cabecera de un handoff | nadie, y por eso hay **ocho vencidos** | El handoff es del rol que lo ejecutó; de la cabecera, `coordinacion` solo tiene `status` |
+| `worktree_path`, en la cabecera de un handoff | nadie, y por eso hay **nueve vencidos** | El handoff es del rol que lo ejecutó; de la cabecera, `coordinacion` solo tiene `status` |
 | `.claude/settings.json` | `coordinacion`, el 2026-08-20, por instrucción directa del usuario | Los archivos de configuración de la raíz son de `implementation-backend`, pero este es un artefacto de permisos y gobernanza, no de la aplicación |
 
 **El caso de `worktree_path` no sería una ampliación sino la consecuencia de lo ya escrito.** La
@@ -257,11 +257,32 @@ línea vigente justifica que `coordinacion` escriba `status` porque «cerrar un 
 del Coordinador, así que registrar ese cierre también lo es». Retirar el worktree **también** es
 atribución suya: está en la autonomía delegada del 2026-08-20, fila «Limpiar worktrees y ramas de
 sprints cerrados». El campo que registra ese retiro quedó del lado equivocado de la línea, y por
-eso lleva ocho instancias sin que nadie pudiera corregirlo.
+eso lleva nueve instancias sin que nadie pudiera corregirlo.
 
-**Qué desbloquearía hoy:** los ocho avisos que `verify_project.py` levanta contra este
-repositorio, todos del mismo tipo — un handoff de sprint cerrado apuntando a un directorio de
-scratchpad que ya no existe. Un subagente lee ese campo para saber dónde trabajar.
+**Qué desbloquearía hoy:** los avisos que `verify_project.py` levanta contra este repositorio,
+todos del mismo tipo — un handoff de sprint cerrado apuntando a un directorio que ya no existe.
+Un subagente lee ese campo para saber dónde trabajar.
+
+**Y son nueve, no los ocho que el script reporta.** El que falta es el de `S-07-B`, el más
+reciente: su worktree se retiró el 2026-08-21 y el campo quedó apuntando a
+`/Users/sankef/ventas-inventario-carriles/s07b`. El barrido a mano sí lo encuentra:
+
+```bash
+for f in docs/handoffs/S-*.md; do
+  p=$(grep -m1 '^worktree_path:' "$f" | sed 's/^worktree_path: *//')
+  case "$p" in retirado|null|"") continue;; esac
+  [ -d "$p" ] || echo "VENCIDO: $f -> $p"
+done
+```
+
+Conviene tenerlo presente por lo que implica: **la herramienta que existe para detectar este
+defecto no lo detecta entero**, y el caso que se le escapa es justo el recién creado, que es el
+que más probabilidad tiene de confundir a quien retome. Es la forma que este proyecto ya
+registra —una comprobación verdadera que contesta una pregunta vecina— aplicada esta vez al
+instrumento de verificación.
+
+De paso, el barrido destapa otro: `S-03-B` apunta al directorio de `S-02-B`. Es un error de copia
+de su día, invisible mientras nadie pudiera tocar el campo.
 
 **Qué NO cambiaría:** ningún rol gana acceso a las rutas de otro. El cuerpo del handoff sigue
 siendo del rol que lo ejecutó, y `implementation-backend` conserva los archivos de configuración
