@@ -115,10 +115,12 @@ sprints:
   - id: S-02-F
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: LISTO
+    execution_status: COMPLETADO
     branch: sprint/S-02-F
     base_sha: e87aded
-    nota_de_ejecucion: despachado y con entorno listo, sin código escrito todavía
+    final_sha: 0f436a4f2a3b6b045fff5c12a8070e9ad946cfa4
+    merge_sha: 476d2c0
+    qa: APROBADO sobre bd2f393 (final_sha 0f436a4) con gobernanza b1ca4ad
     depends_on: [S-02-B, S-03-B, S-01-F]
     parallelizable_with: [S-04-B]
   - id: S-03-F
@@ -510,6 +512,26 @@ con teclado. Para S-09-B no: o se decide una herramienta que controle el teclado
 verdad —lo que reabre la decisión de E2E, hoy pospuesta— o se acepta el recorrido
 manual documentado que el propio RNF-008 describe. Decidirlo con el sprint encima es
 peor que decidirlo ahora.
+
+## Cómo se leen las secciones "Punto de detención"
+
+**Son instantáneas fechadas, no estado vigente.** Cada una describe el proyecto en el momento
+exacto en que se paró, y era cierta entonces. **Ninguna se actualiza después**: reescribirlas
+falsificaría el registro de qué se sabía en ese momento, que es justamente para lo que sirven.
+
+El estado vigente vive en **un solo sitio**: el bloque `sprints:` legible por máquina al
+principio de este documento. Ante cualquier contradicción entre una parada y ese bloque, manda
+el bloque — y ante una contradicción entre el bloque y Git, manda Git (Invariante 1).
+
+**Por qué esto necesita estar escrito.** La tercera parada dice que S-02-F tiene "entorno
+listo, **sin código escrito**". Era exacto cuando se anotó y hoy es lo contrario: ese sprint
+entregó 22 archivos y está en `main`. Con chats humanos alguien recuerda la diferencia; **un
+subagente lee lo que el documento dice.** Bajo el modelo de despacho por subagente, una
+instantánea sin fechar su alcance es una instrucción equivocada esperando a alguien.
+
+Se declara la regla una vez en lugar de poner un aviso en cada parada: hay cuatro, y la quinta
+nacería sin aviso. Es la quinta vez que este proyecto elige declarar el principio en vez de
+enumerar los casos.
 
 ## Punto de detención — 2026-08-20, tercera parada
 
