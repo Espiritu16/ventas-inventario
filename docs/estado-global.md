@@ -1691,11 +1691,16 @@ quedan en `PLANIFICADO` hasta que sus dependencias se completen.
 
 ## Referencias
 - Roadmap: este documento, sección "Roadmap del horizonte"
-- Prompts de apertura de los chats de rol: docs/chats-de-rol.md
+- Despacho por rol, y prompts para los chats que sí se abren a mano: docs/despacho-de-roles.md
 - Contrato entre backend y frontend: docs/contratos/servicios-de-dominio.md
-- Handoffs de sprint: docs/handoffs/
-- Handoff activo: docs/handoffs/S-00.md, en la rama `sprint/S-00`
+- Handoffs de sprint: docs/handoffs/ — la fuente que no envejece es `ls docs/handoffs/`
 - Decisiones y contratos: docs/decisiones/, docs/contratos/, docs/persistencia/modelo.md
+
+Esta sección **no nombra el handoff activo**, a propósito. Lo hizo, y quedó apuntando a
+`S-00` durante nueve sprints. Cuál está activo es estado vigente y vive en un solo sitio:
+el bloque `sprints:` del principio. Un índice que además lo repita es una segunda fuente
+que alguien tiene que mantener igual, que es el patrón que este documento lleva nueve
+instancias registrando.
 
 ---
 
