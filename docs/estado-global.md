@@ -1682,6 +1682,44 @@ que se ejecuta solo.
 estable y se detuviera ahí. No hay sprints en vuelo, no hay trabajo sin publicar y no se
 habilitó ningún sprint nuevo pese a que cuatro tienen sus dependencias satisfechas.
 
+## Integrado y promovido son cosas distintas — y el reposo exige las dos
+
+**El 2026-08-20, con el reposo ya declarado, `main` estaba 20 commits atrás de `develop` y
+Coordinación lo había llamado deliberado.** El motivo sonaba bien y es el que `AGENTS.md`
+declara: promover es un paso aparte, en lote, nunca automático por sprint.
+
+**Era un motivo correcto que sobrevivió a su propio alcance.** Vale para código —no se promueve
+un sprint por vez— y se aplicó a algo que no es código: **la descripción del reposo mismo.**
+
+Lo que había en esos 20 commits era cero código y cero pruebas; el árbol de las dos ramas era
+idéntico. Eso daba la excusa perfecta: *"no hay nada que promover"*. Lo que sí había:
+
+| En `main` se leía | Lo cierto |
+|---|---|
+| `S-02-F: execution_status: LISTO` | COMPLETADO y en producción |
+| sin `docs/evidencia/S-07-B/` | ahí vive la reproducción ejecutable del bloqueo |
+| **sin `.claude/settings.json`** | la barrera contra escritura cruzada, **inerte** |
+| `AGENTS.md` con "Chats de rol previstos" | el despacho por defecto es un subagente |
+
+**Y `main` es la rama por defecto.** Todo el sentido de un reposo es que otro lo recoja; quien
+lo recogiera habría clonado, caído en `main`, y leído el estado del día anterior. **El estado de
+reposo vivía solo en la rama que nadie lee por defecto.**
+
+**El barrido no lo detectó porque preguntaba otra cosa.** Comprobaba "nada vive solo en mi
+disco" —cierto, todo estaba publicado— y no "la rama que otro va a leer tiene lo que necesita".
+Es la misma forma que este documento ya registra: la verificación era verdadera y contestaba
+una pregunta vecina.
+
+**Lo que se agrega al cierre de cualquier reposo:** además de comprobar que todo está publicado,
+comprobar **qué sirve la rama por defecto**. No que esté al día con la de integración —eso
+volvería la promoción automática, que es justo lo que `AGENTS.md` prohíbe— sino que **lo que
+alguien necesita para retomar esté ahí**. Si el reposo se describe en un documento, ese
+documento tiene que estar en la rama por defecto; si no, el reposo no está declarado, está
+escondido.
+
+Lo destapó el Coordinador de otro proyecto, que encontró la misma situación con seis sprints
+aprobados esperando detrás de un PR verde que nadie fusionó **porque su motivo había caducado**.
+
 ## Qué significa "punto estable" acá — tres reglas fijadas por el usuario
 
 1. **Un sprint `BLOQUEADO` también es reposo.** Si QA rechaza y la corrección vuelve a fallar,
