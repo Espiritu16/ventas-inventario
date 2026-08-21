@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="tests/bootstrap.php"
          colors="true"
 >
     <testsuites>
@@ -28,7 +28,14 @@
              son propias del motor, y probarlas contra otro daría confianza falsa.
              La base de pruebas es dedicada y se recrea en cada corrida. -->
         <env name="DB_CONNECTION" value="pgsql"/>
-        <env name="DB_DATABASE" value="ventas_inventario_test"/>
+        <!-- DB_DATABASE no se declara acá a propósito. Este archivo está
+             versionado, así que fijar el nombre obligaba a todos los worktrees a
+             compartir una sola base de pruebas, y `RefreshDatabase` ejecuta
+             `migrate:fresh`: dos suites simultáneas se destruían entre sí. El
+             nombre lo calcula `tests/bootstrap.php` por árbol de trabajo,
+             respetando la convención `ventas_inventario_<carril>_test`, y aborta
+             si no puede. Exportar DB_DATABASE en el entorno sigue mandando sobre
+             todo lo demás. -->
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
