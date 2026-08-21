@@ -9,7 +9,7 @@ bootstrap_status: EN_PROGRESO
 planning_horizon_status: COMPLETA
 current_rfc_batch: []
 planning_scope: [RF-001, RF-002, RF-003, RF-004, RF-005, RF-006, RF-007, RF-008, RF-009, RF-010, RF-011, RF-012, RF-013, RF-014, RF-015, RF-016, RF-017, RF-018, RF-019, RF-020, RF-021, RNF-001, RNF-002, RNF-003, RNF-004, RNF-005, RNF-006, RNF-007, RNF-008, RNF-010, RNF-011, RNF-012, RNF-013, RNF-014]
-updated_at: 2026-08-19
+updated_at: 2026-08-21
 repositories:
   - name: ventas-inventario
     path: ventas-inventario
@@ -102,11 +102,11 @@ sprints:
     branch: sprint/S-07-B
     base_sha: 4299e8c
     final_sha: 187f8899384c3d61c215533828ac6b3393317c68
-    punta: 4bb532a
+    punta: cbe7685 — puesta al día con develop el 2026-08-21; el final_sha entregado sigue siendo 187f889
     publicada: sí — origin/sprint/S-07-B, sin fusionar
     qa: RECHAZADO sobre 187f889 con gobernanza f2ac46a — tres huecos de verificación, código sin defecto
     worktree_path: retirado
-    bloqueo: el usuario detuvo el avance del proyecto el 2026-08-20; no se despacha corrección
+    bloqueo: sigue BLOQUEADO por el RECHAZADO de qa — los tres huecos de verificación no están cerrados. El reposo que lo acompañaba lo levantó el usuario el 2026-08-21
     despacho: subagente
     depends_on: [S-05-B]
     parallelizable_with: [S-06-B, S-08-B, S-04-F]
@@ -195,6 +195,92 @@ sprints:
     depends_on: [S-QA-01, S-DO-01]
     parallelizable_with: []
 ---
+
+# Retoma — 2026-08-21
+
+El usuario levantó el reposo y pidió avanzar implementando. El camino que fijó: cerrar
+G1/G2/G3 de S-07-B, validar de nuevo, integrar el sprint, y corregir el defecto vivo de
+`fueraDeRango()`. Antes de todo eso, resolver el aislamiento de la base de pruebas.
+
+## Lo que la reconstrucción confirmó, y lo que corrigió
+
+`develop` y `main` tienen **árbol idéntico**; `main` solo lleva por encima los cinco commits
+de promoción. La lección de la sección anterior —que el reposo tiene que ser legible desde la
+rama por defecto— quedó efectivamente aplicada, no solo escrita.
+
+Los tres huecos de S-07-B se comprobaron **contra el árbol real**, uno por uno, antes de
+encargar nada: `VentaService::RANGO_MAXIMO_DIAS` y `ConsultaDeInventarioService::RANGO_MAXIMO_DIAS`
+valen 366 los dos (G3); el guardián de G2 sigue siendo un `assertStringNotContainsString`; y
+`reporteUtilidad` sigue sin ninguna prueba que fije el reloj —la única `Carbon::setTestNow` del
+archivo está en la línea 137 y es de `reporteVentas`, exactamente como `qa` lo reportó—. Es lo
+que exige la regla de no despachar un encargo sin verificar que el problema existe: un despacho
+que afirma un problema inexistente no produce un "no encontré nada", induce a fabricar algo que
+encaje.
+
+## `sprint/S-07-B` se puso al día con `develop` antes de implementar encima
+
+La rama nació en `4299e8c` y arrastraba en su árbol el `AGENTS.md` anterior a la enmienda de
+permisos por área, al despacho por subagente y a la barrera de escritura cruzada. Es el caso
+exacto que el mecanismo de dos anclas existe para cubrir, y con despacho por subagente conviene
+cerrarlo de raíz en vez de confiarlo al segundo ancla: **un subagente lee lo que el árbol dice.**
+
+El conflicto de contenido en `docs/contratos/servicios-de-dominio.md` cayó donde el reposo lo
+había anotado. Se resolvió tomando de `develop` la fila de `encontrar` —ya devuelve `array` y se
+proyecta por rol, así que la nota "cambia a `array` al integrar" estaba caduca— y del sprint las
+dos de reportes, con las firmas comprobadas contra `VentaService` antes de fijarlas.
+
+Se aprovechó para cerrar la otra divergencia anotada, que estaba esperando exactamente este
+momento: `docs/contratos/ventas.md` no declaraba `CAMPO_FORMATO_INVALIDO` en los dos reportes y
+el código lo lanza cuando la fecha no es `AAAA-MM-DD`. Ahora sí, y la columna de errores de las
+dos filas nuevas del contrato de servicios dice lo que `rangoDelReporte()` lanza de verdad
+—`CAMPO_REQUERIDO`, `CAMPO_FORMATO_INVALIDO`, `CAMPO_FUERA_DE_RANGO`— en vez del guion que traía.
+
+Verificado tras el merge: Feature **539/539 con 1157 aserciones**, las mismas cifras que
+reportaron el implementador y `qa`. El merge no movió nada del comportamiento.
+
+## Un symlink de `vendor/` produce un falso rojo primero y un falso verde después
+
+Al montar los worktrees se enlazó `vendor/` por symlink al checkout principal, para ahorrar los
+diez minutos de bootstrap que el reposo registra como costo por despacho. **No sirve, y falla de
+la peor manera.**
+
+El autoload de Composer calcula `$baseDir = dirname(dirname(__DIR__))` **en tiempo de ejecución**,
+y `__DIR__` resuelve a través del enlace. El resultado es que `'App\\'` y `'Tests\\'` apuntan al
+`app/` y al `tests/` **del checkout principal**, no a los del worktree.
+
+Acá se delató ruidosamente —33 `Call to undefined method` sobre métodos que sí existen en la
+rama— porque el árbol enlazado no tenía el código del sprint. **El caso peligroso es el
+contrario:** dos árboles con el mismo código y distintas pruebas, o un carril verificando la
+corrección de otro carril y aprobándola. Ahí no hay error, hay verde.
+
+Se comprueba en una línea, y conviene hacerlo al montar cualquier worktree:
+
+```
+php -r 'require "vendor/autoload.php"; echo (new ReflectionClass("App\\Dominios\\Ventas\\Servicios\\VentaService"))->getFileName(), PHP_EOL;'
+```
+
+La ruta que imprime tiene que estar dentro del worktree. La salida que lo destapó imprimía
+`/Users/sankef/ventas-inventario/app/...` desde un árbol en `/Users/sankef/ventas-inventario-carriles/s07b`.
+
+**La forma es la ya registrada como recurrente:** una herramienta que responde algo verdadero
+sobre una pregunta vecina. `ls -l vendor` habría dicho "es un enlace, apunta al principal", que
+es cierto y suena inofensivo; la pregunta que importaba era desde qué árbol se carga la clase.
+Es la misma familia que `lsof` devolviendo vacío por falta de permisos y que `git status`
+respondiendo "limpio" para la rama que hay y no para la que uno cree que hay.
+
+`node_modules` sí puede enlazarse: su contenido no depende de la ruta del proyecto, y
+`pnpm build` escribe en el `public/build/` del árbol que lo invoca.
+
+## Puerto 4000
+
+Lo ocupaba un `vite --port=4000` de este mismo repositorio, huérfano de una sesión anterior
+(22 h 40 min de antigüedad). El usuario autorizó matarlo y se mató; el puerto quedó libre,
+comprobado volviendo a mirar.
+
+Es la contracara del riesgo que ya está registrado —un proceso de **otro** proyecto se reporta y
+no se mata—: este era propio, y aun así vivía fuera de cualquier worktree y de cualquier sprint.
+Un servidor de desarrollo no aparece en ningún inventario de cierre porque no es un artefacto
+del repositorio.
 
 # Segunda promoción del día — 2026-08-20
 
