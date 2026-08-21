@@ -1781,6 +1781,38 @@ cuesta lecturas y lo manda a buscar lo que ya estaba escrito. Lo demostró
 `docs/handoffs/README.md`, que negaba nueve sprints ejecutados y mandó al implementador a
 inferir un formato que ese mismo archivo declara.
 
+## Riesgo estructural declarado — una sesión alcanza repositorios que no son suyos
+
+**Apareció el 2026-08-20 y no es una casualidad afortunada: es una propiedad del entorno.**
+
+El usuario pidió alinear también el `AGENTS.md` de `hurioscan`, otro proyecto suyo. Al ir a
+hacerlo, este Coordinador encontró que **su chat ya tenía la rama
+`gobernanza/agents-modelo-subagentes` con el cambio hecho** y el árbol limpio. No se tocó nada.
+
+**De dónde salió ese acceso, verificado:**
+
+- Ni `ventas-inventario/AGENTS.md` ni `hurioscan/AGENTS.md` mencionan al otro. No hay contrato
+  compartido, no hay dueño declarado, no hay relación de ningún tipo entre los dos proyectos.
+- No hay configuración de proyecto que autorice directorios adicionales.
+- El acceso viene de que **la herramienta de shell opera sobre el sistema de archivos con los
+  permisos del usuario**, sin confinamiento al directorio del proyecto. Desde acá se enumeran
+  todos los repositorios del home.
+
+**Por qué importa:** dos Coordinadores, cada uno gobernando su repositorio, **pueden escribir en
+el árbol del otro**. Y el árbol de `hurioscan` estaba parado en una rama de gobernanza ajena —
+escribir ahí habría commiteado sobre trabajo de otra sesión.
+
+**Lo que lo evitó hoy fue verificar antes de escribir, y esa es exactamente la clase de
+mitigación que este proyecto tiene registrada como insuficiente:** las que dependen de
+acordarse fallan en silencio. `git status` habría respondido "limpio" —para la rama que había,
+no para la que uno cree que hay— que es el fallo que la propia skill nombra.
+
+**La mitigación estructural no está en la documentación**, porque ningún documento impide un
+`cd`. Está en la configuración de permisos: acotar el alcance del shell al directorio del
+proyecto, igual que hoy los push a `develop` y `main` están denegados para forzar el PR. **Es
+decisión del usuario y queda pendiente.** Se declara acá para que no vuelva a depender de que
+alguien verifique a tiempo.
+
 ## Artefactos efímeros que se pierden
 
 `qa` dejó dos sondas fuera del árbol, en el scratchpad de su sesión, que reproducen G1 y G2.
