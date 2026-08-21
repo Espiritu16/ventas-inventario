@@ -234,6 +234,65 @@ Cinco directorios de prueba con doce archivos dentro no tienen dueño: `tests/Fe
 endpoints que exige ADR-0006, el mecanismo de permisos en componentes, y los sprints S-04-B
 y S-02-F.
 
+### Propuesta 2026-08-21 — dos artefactos que ninguna declaración cubre — NO VIGENTE
+
+> **Esto es una propuesta, no una enmienda aprobada.** Las líneas de permisos de arriba **no
+> cambiaron** y siguen mandando tal como están: hoy `coordinacion` **no** puede escribir ninguno
+> de los dos artefactos de abajo. Se redacta acá, y no en un mensaje, porque este proyecto ya
+> decidió que un borrador vive en una rama antes de pedir la aprobación. Se vuelve vigente
+> únicamente si el usuario aprueba y su cambio se fusiona; ese cambio sí toca permisos, así que
+> devolverá el archivo a `BORRADOR` hasta la reaprobación.
+
+Es la misma forma que ya produjo la enmienda de permisos por área y la de
+`app/Compartido/Interfaz/`: **un artefacto legítimo que ninguna área declarada cubre**. Van
+juntos porque son el mismo hueco, no dos casualidades.
+
+| Artefacto | Quién lo escribe de hecho | Por qué ninguna declaración lo cubre |
+|---|---|---|
+| `worktree_path`, en la cabecera de un handoff | nadie, y por eso hay **nueve vencidos** | El handoff es del rol que lo ejecutó; de la cabecera, `coordinacion` solo tiene `status` |
+| `.claude/settings.json` | `coordinacion`, el 2026-08-20, por instrucción directa del usuario | Los archivos de configuración de la raíz son de `implementation-backend`, pero este es un artefacto de permisos y gobernanza, no de la aplicación |
+
+**El caso de `worktree_path` no sería una ampliación sino la consecuencia de lo ya escrito.** La
+línea vigente justifica que `coordinacion` escriba `status` porque «cerrar un sprint es atribución
+del Coordinador, así que registrar ese cierre también lo es». Retirar el worktree **también** es
+atribución suya: está en la autonomía delegada del 2026-08-20, fila «Limpiar worktrees y ramas de
+sprints cerrados». El campo que registra ese retiro quedó del lado equivocado de la línea, y por
+eso lleva nueve instancias sin que nadie pudiera corregirlo.
+
+**Qué desbloquearía hoy:** los avisos que `verify_project.py` levanta contra este repositorio,
+todos del mismo tipo — un handoff de sprint cerrado apuntando a un directorio que ya no existe.
+Un subagente lee ese campo para saber dónde trabajar.
+
+**Y son nueve, no los ocho que el script reporta.** El que falta es el de `S-07-B`, el más
+reciente: su worktree se retiró el 2026-08-21 y el campo quedó apuntando a
+`/Users/sankef/ventas-inventario-carriles/s07b`. El barrido a mano sí lo encuentra:
+
+```bash
+for f in docs/handoffs/S-*.md; do
+  p=$(grep -m1 '^worktree_path:' "$f" | sed 's/^worktree_path: *//')
+  case "$p" in retirado|null|"") continue;; esac
+  [ -d "$p" ] || echo "VENCIDO: $f -> $p"
+done
+```
+
+Conviene tenerlo presente por lo que implica: **la herramienta que existe para detectar este
+defecto no lo detecta entero**, y el caso que se le escapa es justo el recién creado, que es el
+que más probabilidad tiene de confundir a quien retome. Es la forma que este proyecto ya
+registra —una comprobación verdadera que contesta una pregunta vecina— aplicada esta vez al
+instrumento de verificación.
+
+De paso, el barrido destapa otro: `S-03-B` apunta al directorio de `S-02-B`. Es un error de copia
+de su día, invisible mientras nadie pudiera tocar el campo.
+
+**Qué NO cambiaría:** ningún rol gana acceso a las rutas de otro. El cuerpo del handoff sigue
+siendo del rol que lo ejecutó, y `implementation-backend` conserva los archivos de configuración
+de la raíz. `.claude/settings.json` saldría de esa bolsa por lo que **es**, no por quién lo
+escribió.
+
+**Si el usuario prefiere no ampliar `coordinacion`**, la alternativa es que `worktree_path` deje
+de vivir en el handoff: es un dato operativo y perecedero dentro de un documento que se conserva
+como registro. Esa salida no necesita enmienda de permisos, pero sí decidir dónde vive.
+
 ### Enmienda 2026-08-20 — `app/Compartido/Interfaz/` para `implementation-frontend`
 
 `implementation-frontend` no tenía **ningún** sitio donde poner algo compartido entre
