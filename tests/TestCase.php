@@ -21,6 +21,14 @@ abstract class TestCase extends BaseTestCase
      * nombre configurado y aquel al que el driver acaba conectándose pueden
      * ser distintos: mirar la configuración dejaría pasar exactamente el caso
      * que esta salvaguarda existe para impedir.
+     *
+     * Es la segunda de las dos guardas. La primera está en `tests/bootstrap.php`
+     * y valida el nombre derivado antes de que exista conexión alguna; esta
+     * comprueba la conexión real, que es lo único capaz de delatar un `DB_URL`
+     * pisando el nombre. Se exige la convención completa
+     * `ventas_inventario_<carril>_test` y no solo el sufijo: un nombre que
+     * termine en `_test` pero pertenezca a otro proyecto del mismo clúster
+     * también es una base ajena que `migrate:fresh` borraría.
      */
     protected function refreshApplication(): void
     {
@@ -29,7 +37,8 @@ abstract class TestCase extends BaseTestCase
         $conexion = DB::connection();
         $efectiva = (string) $conexion->scalar('select current_database()');
 
-        if (str_ends_with($efectiva, '_test')) {
+        if (str_starts_with($efectiva, EntornoDePruebas::PREFIJO)
+            && str_ends_with($efectiva, EntornoDePruebas::SUFIJO)) {
             return;
         }
 
@@ -44,7 +53,8 @@ abstract class TestCase extends BaseTestCase
         throw new RuntimeException(
             "Las pruebas están conectadas a «{$efectiva}», que no es una base de pruebas."
             .$detalle
-            .' El nombre de la base de pruebas debe terminar en _test.'
+            .' El nombre de la base de pruebas debe seguir la convención «'
+            .EntornoDePruebas::PREFIJO.'<carril>'.EntornoDePruebas::SUFIJO.'».'
         );
     }
 }
