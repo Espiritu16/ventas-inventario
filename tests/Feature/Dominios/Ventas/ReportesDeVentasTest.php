@@ -6,6 +6,7 @@ use App\Compartido\Auditoria\AuditoriaService;
 use App\Compartido\Datos\DatosDeEntrada;
 use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
+use App\Compartido\Fechas\RangoDeFechas;
 use App\Dominios\Catalogo\Modelos\Producto;
 use App\Dominios\Clientes\Modelos\Cliente;
 use App\Dominios\Comprobantes\Modelos\Comprobante;
@@ -324,6 +325,73 @@ final class ReportesDeVentasTest extends TestCase
         $this->assertSame(0, bccomp($reporte['utilidad'], '15.00', 2));
     }
 
+    /**
+     * El rango del reporte de utilidad se acota **dos veces**: una en el
+     * agregado de ingreso y otra en el de costo, que corren sobre
+     * granularidades distintas y por eso no pueden compartir la condición.
+     * Nada comprobaba ninguna de las dos, y la forma asimétrica es la
+     * peligrosa: ingreso de un período contra costo de otro da una utilidad
+     * falsa sin que ninguna cifra se vea rara.
+     *
+     * **El reloj se fija cruzando el límite de zona horaria a propósito.**
+     * Lima es UTC-5, así que una venta de las 23:40 ya pertenece al día
+     * siguiente en UTC: ahí es donde un rango mal construido se rompe. Con el
+     * reloj en la mañana la prueba pasaría por la hora de la corrida y no por
+     * el mecanismo, que es exactamente como este hueco sobrevivió.
+     */
+    public function test_el_ingreso_y_el_costo_del_reporte_de_utilidad_se_acotan_al_mismo_rango(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-20 23:40:00', config('app.timezone_visualizacion')));
+
+        $this->ingresar('100.000', '2.0000', 'L-001');
+        $delVeinte = $this->vender('3.000');
+
+        Carbon::setTestNow(Carbon::parse('2026-08-21 23:40:00', config('app.timezone_visualizacion')));
+
+        $delVeintiuno = $this->vender('5.000');
+
+        $this->assertSame('2026-08-21', $delVeinte->fecha->format('Y-m-d'), 'En UTC la venta del 20 cayó en el 21.');
+        $this->assertSame('2026-08-22', $delVeintiuno->fecha->format('Y-m-d'));
+
+        $reporte = $this->servicio->reporteUtilidad('2026-08-20', '2026-08-20');
+
+        $this->assertSame(0, bccomp($reporte['ingreso'], '30.00', 2), '3 unidades a S/ 10; con las 5 del día siguiente adentro serían 80.');
+        $this->assertSame(0, bccomp($reporte['costo'], '6.00', 2), '3 unidades a S/ 2; con las del día siguiente adentro serían 16.');
+        $this->assertSame(0, bccomp($reporte['utilidad'], '24.00', 2));
+
+        $this->assertCount(1, $reporte['por_producto']);
+        $fila = $reporte['por_producto'][0];
+
+        $this->assertSame(0, bccomp($fila['cantidad'], '3.000', 3));
+        $this->assertSame(0, bccomp($fila['ingreso'], '30.00', 2), 'La fila arrastra el mismo recorte que el total.');
+        $this->assertSame(0, bccomp($fila['costo'], '6.00', 2));
+    }
+
+    /**
+     * El mismo borde por el otro lado: la venta de las 23:40 es del día 20 para
+     * quien la hizo, aunque su instante en UTC sea del 21. Un reporte que
+     * comparara el instante contra la fecha civil sin convertirla se comería
+     * las últimas cinco horas de cada día — justo las de más caja.
+     *
+     * `reporteVentas` ya tenía esta prueba; `reporteUtilidad` no tenía ninguna.
+     */
+    public function test_la_utilidad_de_una_venta_de_las_ultimas_horas_pertenece_a_ese_dia(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-20 23:40:00', config('app.timezone_visualizacion')));
+
+        $this->ingresar('100.000', '2.0000', 'L-001');
+        $venta = $this->vender('3.000');
+
+        $this->assertSame('2026-08-21', $venta->fecha->format('Y-m-d'), 'En UTC ya es el día siguiente.');
+
+        $delVeinte = $this->servicio->reporteUtilidad('2026-08-20', '2026-08-20');
+        $delVeintiuno = $this->servicio->reporteUtilidad('2026-08-21', '2026-08-21');
+
+        $this->assertSame(0, bccomp($delVeinte['ingreso'], '30.00', 2), 'Para quien vendió fue el día 20.');
+        $this->assertSame(0, bccomp($delVeinte['costo'], '6.00', 2));
+        $this->assertSame([], $delVeintiuno['por_producto'], 'Y no cuenta también en el 21.');
+    }
+
     public function test_un_periodo_sin_ventas_no_inventa_filas(): void
     {
         $ayer = now()->timezone(config('app.timezone_visualizacion'))->subDay()->format('Y-m-d');
@@ -372,10 +440,29 @@ final class ReportesDeVentasTest extends TestCase
         $this->assertSame('desde', $error->detalle['campo'] ?? null);
     }
 
+    /**
+     * El tope se prueba **en su borde y derivado de la constante**, no con un
+     * rango absurdo: dos años y medio siguen siendo demasiado con cualquier
+     * tope, así que una prueba así queda verde aunque alguien mueva el límite.
+     * Ese era el hueco que dejaba cambiar uno de los dos topes a 400 sin que
+     * nada fallara.
+     */
     #[DataProvider('reportes')]
-    public function test_el_rango_tiene_tope(string $metodo): void
+    public function test_el_rango_maximo_entra_y_un_dia_mas_se_rechaza(string $metodo): void
     {
-        $error = $this->rechazoDe($metodo, '2024-01-01', '2026-08-20');
+        $desde = '2026-01-01';
+        $ultimo = Carbon::parse($desde)->addDays(RangoDeFechas::MAXIMO_DIAS - 1)->format('Y-m-d');
+        $unoMas = Carbon::parse($desde)->addDays(RangoDeFechas::MAXIMO_DIAS)->format('Y-m-d');
+
+        $reporte = $this->servicio->{$metodo}($desde, $ultimo);
+
+        $this->assertSame(
+            $ultimo,
+            $reporte['hasta'],
+            'De '.$desde." a {$ultimo} son ".RangoDeFechas::MAXIMO_DIAS.' días contando los dos extremos: entran.'
+        );
+
+        $error = $this->rechazoDe($metodo, $desde, $unoMas);
 
         $this->assertSame(CodigoDeError::CAMPO_FUERA_DE_RANGO, $error->codigo);
         $this->assertSame('hasta', $error->detalle['campo'] ?? null);
