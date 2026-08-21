@@ -10,9 +10,11 @@ use App\Dominios\Inventario\Modelos\MovimientoInventario;
 use App\Dominios\Usuarios\Modelos\Usuario;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
- * Lecturas de inventario y kardex (RF-007, RF-008).
+ * Lecturas de inventario y kardex (RF-007, RF-008), y las alertas del tablero
+ * (RF-018, RF-019).
  *
  * Separado de `InventarioService` a propósito: aquel es la única puerta de
  * **escritura** y una prueba de arquitectura lo verifica. Mezclar consultas
@@ -29,6 +31,13 @@ class ConsultaDeInventarioService
     private const DIAS_POR_DEFECTO = 30;
 
     private const RANGO_MAXIMO_DIAS = 366;
+
+    /** Plazo de la alerta de vencimiento, el que fija el contrato de `GET /panel`. */
+    public const DIAS_POR_VENCER_POR_DEFECTO = 30;
+
+    private const DIAS_POR_VENCER_MINIMO = 1;
+
+    private const DIAS_POR_VENCER_MAXIMO = 365;
 
     public function __construct(private readonly InventarioService $inventario) {}
 
@@ -112,6 +121,106 @@ class ConsultaDeInventarioService
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->paginate(self::POR_PAGINA, ['*'], 'pagina', max(1, $pagina));
+    }
+
+    /**
+     * Lotes que vencen dentro del plazo y los ya vencidos con existencia, en
+     * orden de urgencia (RF-018).
+     *
+     * Los vencidos y los por vencer salen de **una sola condición**: un lote
+     * vencido es uno cuyo vencimiento ya pasó, así que `fecha_vencimiento <=
+     * hoy + plazo` los abarca a los dos. Separarlos en dos consultas y unirlas
+     * dejaría dos criterios que mantener iguales.
+     *
+     * El orden por vencimiento ascendente *es* el orden de urgencia: primero
+     * lo que venció hace más tiempo, después lo que vence antes.
+     *
+     * **No lleva costo.** El tablero lo ve también el vendedor, y la matriz de
+     * permisos lo declara «sin indicadores de utilidad»; como este método no
+     * recibe actor, no puede proyectar por rol y por lo tanto no puede traer un
+     * dato que a la mitad de sus lectores no le corresponde.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function lotesPorVencer(int $dias = self::DIAS_POR_VENCER_POR_DEFECTO): Collection
+    {
+        if ($dias < self::DIAS_POR_VENCER_MINIMO || $dias > self::DIAS_POR_VENCER_MAXIMO) {
+            throw new ErrorDeDominio(
+                CodigoDeError::CAMPO_FUERA_DE_RANGO,
+                'El plazo de la alerta debe estar entre '
+                    .self::DIAS_POR_VENCER_MINIMO.' y '.self::DIAS_POR_VENCER_MAXIMO.' días.',
+                ['campo' => 'dias']
+            );
+        }
+
+        // El mismo `hoy` que usa `stockDisponible`, para que lo que la alerta
+        // llama vencido sea exactamente lo que el disponible deja fuera.
+        $hoy = now()->format('Y-m-d');
+        $limite = Carbon::parse($hoy)->addDays($dias)->format('Y-m-d');
+
+        return Lote::query()
+            ->with('producto')
+            ->where('cantidad_actual', '>', 0)
+            ->where('fecha_vencimiento', '<=', $limite)
+            ->orderBy('fecha_vencimiento')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Lote $lote) => [
+                'id' => $lote->id,
+                'producto_id' => $lote->producto_id,
+                'producto_codigo' => $lote->producto?->codigo,
+                'producto_nombre' => $lote->producto?->nombre,
+                'codigo_lote' => $lote->codigo_lote,
+                'fecha_vencimiento' => $lote->fecha_vencimiento->format('Y-m-d'),
+                'cantidad_actual' => $lote->cantidad_actual,
+                'vencido' => $lote->estaVencido($hoy),
+                'dias_para_vencer' => (int) Carbon::parse($hoy)
+                    ->diffInDays(Carbon::parse($lote->fecha_vencimiento->format('Y-m-d')), false),
+            ])
+            ->values();
+    }
+
+    /**
+     * Productos activos cuyo stock disponible quedó en su mínimo o por debajo
+     * (RF-019).
+     *
+     * El disponible se calcula igual que en el resto del inventario —lotes no
+     * vencidos con existencia—, así que un producto cuyas únicas unidades
+     * están vencidas aparece con disponible cero: físicamente hay mercadería y
+     * vendible no hay ninguna, que es justo lo que la alerta tiene que decir.
+     *
+     * Se resuelve con una sola consulta agregada y no producto por producto:
+     * el tablero se abre en cada carga y el catálogo crece.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function productosBajoMinimo(): Collection
+    {
+        $hoy = now()->format('Y-m-d');
+
+        return Producto::query()
+            ->leftJoin('lotes', function ($union) use ($hoy) {
+                $union->on('lotes.producto_id', '=', 'productos.id')
+                    ->where('lotes.fecha_vencimiento', '>=', $hoy)
+                    ->where('lotes.cantidad_actual', '>', 0);
+            })
+            ->where('productos.activo', true)
+            ->groupBy('productos.id')
+            ->havingRaw('coalesce(sum(lotes.cantidad_actual), 0) <= productos.stock_minimo')
+            ->orderBy('productos.nombre')
+            ->orderBy('productos.id')
+            ->select('productos.*')
+            ->selectRaw('coalesce(sum(lotes.cantidad_actual), 0) as disponible')
+            ->get()
+            ->map(fn (Producto $producto) => [
+                'id' => $producto->id,
+                'codigo' => $producto->codigo,
+                'nombre' => $producto->nombre,
+                'unidad_medida' => $producto->unidad_medida,
+                'stock_disponible' => bcadd((string) $producto->getAttribute('disponible'), '0', 3),
+                'stock_minimo' => bcadd($producto->stock_minimo, '0', 3),
+            ])
+            ->values();
     }
 
     /**
