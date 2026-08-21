@@ -26,6 +26,11 @@ final class AlertasDeInventarioTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** Costo y cantidad del lote testigo: cualquier valor derivado de ellos se reconoce. */
+    private const COSTO_TESTIGO = '777.7777';
+
+    private const CANTIDAD_TESTIGO = '13.000';
+
     private ConsultaDeInventarioService $consulta;
 
     private InventarioService $inventario;
@@ -133,19 +138,45 @@ final class AlertasDeInventarioTest extends TestCase
         );
     }
 
-    public function test_la_alerta_de_vencimiento_no_lleva_costo(): void
+    /**
+     * Deny-by-default sobre la forma de la alerta, igual que RNF-013 resuelve
+     * las rutas: se afirma el conjunto de campos que la alerta **sí** puede
+     * llevar, en vez de prohibir la subcadena «costo».
+     *
+     * Una lista negra solo detecta lo que alguien anticipó nombrar. Un campo
+     * `valor_en_riesgo` = cantidad x costo unitario pasaba entero por el
+     * guardián anterior, y el costo se recupera dividiéndolo por la cantidad,
+     * que viaja en la misma fila. Sería la quinta superficie sobre el mismo
+     * dato, y en la única pantalla que vendedor y administrador comparten.
+     *
+     * Un campo nuevo tiene que costar una decisión explícita acá, no colarse.
+     */
+    public function test_la_alerta_de_vencimiento_solo_lleva_los_campos_declarados(): void
     {
-        $this->lote($this->enDias(5));
+        $lote = $this->lote($this->enDias(5), self::CANTIDAD_TESTIGO);
+        Lote::query()->whereKey($lote->id)->update(['costo_unitario' => self::COSTO_TESTIGO]);
 
-        $serializado = (string) json_encode($this->consulta->lotesPorVencer(30)->all());
+        $fila = $this->consulta->lotesPorVencer(30)->firstWhere('id', $lote->id);
 
-        $this->assertStringNotContainsString('costo', $serializado, 'El tablero lo ve también el vendedor.');
-        $this->assertStringContainsString('Leche entera', $serializado, 'Pero sí dice de qué producto es el lote.');
+        $this->assertSame([
+            'id',
+            'producto_id',
+            'producto_codigo',
+            'producto_nombre',
+            'codigo_lote',
+            'fecha_vencimiento',
+            'cantidad_actual',
+            'vencido',
+            'dias_para_vencer',
+        ], array_keys($fila), 'Campo nuevo en la alerta de vencimiento: hay que decidir si el vendedor puede verlo.');
+
+        $this->assertSame('Leche entera', $fila['producto_nombre'], 'Pero sí dice de qué producto es el lote.');
+        $this->assertNingunValorReconstruyeElCosto($fila);
     }
 
     public function test_el_plazo_fuera_de_rango_se_rechaza(): void
     {
-        foreach ([0, -1, 366] as $dias) {
+        foreach ([0, -1, ConsultaDeInventarioService::DIAS_POR_VENCER_MAXIMO + 1] as $dias) {
             try {
                 $this->consulta->lotesPorVencer($dias);
                 $this->fail("El plazo {$dias} tendría que rechazarse.");
@@ -153,6 +184,15 @@ final class AlertasDeInventarioTest extends TestCase
                 $this->assertSame(CodigoDeError::CAMPO_FUERA_DE_RANGO, $error->codigo);
                 $this->assertSame('dias', $error->detalle['campo'] ?? null);
             }
+        }
+
+        // Los extremos del intervalo sí entran: el rechazo es afuera, no en el
+        // borde. Sin esto, el plazo máximo se podría mover sin que nada falle.
+        foreach ([
+            ConsultaDeInventarioService::DIAS_POR_VENCER_MINIMO,
+            ConsultaDeInventarioService::DIAS_POR_VENCER_MAXIMO,
+        ] as $dias) {
+            $this->assertNotNull($this->consulta->lotesPorVencer($dias), "El plazo {$dias} es válido.");
         }
     }
 
@@ -219,15 +259,57 @@ final class AlertasDeInventarioTest extends TestCase
         $this->assertNull($this->consulta->productosBajoMinimo()->firstWhere('id', $inactivo->id));
     }
 
-    public function test_la_alerta_de_stock_bajo_no_lleva_costo(): void
+    /** El mismo guardián, por el mismo motivo: las dos alertas son la misma pantalla. */
+    public function test_la_alerta_de_stock_bajo_solo_lleva_los_campos_declarados(): void
     {
-        $this->producto->update(['stock_minimo' => '5.000']);
-        $this->ingresar('1.000', 'L-CARO', '999.9999');
+        $this->producto->update(['stock_minimo' => '20.000']);
+        $this->ingresar(self::CANTIDAD_TESTIGO, 'L-CARO', self::COSTO_TESTIGO);
 
-        $serializado = (string) json_encode($this->consulta->productosBajoMinimo()->all());
+        $fila = $this->consulta->productosBajoMinimo()->firstWhere('id', $this->producto->id);
 
-        $this->assertStringNotContainsString('costo', $serializado);
-        $this->assertStringNotContainsString('999.9999', $serializado);
+        $this->assertSame([
+            'id',
+            'codigo',
+            'nombre',
+            'unidad_medida',
+            'stock_disponible',
+            'stock_minimo',
+        ], array_keys($fila), 'Campo nuevo en la alerta de stock bajo: hay que decidir si el vendedor puede verlo.');
+
+        $this->assertNingunValorReconstruyeElCosto($fila);
+    }
+
+    /**
+     * La segunda mitad del guardián: que la lista de campos sea la declarada no
+     * alcanza si uno de esos campos trae el costo adentro.
+     *
+     * Se comprueba sobre valores, no sobre nombres. La cantidad viaja en la
+     * misma fila, así que un importe —cantidad x costo— es costo servido:
+     * dividir es todo el trabajo que hay que hacer para recuperarlo.
+     *
+     * @param  array<string, mixed>  $fila
+     */
+    private function assertNingunValorReconstruyeElCosto(array $fila): void
+    {
+        $derivado = bcmul(self::COSTO_TESTIGO, self::CANTIDAD_TESTIGO, 4);
+
+        foreach ($fila as $campo => $valor) {
+            if (! is_numeric($valor)) {
+                continue;
+            }
+
+            $this->assertNotSame(
+                0,
+                bccomp((string) $valor, self::COSTO_TESTIGO, 4),
+                "«{$campo}» trae el costo unitario del lote."
+            );
+
+            $this->assertNotSame(
+                0,
+                bccomp((string) $valor, $derivado, 4),
+                "«{$campo}» dividido por la cantidad de la misma fila devuelve el costo unitario."
+            );
+        }
     }
 
     private function ingresar(string $cantidad, string $codigoLote = 'L-001', string $costo = '5.0000'): void
