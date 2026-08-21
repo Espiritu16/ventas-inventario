@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "deny": [
+      "Write(/Users/sankef/hurioscan/**)",
+      "Edit(/Users/sankef/hurioscan/**)",
+      "Write(/Users/sankef/reservas-canchas/**)",
+      "Edit(/Users/sankef/reservas-canchas/**)",
+      "Bash(cd /Users/sankef/hurioscan:*)",
+      "Bash(cd ../hurioscan:*)",
+      "Bash(git -C /Users/sankef/hurioscan:*)",
+      "Bash(git -C ../hurioscan:*)",
+      "Bash(cd /Users/sankef/reservas-canchas:*)",
+      "Bash(cd ../reservas-canchas:*)",
+      "Bash(git -C /Users/sankef/reservas-canchas:*)",
+      "Bash(git -C ../reservas-canchas:*)"
+    ]
+  }
+}

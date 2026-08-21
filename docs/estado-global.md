@@ -1807,10 +1807,32 @@ mitigación que este proyecto tiene registrada como insuficiente:** las que depe
 acordarse fallan en silencio. `git status` habría respondido "limpio" —para la rama que había,
 no para la que uno cree que hay— que es el fallo que la propia skill nombra.
 
-**La mitigación estructural no está en la documentación**, porque ningún documento impide un
-`cd`. Está en la configuración de permisos: acotar el alcance del shell al directorio del
-proyecto, igual que hoy los push a `develop` y `main` están denegados para forzar el PR. **Es
-decisión del usuario y queda pendiente.** Se declara acá para que no vuelva a depender de que
+### Mitigación aplicada el 2026-08-20 — y qué vale exactamente
+
+`.claude/settings.json` en este repositorio deniega **escribir** en `hurioscan` y en
+`reservas-canchas`, y los caminos habituales para llegar a ellos: `Write`/`Edit` sobre sus
+rutas, y `cd` / `git -C` hacia ellas, en forma absoluta y relativa.
+
+Es un settings **propio del repositorio**, no global: solo aplica a sesiones abiertas acá. Un
+deny global no serviría — no distingue una sesión de este proyecto de una de administración que
+legítimamente inspecciona varios repositorios.
+
+**Leer sigue permitido**, porque una referencia cross-repo puede ser legítima. Lo que se corta
+es escribir.
+
+> **Es una barrera contra el descuido, no un aislamiento, y conviene no confiarla más de lo que
+> vale.** No cubre una ruta construida dinámicamente, ni todas las formas de llegar a esos
+> árboles. **Contra el accidente sirve** —escribir en el árbol de otro creyendo que es el
+> propio, que es exactamente lo que casi pasa el 2026-08-20—; **contra la intención, no.**
+>
+> Y no reemplaza verificar antes de escribir: la vuelve una segunda capa en vez de la única.
+
+**Nota de gobernanza sin resolver:** `.claude/settings.json` **no tiene dueño declarado** en
+`AGENTS.md`. Los archivos de configuración de la raíz son de `implementation-backend`, pero
+este es un artefacto de permisos y gobernanza, no de la aplicación. Lo escribió Coordinación
+por instrucción directa del usuario. Es la misma clase de hueco que produjo la enmienda de
+permisos por área: un artefacto legítimo que ninguna declaración cubre. Queda anotado, no
+resuelto. Se declara acá para que no vuelva a depender de que
 alguien verifique a tiempo.
 
 ## Artefactos efímeros que se pierden
