@@ -2,9 +2,9 @@
 project: ventas-inventario
 source_status: CANONICA
 baseline: documentación inicial aprobada 2026-08-19
-active_phase: ola-4
+active_phase: olas 5 y 6, parciales — S-05-B y S-07-B cerrados; S-03-F, S-06-B, S-08-B y S-04-F sin despachar
 active_status: EN_PROGRESO
-last_completed_phase: ola-2 (S-01-B, S-DO-01)
+last_completed_phase: ola-4 (S-04-B, S-02-F) — es la última ola completa; las olas 1 a 4 están todas cerradas
 bootstrap_status: EN_PROGRESO
 planning_horizon_status: COMPLETA
 current_rfc_batch: []
@@ -98,15 +98,14 @@ sprints:
   - id: S-07-B
     repository: ventas-inventario
     planning_status: LISTO
-    execution_status: BLOQUEADO
+    execution_status: COMPLETADO
     branch: sprint/S-07-B
     base_sha: 4299e8c
-    final_sha: 187f8899384c3d61c215533828ac6b3393317c68
-    punta: cbe7685 — puesta al día con develop el 2026-08-21; el final_sha entregado sigue siendo 187f889
-    publicada: sí — origin/sprint/S-07-B, sin fusionar
-    qa: RECHAZADO sobre 187f889 con gobernanza f2ac46a — tres huecos de verificación, código sin defecto
+    final_sha: 8cffe930a72e3b065679f6c29342371f2a7b13ef
+    merge_sha: 36ad724
+    qa: APROBADO sobre 579c756 con gobernanza be96639 — segunda entrega; el 579c756 es el final_sha con develop integrado, que es lo que se fusiona
+    qa_primer_intento: RECHAZADO sobre 187f889 con gobernanza f2ac46a — tres huecos de verificación, código sin defecto
     worktree_path: retirado
-    bloqueo: sigue BLOQUEADO por el RECHAZADO de qa — los tres huecos de verificación no están cerrados. El reposo que lo acompañaba lo levantó el usuario el 2026-08-21
     despacho: subagente
     depends_on: [S-05-B]
     parallelizable_with: [S-06-B, S-08-B, S-04-F]
@@ -195,6 +194,93 @@ sprints:
     depends_on: [S-QA-01, S-DO-01]
     parallelizable_with: []
 ---
+
+# Cierre de la jornada — 2026-08-21
+
+El reposo del 2026-08-20 quedó levantado y todo lo que dejó abierto está cerrado, salvo dos
+cosas que **dependen del usuario** y una que se decidió no cerrar: ver "Lo que queda esperando"
+al final.
+
+## S-07-B — `COMPLETADO`, en la segunda entrega
+
+`qa` emitió **APROBADO** sobre `579c756` con gobernanza `be96639`, tras haber rechazado
+`187f889`. Entre las dos entregas **no se tocó el comportamiento**: lo rechazado era la
+verificación, y eso fue exactamente lo que se corrigió.
+
+| | Cómo se cerró |
+|---|---|
+| **G1** | Dos pruebas que fijan el reloj a las **23:40 de Lima**, cruzando el límite UTC-5. Las tres mutaciones —costo, ingreso, las dos— ponen algo rojo, incluida la asimétrica |
+| **G2** | Lista blanca exacta de claves, **más** una segunda capa que verifica que ningún valor de la fila iguale el costo ni el importe derivado |
+| **G3** | Fuente única `app/Compartido/Fechas/RangoDeFechas::MAXIMO_DIAS`, más una prueba unitaria que la compara contra el contrato |
+
+**Ocho mutaciones lo demuestran, y una vale por sí sola:** en G2, la que esconde el importe
+dentro de un campo ya declarado **pasa la lista blanca**; la que muerde es la segunda capa. Sin
+ella la fuga habría pasado entera. Una defensa de dos capas que se justifica porque **fallan por
+causas distintas**, que es el único caso en que este proyecto acepta duplicar una comprobación.
+
+**Y las pruebas nuevas no pasan por una propiedad accidental de su dato.** Movido el reloj de las
+23:40 a las 10:00 de Lima sobre producción limpia, fallan — y fallan en su **aserción-guardia**,
+no en el resultado: se niegan a pasar si su dato no cruza el límite UTC. Es el instrumento
+verificando que midió lo que cree haber medido. Es la inversión exacta del defecto que denunció
+el primer rechazo, donde el reloj de la corrida hacía pasar la prueba.
+
+### Lo que S-07-B decidió no unificar, y por qué estuvo bien
+
+Había un tercer `366`, en `AlertasDeInventarioTest`. **No se unificó**, y `qa` auditó ese
+razonamiento en vez de aceptarlo: ese `366` es `DIAS_POR_VENCER_MAXIMO + 1`, y los dos límites
+nacen separados en `docs/contratos/inventario.md` con orígenes distintos —el tope del kardex como
+«derivado: límite propuesto», el plazo de alerta como RF-018—.
+
+**Coinciden en el número y no en el significado.** Unificarlos habría atado un límite de amplitud
+de consulta a un plazo de alerta que responde a otro requisito, y mover uno habría movido el otro
+en silencio. Es el reverso del patrón de dos fuentes: **la trampa simétrica de unificar dos
+valores que se parecen**, cuando la regla existe para unificar dos que son el mismo. Vale
+registrarla, porque la regla escrita empuja en la dirección equivocada en este caso.
+
+## El defecto vivo del kardex — cerrado
+
+`ConsultaDeInventarioService::fueraDeRango()` ya nombra su campo. Estaba en producción de `main`
+y llevaba desde el 2026-08-20 esperando. Lo que lo mantuvo invisible era que **ninguna prueba lo
+cubría**: la del rango invertido solo miraba el código de error, y el límite de 366 días no tenía
+ninguna.
+
+## Aislamiento de base — el arreglo estructural que la ola 3 había dejado pendiente
+
+`phpunit.xml` fijaba la base de pruebas y estaba versionado, así que dos carriles se destruían
+entre sí con `migrate:fresh`. Ahora se deriva por árbol de trabajo, con dos guardas.
+
+**La demostración que justifica el endurecimiento:** con la guarda vieja —solo exigía que el
+nombre terminara en `_test`— una suite apuntada por `DB_URL` a una base ajena **pasa en verde** y
+deja esa base borrada y reconstruida. No falla: aprueba, y aprueba lo que no era.
+
+Se ejerció de verdad ese mismo día: cuatro árboles distintos corrieron la suite con cuatro bases
+distintas sin coordinación de nadie, y la validación de `qa` fue independiente **por
+construcción** y no por acordarse de exportar una variable.
+
+## Un modo de falla nuevo, que casi produce un falso verde
+
+Enlazar `vendor/` por symlink en un worktree hace que el autoload de Composer resuelva `$baseDir`
+**fuera del árbol**, porque lo calcula en tiempo de ejecución desde `__DIR__`. Los dos primeros
+carriles estuvieron cargando el `app/` y el `tests/` del checkout principal.
+
+Acá se delató ruidosamente. **El caso peligroso es el simétrico:** dos árboles con el mismo código
+y distintas pruebas, o un carril verificando el trabajo de otro y aprobándolo. Ahí no hay error,
+hay verde. La comprobación de una línea está en "Retoma — 2026-08-21".
+
+## Lo que queda esperando
+
+| Qué | De quién depende |
+|---|---|
+| **PR #29** — dueño para `worktree_path` y `.claude/settings.json` | Del usuario: toca permisos de `AGENTS.md`. Mientras no se apruebe, los ocho `worktree_path` vencidos **no los puede corregir nadie** |
+| **Datos de SUNAT para S-06-B** — RUC, razón social, dirección fiscal, usuario secundario SOL y certificado digital **de pruebas** | Del usuario. El aviso está vencido en su plazo desde el cierre de S-05-B |
+| `TraduccionesCubrenLoQueSeValidaTest` no ve los campos ajenos a `ValidadorDeDominio` | Nadie lo tomó. Es limitación estructural del guardián, no defecto |
+| `producto_id` en el código contra `productoId` en el contrato del kardex | Decisión de Arquitectura. Preexistente, no bloqueante |
+| La redacción del guardián de G2 promete más de lo que cumple | Anotado con su reproducción en `docs/evidencia/S-07-B/` |
+| `ventas_inventario_anot_test` y seis bases de carriles viejos, huérfanas en el clúster | Del usuario: borrar una base es destructivo y no se hace por iniciativa propia |
+
+**Sprints con dependencias satisfechas y sin despachar:** S-06-B (esperando los datos de SUNAT),
+S-08-B, S-03-F, S-04-F y ahora S-06-F, que dependía de S-07-B. Ninguno se habilitó: el usuario
+pidió un camino concreto y este documento no declara habilitado lo que nadie decidió despachar.
 
 # Retoma — 2026-08-21
 
@@ -1881,6 +1967,10 @@ re-entregar está en la lista de abajo.
 
 ## Defecto vivo en `develop`, anterior a S-07-B y no corregido
 
+> **Cerrado el 2026-08-21**, PR #26. `fueraDeRango()` ya nombra su campo, y la cobertura que
+> faltaba —el límite de 366 días no tenía ninguna— existe. Lo que sigue abajo es el registro de
+> por qué se dejó abierto durante el reposo, no un pendiente.
+
 `ConsultaDeInventarioService::fueraDeRango()` construye `CAMPO_FUERA_DE_RANGO` **sin
 `['campo' => …]`**, y `docs/errores/manejo-errores.md` fija que un error de campo nombra su
 campo en `detalle` — sin él la pantalla degrada el error a aviso general de la operación.
@@ -1890,6 +1980,12 @@ Afecta al kardex, que está en producción de `main`. Lo encontró `qa` validand
 Se registra para que quien retome no lo redescubra.
 
 ## Divergencias que NO se corrigieron, y por qué
+
+> **Las dos primeras se cerraron el 2026-08-21 al integrar S-07-B**, que es exactamente cuando
+> esta sección decía que correspondía hacerlo: `docs/contratos/ventas.md` ya declara
+> `CAMPO_FORMATO_INVALIDO` en los dos reportes, y el conflicto de contenido de
+> `servicios-de-dominio.md` se resolvió al poner la rama al día. La tercera —el guardián de
+> traducciones que no ve los campos ajenos a `ValidadorDeDominio`— **sigue abierta**.
 
 - **`docs/contratos/ventas.md` no declara `CAMPO_FORMATO_INVALIDO`** para los dos reportes, y el
   código de S-07-B lo lanza. **No se corrige hoy**: ese código no está en `develop`, y agregarlo
@@ -1978,6 +2074,12 @@ resuelto. Se declara acá para que no vuelva a depender de que
 alguien verifique a tiempo.
 
 ## Artefactos efímeros que se pierden
+
+> **Las dos sondas se habían rescatado antes de escribir esto**, y están en
+> `docs/evidencia/S-07-B/`. El párrafo de abajo describe el riesgo, que era real y volvió a
+> aparecer: la segunda validación produjo otra reproducción única, rescatada el 2026-08-21 en
+> `limite-residual-del-guardian-G2.md`. **Es la regla, no la excepción:** toda validación que
+> encuentra algo produce evidencia que muere con su sesión si nadie la baja al árbol.
 
 `qa` dejó dos sondas fuera del árbol, en el scratchpad de su sesión, que reproducen G1 y G2.
 **No están versionadas y ese directorio no sobrevive.** Convertirlas en pruebas es trabajo de
