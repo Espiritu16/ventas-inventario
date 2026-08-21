@@ -79,13 +79,13 @@ transacción.
 ## GET /reportes/ventas
 - Query params: `desde: fecha (requerido)`, `hasta: fecha (requerido)`
 - Response éxito: total del período, desglose por tipo de comprobante y por método de pago, y detalle de ventas, distinguiendo las de comprobante rechazado (RF-020)
-- Errores: CAMPO_REQUERIDO, CAMPO_FUERA_DE_RANGO, NO_AUTORIZADO
+- Errores: CAMPO_REQUERIDO, CAMPO_FORMATO_INVALIDO, CAMPO_FUERA_DE_RANGO, NO_AUTORIZADO
 - Autenticación: requerida, rol `administrador`
 
 ## GET /reportes/utilidad
 - Query params: `desde: fecha (requerido)`, `hasta: fecha (requerido)`, `productoId?: entero (opcional)`
 - Response éxito: ingreso, costo real de lo vendido —tomado de `detalle_venta_lotes`, no de un promedio— y utilidad, en total y por producto (RF-021)
-- Errores: CAMPO_REQUERIDO, CAMPO_FUERA_DE_RANGO, NO_AUTORIZADO
+- Errores: CAMPO_REQUERIDO, CAMPO_FORMATO_INVALIDO, CAMPO_FUERA_DE_RANGO, NO_AUTORIZADO
 - Autenticación: requerida, rol `administrador`
 
 Aprobado por (Arquitectura): sesión de Arquitectura del 2026-08-19 — fecha: 2026-08-19

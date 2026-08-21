@@ -7,6 +7,7 @@ use App\Compartido\Documentos\TipoDeDocumento;
 use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
 use App\Compartido\Errores\ValidadorDeDominio;
+use App\Compartido\Fechas\RangoDeFechas;
 use App\Compartido\Idempotencia\RegistroDeOperaciones;
 use App\Dominios\Catalogo\Modelos\Producto;
 use App\Dominios\Clientes\Modelos\Cliente;
@@ -44,6 +45,11 @@ class VentaService
     private const FACTOR_IGV = '1.18';
 
     private const FORMATO_CANTIDAD = '/^\d{1,6}(\.\d{1,3})?$/';
+
+    private const FORMATO_FECHA = '/^\d{4}-\d{2}-\d{2}$/';
+
+    /** Un comprobante siempre existe; el rótulo evita que el desglose deje de sumar el total. */
+    private const SIN_COMPROBANTE = 'SIN_COMPROBANTE';
 
     public function __construct(
         private readonly InventarioService $inventario,
@@ -302,6 +308,263 @@ class VentaService
         }
 
         return $presentada;
+    }
+
+    /**
+     * Ventas del período con su desglose (RF-020).
+     *
+     * El total es la suma de **todas** las ventas del rango, incluidas aquellas
+     * cuyo comprobante rechazó SUNAT: la venta ocurrió y el dinero entró; lo
+     * que quedó mal es el documento. Por eso el rechazo se **señala** —por
+     * venta y con su propio subtotal— en vez de descontarse del total, que es
+     * lo que pide RF-020 al decir que las distingue.
+     *
+     * Los desgloses se arman recorriendo las mismas ventas que se totalizan, y
+     * no con consultas agregadas aparte: así suman el total por construcción y
+     * no porque dos consultas coincidan.
+     *
+     * @return array<string, mixed>
+     */
+    public function reporteVentas(string $desde, string $hasta): array
+    {
+        [$inicio, $fin] = $this->rangoDelReporte($desde, $hasta);
+
+        $ventas = Venta::query()
+            ->with(['comprobante', 'cliente'])
+            ->whereBetween('fecha', [$inicio, $fin])
+            ->orderBy('fecha')
+            ->orderBy('id')
+            ->get();
+
+        $total = '0.00';
+        $porComprobante = [];
+        $porMetodoPago = [];
+        $rechazadas = ['cantidad' => 0, 'total' => '0.00'];
+        $detalle = [];
+
+        foreach ($ventas as $venta) {
+            $tipo = $venta->comprobante?->tipo_comprobante ?? self::SIN_COMPROBANTE;
+            $rechazado = $venta->comprobante?->estado === Comprobante::ESTADO_RECHAZADO;
+
+            $total = bcadd($total, $venta->total, 2);
+            $porComprobante[$tipo] = $this->acumular($porComprobante[$tipo] ?? null, $venta->total);
+            $porMetodoPago[$venta->metodo_pago] = $this->acumular($porMetodoPago[$venta->metodo_pago] ?? null, $venta->total);
+
+            if ($rechazado) {
+                $rechazadas = $this->acumular($rechazadas, $venta->total);
+            }
+
+            $detalle[] = [
+                'id' => $venta->id,
+                'fecha' => $venta->fecha->toIso8601String(),
+                'cliente' => $venta->cliente?->nombre,
+                'metodo_pago' => $venta->metodo_pago,
+                'total' => $venta->total,
+                'comprobante' => $venta->comprobante === null ? null : [
+                    'tipo_comprobante' => $venta->comprobante->tipo_comprobante,
+                    'serie' => $venta->comprobante->serie,
+                    'correlativo' => $venta->comprobante->correlativo,
+                    'estado' => $venta->comprobante->estado,
+                ],
+                'rechazado' => $rechazado,
+            ];
+        }
+
+        ksort($porComprobante);
+        ksort($porMetodoPago);
+
+        return [
+            'desde' => $desde,
+            'hasta' => $hasta,
+            'cantidad' => $ventas->count(),
+            'total' => $total,
+            'por_comprobante' => $this->desglose($porComprobante, 'tipo_comprobante'),
+            'por_metodo_pago' => $this->desglose($porMetodoPago, 'metodo_pago'),
+            'rechazadas' => $rechazadas,
+            'ventas' => $detalle,
+        ];
+    }
+
+    /**
+     * Utilidad real del período: ingreso menos el costo de las porciones de
+     * lote que efectivamente salieron (RF-021, ADR-0004).
+     *
+     * **El costo no puede salir de la misma consulta que el ingreso.** Una
+     * línea de venta se cubre con una o varias porciones de lote, así que unir
+     * `detalle_ventas` con `detalle_venta_lotes` multiplica la línea por sus
+     * porciones y el importe se contaría dos veces. Son dos agregados sobre
+     * granularidades distintas y se calculan por separado.
+     *
+     * El costo sale de `detalle_venta_lotes`, que congeló el costo del lote al
+     * momento de la salida: ni un promedio del producto, ni el costo que el
+     * lote tenga hoy.
+     *
+     * @return array<string, mixed>
+     */
+    public function reporteUtilidad(string $desde, string $hasta, ?int $productoId = null): array
+    {
+        [$inicio, $fin] = $this->rangoDelReporte($desde, $hasta);
+
+        $ingresos = DetalleVenta::query()
+            ->join('ventas', 'ventas.id', '=', 'detalle_ventas.venta_id')
+            ->whereBetween('ventas.fecha', [$inicio, $fin])
+            ->when($productoId !== null, fn ($c) => $c->where('detalle_ventas.producto_id', $productoId))
+            ->groupBy('detalle_ventas.producto_id')
+            ->selectRaw('detalle_ventas.producto_id as producto_id')
+            ->selectRaw('sum(detalle_ventas.cantidad) as cantidad')
+            ->selectRaw('sum(detalle_ventas.importe) as ingreso')
+            ->get()
+            ->keyBy('producto_id');
+
+        $costos = DetalleVentaLote::query()
+            ->join('detalle_ventas', 'detalle_ventas.id', '=', 'detalle_venta_lotes.detalle_venta_id')
+            ->join('ventas', 'ventas.id', '=', 'detalle_ventas.venta_id')
+            ->whereBetween('ventas.fecha', [$inicio, $fin])
+            ->when($productoId !== null, fn ($c) => $c->where('detalle_ventas.producto_id', $productoId))
+            ->groupBy('detalle_ventas.producto_id')
+            ->selectRaw('detalle_ventas.producto_id as producto_id')
+            ->selectRaw('sum(detalle_venta_lotes.cantidad * detalle_venta_lotes.costo_unitario) as costo')
+            ->get()
+            ->keyBy('producto_id');
+
+        $productos = Producto::query()
+            ->whereIn('id', $ingresos->keys()->all())
+            ->orderBy('nombre')
+            ->orderBy('id')
+            ->get();
+
+        $porProducto = [];
+        $ingresoTotal = '0.00';
+        $costoTotal = '0.00';
+
+        foreach ($productos as $producto) {
+            $fila = $ingresos->get($producto->id);
+            $ingreso = bcadd((string) $fila->ingreso, '0', 2);
+            // Se redondea por producto y el total se suma de esas partes: un
+            // reporte cuyas filas no suman su propio total es un reporte que
+            // quien lo lee deja de creer.
+            $costo = $this->redondear((string) ($costos->get($producto->id)?->costo ?? '0'), 2);
+
+            $porProducto[] = [
+                'producto_id' => (int) $producto->id,
+                'codigo' => $producto->codigo,
+                'nombre' => $producto->nombre,
+                'cantidad' => bcadd((string) $fila->cantidad, '0', 3),
+                'ingreso' => $ingreso,
+                'costo' => $costo,
+                'utilidad' => bcsub($ingreso, $costo, 2),
+            ];
+
+            $ingresoTotal = bcadd($ingresoTotal, $ingreso, 2);
+            $costoTotal = bcadd($costoTotal, $costo, 2);
+        }
+
+        return [
+            'desde' => $desde,
+            'hasta' => $hasta,
+            'ingreso' => $ingresoTotal,
+            'costo' => $costoTotal,
+            'utilidad' => bcsub($ingresoTotal, $costoTotal, 2),
+            'por_producto' => $porProducto,
+        ];
+    }
+
+    /**
+     * @param  array{cantidad: int, total: string}|null  $acumulado
+     * @return array{cantidad: int, total: string}
+     */
+    private function acumular(?array $acumulado, string $importe): array
+    {
+        $acumulado ??= ['cantidad' => 0, 'total' => '0.00'];
+
+        return [
+            'cantidad' => $acumulado['cantidad'] + 1,
+            'total' => bcadd($acumulado['total'], $importe, 2),
+        ];
+    }
+
+    /**
+     * Pasa el acumulador —indexado por su clave para poder sumarlo— a una
+     * lista con la clave adentro, que es lo que una pantalla recorre.
+     *
+     * @param  array<string, array{cantidad: int, total: string}>  $acumulado
+     * @return array<int, array<string, mixed>>
+     */
+    private function desglose(array $acumulado, string $nombreDeLaClave): array
+    {
+        $filas = [];
+
+        foreach ($acumulado as $clave => $valores) {
+            $filas[] = [$nombreDeLaClave => $clave] + $valores;
+        }
+
+        return $filas;
+    }
+
+    /**
+     * Rango del reporte, como instantes UTC del día civil de Lima.
+     *
+     * Las dos fechas son las que alguien elige mirando un calendario, pero
+     * `ventas.fecha` es un instante: se convierte el rango y no el dato. Sin
+     * eso, una venta de las 20:00 del último día del rango —ya del día
+     * siguiente en UTC— quedaría fuera del reporte que la incluye.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function rangoDelReporte(string $desde, string $hasta): array
+    {
+        foreach (['desde' => $desde, 'hasta' => $hasta] as $campo => $valor) {
+            if (trim($valor) === '') {
+                throw new ErrorDeDominio(
+                    CodigoDeError::CAMPO_REQUERIDO,
+                    'El reporte necesita las dos fechas del período.',
+                    ['campo' => $campo]
+                );
+            }
+
+            if (! $this->esFechaDeCalendario($valor)) {
+                throw new ErrorDeDominio(
+                    CodigoDeError::CAMPO_FORMATO_INVALIDO,
+                    'La fecha debe escribirse como AAAA-MM-DD.',
+                    ['campo' => $campo]
+                );
+            }
+        }
+
+        if ($desde > $hasta) {
+            throw new ErrorDeDominio(
+                CodigoDeError::CAMPO_FUERA_DE_RANGO,
+                'La fecha inicial no puede ser posterior a la final.',
+                ['campo' => 'desde']
+            );
+        }
+
+        $inicio = $this->inicioDelDia($desde);
+        $fin = $this->finDelDia($hasta);
+
+        if ($inicio->diffInDays($fin) > RangoDeFechas::MAXIMO_DIAS) {
+            throw new ErrorDeDominio(
+                CodigoDeError::CAMPO_FUERA_DE_RANGO,
+                'El rango no puede superar los '.RangoDeFechas::MAXIMO_DIAS.' días.',
+                ['campo' => 'hasta']
+            );
+        }
+
+        return [$inicio, $fin];
+    }
+
+    /**
+     * Formato y existencia: `2026-02-30` cumple el formato y no es un día.
+     */
+    private function esFechaDeCalendario(string $valor): bool
+    {
+        if (preg_match(self::FORMATO_FECHA, $valor) !== 1) {
+            return false;
+        }
+
+        [$anio, $mes, $dia] = array_map('intval', explode('-', $valor));
+
+        return checkdate($mes, $dia, $anio);
     }
 
     /** @return array<string, mixed> */

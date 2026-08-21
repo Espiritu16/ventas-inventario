@@ -216,8 +216,8 @@ rol.
 | `InventarioService::lotesDe(int $productoId): Collection` | producto | sus lotes con existencia | RECURSO_NO_ENCONTRADO | implementado | RF-008 |
 | `ConsultaDeInventarioService::stock(Usuario $actor, ?string $buscar = null, ?int $categoriaId = null, bool $soloConStock = false, int $pagina = 1): LengthAwarePaginator` | actor, búsqueda, categoría, solo con stock, página | productos con su stock y sus lotes por vencimiento; **sin costo si el actor es vendedor** | — | implementado | RF-008 |
 | `ConsultaDeInventarioService::kardex(int $productoId, ?string $desde = null, ?string $hasta = null, int $pagina = 1): LengthAwarePaginator` | producto y rango | página de movimientos con origen y responsable | RECURSO_NO_ENCONTRADO | implementado | RF-008 |
-| `lotesPorVencer(int $dias)` | días de anticipación | lotes por vencer y vencidos con existencia, ordenados por urgencia | — | pendiente S-07-B | RF-018 |
-| `productosBajoMinimo()` | — | productos activos en o bajo su stock mínimo | — | pendiente S-07-B | RF-019 |
+| `ConsultaDeInventarioService::lotesPorVencer(int $dias = 30): Collection` | días de anticipación, de 1 a 365 | lotes por vencer y vencidos con existencia, ordenados por urgencia; **sin costo**, porque el tablero lo ve también el vendedor | — | implementado | RF-018 |
+| `ConsultaDeInventarioService::productosBajoMinimo(): Collection` | — | productos activos en o bajo su stock mínimo, con su stock disponible y su mínimo | — | implementado | RF-019 |
 
 `descontarPorVencimiento` **no** cobra ni registra la venta: solo mueve stock. Debe invocarse
 dentro de la transacción que abre `VentaService`.
@@ -246,8 +246,8 @@ dentro de la transacción que abre `VentaService`.
 | `registrar(DatosDeEntrada $datos, Usuario $actor): Venta` | cliente, tipo de comprobante, medio de pago, líneas con producto, cantidad y tipo de precio | la venta con su reparto por lote y su comprobante en estado `PENDIENTE` | VENTA_SIN_LINEAS, STOCK_INSUFICIENTE, LOTE_VENCIDO, FACTURA_REQUIERE_RUC, BOLETA_REQUIERE_DOCUMENTO, TIPO_PRECIO_INVALIDO, SERIE_NO_CONFIGURADA, PRODUCTO_INACTIVO | implementado | RF-011, RF-012, RF-013 |
 | `listar(Usuario $actor, ?string $desde = null, ?string $hasta = null, ?string $estadoComprobante = null, int $pagina = 1): LengthAwarePaginator` | actor, rango, estado de comprobante, página | página de ventas; **acotada a las propias si el actor es vendedor** | — | implementado | RF-011, RF-020 |
 | `encontrar(int $id, Usuario $actor): array` | identificador y actor | la venta con líneas, reparto por lote y estado del comprobante, **proyectada por rol**: el vendedor no recibe el costo, ni del reparto ni del lote | RECURSO_NO_ENCONTRADO | implementado | RF-011 |
-| `reporteVentas(string $desde, string $hasta)` | rango | total, desglose por comprobante y medio de pago, detalle | — | pendiente S-07-B | RF-020 |
-| `reporteUtilidad(string $desde, string $hasta, ?int $productoId)` | rango y producto opcional | ingreso, costo real por lote y utilidad, total y por producto | — | pendiente S-07-B | RF-021 |
+| `reporteVentas(string $desde, string $hasta): array` | rango de fechas civiles de Lima | total, desglose por comprobante y por medio de pago, subtotal de rechazadas y detalle | CAMPO_REQUERIDO, CAMPO_FORMATO_INVALIDO, CAMPO_FUERA_DE_RANGO | implementado | RF-020 |
+| `reporteUtilidad(string $desde, string $hasta, ?int $productoId = null): array` | rango de fechas civiles de Lima y producto opcional | ingreso, costo real por lote y utilidad, total y por producto | CAMPO_REQUERIDO, CAMPO_FORMATO_INVALIDO, CAMPO_FUERA_DE_RANGO | implementado | RF-021 |
 
 `registrar` es el método más delicado del sistema. En una sola transacción: valida, descuenta
 por FEFO, escribe kardex, reserva correlativo y crea el comprobante. Si algo falla, no queda

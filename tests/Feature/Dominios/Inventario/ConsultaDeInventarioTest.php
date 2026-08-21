@@ -5,6 +5,7 @@ namespace Tests\Feature\Dominios\Inventario;
 use App\Compartido\Auditoria\AuditoriaService;
 use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
+use App\Compartido\Fechas\RangoDeFechas;
 use App\Dominios\Catalogo\Modelos\Producto;
 use App\Dominios\Inventario\Modelos\Lote;
 use App\Dominios\Inventario\Modelos\MovimientoInventario;
@@ -152,6 +153,32 @@ final class ConsultaDeInventarioTest extends TestCase
         } catch (ErrorDeDominio $error) {
             $this->assertSame(CodigoDeError::CAMPO_FUERA_DE_RANGO, $error->codigo);
             $this->assertSame('hasta', $error->detalle['campo'] ?? null, 'El rechazo debe nombrar su campo.');
+        }
+    }
+
+    /**
+     * El kardex tiene un tope de amplitud y nada lo probaba: se podía mover sin
+     * que fallara ninguna prueba, que es la mitad del hueco de los dos topes que
+     * había que mantener iguales. Se prueba en el borde y derivado de la
+     * constante compartida, no con un número escrito a mano.
+     */
+    public function test_el_rango_maximo_del_kardex_entra_y_un_dia_mas_se_rechaza(): void
+    {
+        $desde = '2026-01-01';
+        $ultimo = Carbon::parse($desde)->addDays(RangoDeFechas::MAXIMO_DIAS - 1)->format('Y-m-d');
+        $unoMas = Carbon::parse($desde)->addDays(RangoDeFechas::MAXIMO_DIAS)->format('Y-m-d');
+
+        $this->assertSame(
+            0,
+            $this->consulta->kardex((int) $this->producto->id, $desde, $ultimo)->total(),
+            'De '.$desde." a {$ultimo} son ".RangoDeFechas::MAXIMO_DIAS.' días contando los dos extremos: entran.'
+        );
+
+        try {
+            $this->consulta->kardex((int) $this->producto->id, $desde, $unoMas);
+            $this->fail("Un día más que el tope tendría que rechazarse: {$desde} a {$unoMas}.");
+        } catch (ErrorDeDominio $error) {
+            $this->assertSame(CodigoDeError::CAMPO_FUERA_DE_RANGO, $error->codigo);
         }
     }
 
