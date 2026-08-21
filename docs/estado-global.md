@@ -1658,6 +1658,41 @@ que se ejecuta solo.
 
 ---
 
+# Autonomía delegada al Coordinador — vigente desde el 2026-08-20
+
+**Otorgada por Kevin Espíritu (kevinespiritu16@gmail.com) el 2026-08-20**, tras revisar el
+criterio del Coordinador en la limpieza de siete worktrees y en la corrección de la entrada de
+S-02-F. Alcance exacto, no ampliable por analogía.
+
+## Se ejecuta sin consultar, y se reporta después
+
+| Acción | Condición |
+|---|---|
+| Corregir una divergencia entre el estado global y Git | Con la evidencia registrada en el commit. Deriva del Invariante 1: Git manda, y un documento gobernado que afirma algo falso se corrige **de inmediato**, no cuando alguien lo autorice |
+| Habilitar un sprint (`PLANIFICADO` → `LISTO`) | Su RFC aprobado y sus dependencias satisfechas |
+| Despachar un subagente | Solo para sprints **sin decisiones abiertas** — los que las tienen se bloquearían enseguida y piden chat |
+| Empujar una rama de trabajo, abrir el PR y fusionarlo | Con la verificación **ejecutada** y en verde, salida real a la vista |
+| Limpiar worktrees y ramas de sprints cerrados | Comprobado antes que no retienen commits sin fusionar, cambios sin commitear ni archivos sin rastrear |
+
+## Sigue exigiendo aprobación del usuario
+
+- **Un RFC nuevo o enmendado** — presentado como documento completo, nunca como resumen.
+- **`AGENTS.md`**, en cualquier enmienda.
+- **Cualquier waiver** de un invariante (Invariante 13).
+- **Un cambio que pueda romper lo que funciona**: migración destructiva, contrato o permisos
+  incompatibles, borrado de datos.
+- **Cualquier cosa que salga hacia usuarios reales**: despliegue, publicación, emisión en
+  producción.
+
+## Por qué está escrito acá y no solo en la conversación
+
+Una delegación que vive en un chat se pierde al compactarse el contexto, y la sesión siguiente
+vuelve a pedir permiso para lo mismo — o peor, actúa sin él creyendo que lo tiene. **El alcance
+de una autorización es exactamente el tipo de hecho que este documento existe para conservar.**
+Lo pidió el usuario con esa razón explícita.
+
+---
+
 # Avisos al usuario — obligación del Coordinador
 
 Hay puntos del proyecto que **no se pueden resolver sin el dueño del negocio**.
