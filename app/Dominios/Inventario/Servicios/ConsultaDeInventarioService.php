@@ -4,6 +4,7 @@ namespace App\Dominios\Inventario\Servicios;
 
 use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
+use App\Compartido\Fechas\RangoDeFechas;
 use App\Dominios\Catalogo\Modelos\Producto;
 use App\Dominios\Inventario\Modelos\Lote;
 use App\Dominios\Inventario\Modelos\MovimientoInventario;
@@ -30,14 +31,18 @@ class ConsultaDeInventarioService
 
     private const DIAS_POR_DEFECTO = 30;
 
-    private const RANGO_MAXIMO_DIAS = 366;
-
     /** Plazo de la alerta de vencimiento, el que fija el contrato de `GET /panel`. */
     public const DIAS_POR_VENCER_POR_DEFECTO = 30;
 
-    private const DIAS_POR_VENCER_MINIMO = 1;
+    /**
+     * Extremos del plazo admisible, también del contrato de `GET /panel` (de 1
+     * a 365). Son públicos porque quien construye el formulario y quien prueba
+     * el borde necesitan el mismo número: escribirlo a mano del otro lado es
+     * volver a tener dos valores que alguien debe mantener iguales.
+     */
+    public const DIAS_POR_VENCER_MINIMO = 1;
 
-    private const DIAS_POR_VENCER_MAXIMO = 365;
+    public const DIAS_POR_VENCER_MAXIMO = 365;
 
     public function __construct(private readonly InventarioService $inventario) {}
 
@@ -110,8 +115,8 @@ class ConsultaDeInventarioService
         $inicio = Carbon::parse($desde.' 00:00:00', $zona)->utc();
         $fin = Carbon::parse($hasta.' 23:59:59.999999', $zona)->utc();
 
-        if ($inicio->diffInDays($fin) > self::RANGO_MAXIMO_DIAS) {
-            throw $this->fueraDeRango('El rango no puede superar los '.self::RANGO_MAXIMO_DIAS.' días.');
+        if ($inicio->diffInDays($fin) > RangoDeFechas::MAXIMO_DIAS) {
+            throw $this->fueraDeRango('El rango no puede superar los '.RangoDeFechas::MAXIMO_DIAS.' días.');
         }
 
         return MovimientoInventario::query()

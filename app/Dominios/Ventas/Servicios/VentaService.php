@@ -7,6 +7,7 @@ use App\Compartido\Documentos\TipoDeDocumento;
 use App\Compartido\Errores\CodigoDeError;
 use App\Compartido\Errores\ErrorDeDominio;
 use App\Compartido\Errores\ValidadorDeDominio;
+use App\Compartido\Fechas\RangoDeFechas;
 use App\Compartido\Idempotencia\RegistroDeOperaciones;
 use App\Dominios\Catalogo\Modelos\Producto;
 use App\Dominios\Clientes\Modelos\Cliente;
@@ -46,9 +47,6 @@ class VentaService
     private const FORMATO_CANTIDAD = '/^\d{1,6}(\.\d{1,3})?$/';
 
     private const FORMATO_FECHA = '/^\d{4}-\d{2}-\d{2}$/';
-
-    /** Mismo tope que el kardex: un año más un día de margen. */
-    private const RANGO_MAXIMO_DIAS = 366;
 
     /** Un comprobante siempre existe; el rótulo evita que el desglose deje de sumar el total. */
     private const SIN_COMPROBANTE = 'SIN_COMPROBANTE';
@@ -544,10 +542,10 @@ class VentaService
         $inicio = $this->inicioDelDia($desde);
         $fin = $this->finDelDia($hasta);
 
-        if ($inicio->diffInDays($fin) > self::RANGO_MAXIMO_DIAS) {
+        if ($inicio->diffInDays($fin) > RangoDeFechas::MAXIMO_DIAS) {
             throw new ErrorDeDominio(
                 CodigoDeError::CAMPO_FUERA_DE_RANGO,
-                'El rango no puede superar los '.self::RANGO_MAXIMO_DIAS.' días.',
+                'El rango no puede superar los '.RangoDeFechas::MAXIMO_DIAS.' días.',
                 ['campo' => 'hasta']
             );
         }
