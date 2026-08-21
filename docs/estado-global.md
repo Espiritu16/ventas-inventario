@@ -1675,8 +1675,31 @@ S-02-F. Alcance exacto, no ampliable por analogía.
 | Corregir una divergencia entre el estado global y Git | Con la evidencia registrada en el commit. Deriva del Invariante 1: Git manda, y un documento gobernado que afirma algo falso se corrige **de inmediato**, no cuando alguien lo autorice |
 | Habilitar un sprint (`PLANIFICADO` → `LISTO`) | Su RFC aprobado y sus dependencias satisfechas |
 | Despachar un subagente | Solo para sprints **sin decisiones abiertas** — los que las tienen se bloquearían enseguida y piden chat |
-| Empujar una rama de trabajo, abrir el PR y fusionarlo | Con la verificación **ejecutada** y en verde, salida real a la vista |
+| Empujar una rama de trabajo, **abrir el PR y fusionarlo** | Con la verificación **ejecutada** y en verde, salida real a la vista. **Fusionar significa PR, nunca empujar directo a `develop` o `main`** |
 | Limpiar worktrees y ramas de sprints cerrados | Comprobado antes que no retienen commits sin fusionar, cambios sin commitear ni archivos sin rastrear |
+
+## Fusionar es abrir el PR, no empujar directo — aclaración del 2026-08-20
+
+La autorización original decía "empujar una rama de trabajo, abrir el PR y fusionarlo", y el
+Coordinador la leyó como que podía empujar directo a `develop`. **No puede.** `git push origin
+develop` y `git push origin main` están **denegados a propósito en la configuración de
+permisos**, precisamente para forzar que todo pase por PR.
+
+Eso no es una restricción externa que haya que rodear ni reportar como impedimento: **es la
+política funcionando.** Un push denegado a una rama compartida no es un obstáculo, es la
+respuesta correcta.
+
+El flujo lo declara `AGENTS.md`, no una preferencia del momento: **rama de trabajo
+`gobernanza/<tema>`, PR hacia `develop`, y el Coordinador integra.** El Invariante 11 dice lo
+mismo para el caso concreto de este documento: la declaración de roadmap/estado se trata como
+un mini-sprint de gobernanza propio del Coordinador — se commitea en su rama y se fusiona,
+nunca se escribe directo en la rama compartida.
+
+Ocurrió el 2026-08-20 con los tres commits que corrigieron S-02-F, registraron esta autonomía y
+habilitaron S-07-B: fueron directos a `develop` local. **El contenido era correcto y no se
+revierte**; lo que se corrige es el camino. Es la segunda vez en el día que este proyecto
+encuentra la misma forma —una convención propia que se sabía y no se aplicó— y la primera en
+que quien la incumple es quien la escribió.
 
 ## Sigue exigiendo aprobación del usuario
 
