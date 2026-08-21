@@ -1,0 +1,66 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Compartido\Auditoria\AuditoriaService;
+use App\Compartido\Datos\DatosDeEntrada;
+use App\Dominios\Catalogo\Modelos\Producto;
+use App\Dominios\Clientes\Modelos\Cliente;
+use App\Dominios\Comprobantes\Modelos\SerieComprobante;
+use App\Dominios\Comprobantes\Servicios\SerieComprobanteService;
+use App\Dominios\Inventario\Modelos\MovimientoInventario;
+use App\Dominios\Inventario\Servicios\InventarioService;
+use App\Dominios\Usuarios\Modelos\Usuario;
+use App\Dominios\Ventas\Modelos\Venta;
+use App\Dominios\Ventas\Servicios\VentaService;
+use Database\Seeders\SeriesComprobanteSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Tests\TestCase;
+
+class QaSondaS07BTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_sonda_el_reporte_de_utilidad_acota_por_rango(): void
+    {
+        $inventario = new InventarioService(new AuditoriaService);
+        $servicio = new VentaService($inventario, new SerieComprobanteService);
+
+        $producto = Producto::factory()->create(['nombre' => 'Leche', 'precio_menor' => '10.0000', 'precio_mayor' => '8.0000']);
+        $cliente = Cliente::factory()->create();
+        $vendedor = Usuario::factory()->create();
+        $this->seed(SeriesComprobanteSeeder::class);
+
+        $inventario->ingresar((int) $producto->id, '100.000', '2.0000', 'L-1',
+            now()->addMonths(6)->format('Y-m-d'), MovimientoInventario::ORIGEN_COMPRA, 1, (int) $vendedor->id);
+
+        $vender = function (string $cantidad) use ($servicio, $cliente, $producto, $vendedor) {
+            return $servicio->registrar(DatosDeEntrada::desde([
+                'cliente_id' => $cliente->id,
+                'tipo_comprobante' => SerieComprobante::TIPO_BOLETA,
+                'metodo_pago' => 'efectivo',
+                'lineas' => [['producto_id' => $producto->id, 'cantidad' => $cantidad, 'tipo_precio' => 'menor']],
+            ]), $vendedor);
+        };
+
+        $zona = config('app.timezone_visualizacion');
+        $hoy = now()->timezone($zona)->format('Y-m-d');
+        $ayer = now()->timezone($zona)->subDay()->format('Y-m-d');
+
+        // Venta de AYER: 5 unidades. Se reubica su instante al día anterior.
+        $deAyer = $vender('5.000');
+        Venta::query()->whereKey($deAyer->id)->update([
+            'fecha' => Carbon::parse($ayer.' 12:00:00', $zona)->utc(),
+        ]);
+
+        // Venta de HOY: 3 unidades.
+        $vender('3.000');
+
+        $reporteDeHoy = $servicio->reporteUtilidad($hoy, $hoy);
+
+        $this->assertSame(0, bccomp($reporteDeHoy['ingreso'], '30.00', 2), 'Solo las 3 unidades de hoy: 3 x S/ 10.');
+        $this->assertSame(0, bccomp($reporteDeHoy['costo'], '6.00', 2), 'Solo el costo de hoy: 3 x S/ 2. Con 8 lleva el costo de ayer adentro.');
+        $this->assertSame(0, bccomp($reporteDeHoy['utilidad'], '24.00', 2));
+    }
+}
