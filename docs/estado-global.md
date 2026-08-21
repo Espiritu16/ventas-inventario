@@ -1003,6 +1003,16 @@ advisories.
 
 ## Aislamiento de base por carril — decidido antes de la ola 3
 
+> **Superseded el 2026-08-21 en su mecanismo, no en su convención.** El nombre ya no lo
+> fija cada carril a mano en su `.env`: lo **deriva** `tests/EntornoDePruebas.php` por árbol
+> de trabajo, y `phpunit.xml` dejó de declarar `DB_DATABASE`. La convención de nombre que
+> esta sección fijó sigue vigente y es la que el mecanismo respeta. Lo que caducó son las
+> "Reglas de uso" de abajo, corregidas en su sitio. Ver "Retoma — 2026-08-21".
+>
+> El motivo del cambio es el que esta sección ya insinuaba sin poder resolver: fijar la base
+> en el `.env` de cada worktree **depende de que alguien se acuerde**, y este proyecto tiene
+> registrado ocho veces que esa clase de mitigación falla en silencio.
+
 El usuario otorgó `CREATEDB` al rol `ventas_inventario` el 2026-08-19 (verificado:
 `rolcreatedb = t`). Con eso, cada carril paralelo puede crear su propia base de
 pruebas y la serialización por turnos deja de ser necesaria. Los turnos manuales
@@ -1026,15 +1036,18 @@ estaría mal es el nombre.
 
 Reglas de uso:
 
-- Cada carril fija su base en el `.env` de **su propio worktree**, que no se versiona.
-  Ningún carril toca la base de otro.
+- ~~Cada carril fija su base en el `.env` de su propio worktree.~~ **Ya no.** El nombre se
+  deriva solo del árbol de trabajo; no hay que exportar ni editar nada. Un carril que
+  igualmente exporte `DB_DATABASE` manda sobre la derivación, que es lo que deja funcionar
+  a CI y a quien quiera apuntar a una base concreta.
 - `ventas_inventario_test` queda como la base por defecto de quien trabaje sin
-  paralelismo. No es de nadie en particular.
+  paralelismo. No es de nadie en particular, y sigue pasando las dos guardas.
 - `ventas_inventario` es la base de aplicación y ninguna suite la toca jamás. Esa es
-  precisamente la garantía que la salvaguarda existe para dar.
-- El carril crea su base al empezar y puede dejarla al terminar; no se exige
-  limpiarla, porque `RefreshDatabase` la recompone y su nombre dice a qué sprint
-  pertenece.
+  precisamente la garantía que las salvaguardas existen para dar, y ahora está demostrada
+  por ejecución: apuntar la suite ahí aborta con código 1 y la base queda intacta.
+- El carril crea su base al empezar —lo hace el bootstrap, no la persona— y puede dejarla
+  al terminar; no se exige limpiarla, porque `RefreshDatabase` la recompone y su nombre
+  dice de qué árbol es.
 
 Esto no reemplaza el inventario de estado externo que hay que hacer en cada ola: la
 base era un recurso compartido, no el único. Puertos, caché y directorios temporales
@@ -1678,11 +1691,16 @@ quedan en `PLANIFICADO` hasta que sus dependencias se completen.
 
 ## Referencias
 - Roadmap: este documento, sección "Roadmap del horizonte"
-- Prompts de apertura de los chats de rol: docs/chats-de-rol.md
+- Despacho por rol, y prompts para los chats que sí se abren a mano: docs/despacho-de-roles.md
 - Contrato entre backend y frontend: docs/contratos/servicios-de-dominio.md
-- Handoffs de sprint: docs/handoffs/
-- Handoff activo: docs/handoffs/S-00.md, en la rama `sprint/S-00`
+- Handoffs de sprint: docs/handoffs/ — la fuente que no envejece es `ls docs/handoffs/`
 - Decisiones y contratos: docs/decisiones/, docs/contratos/, docs/persistencia/modelo.md
+
+Esta sección **no nombra el handoff activo**, a propósito. Lo hizo, y quedó apuntando a
+`S-00` durante nueve sprints. Cuál está activo es estado vigente y vive en un solo sitio:
+el bloque `sprints:` del principio. Un índice que además lo repita es una segunda fuente
+que alguien tiene que mantener igual, que es el patrón que este documento lleva nueve
+instancias registrando.
 
 ---
 

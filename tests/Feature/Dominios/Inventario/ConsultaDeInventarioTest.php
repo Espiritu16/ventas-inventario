@@ -125,13 +125,34 @@ final class ConsultaDeInventarioTest extends TestCase
         }
     }
 
-    public function test_un_rango_invertido_se_rechaza(): void
+    /**
+     * El código no alcanza: la pantalla muestra el mensaje junto al campo que
+     * lo produjo y para saber cuál es lee `detalle.campo`. Sin ese dato el
+     * rechazo se degrada a aviso general de la consulta.
+     *
+     * Los dos rechazos del rango nombran campos distintos —`desde` el
+     * invertido, `hasta` el que excede el máximo—, así que ninguna de las dos
+     * aserciones puede pasar por un campo puesto al azar.
+     */
+    public function test_un_rango_invertido_se_rechaza_nombrando_la_fecha_inicial(): void
     {
         try {
             $this->consulta->kardex((int) $this->producto->id, '2026-08-20', '2026-08-01');
             $this->fail('Se aceptó un rango invertido.');
         } catch (ErrorDeDominio $error) {
             $this->assertSame(CodigoDeError::CAMPO_FUERA_DE_RANGO, $error->codigo);
+            $this->assertSame('desde', $error->detalle['campo'] ?? null, 'El rechazo debe nombrar su campo.');
+        }
+    }
+
+    public function test_un_rango_mas_largo_que_el_maximo_se_rechaza_nombrando_la_fecha_final(): void
+    {
+        try {
+            $this->consulta->kardex((int) $this->producto->id, '2025-01-01', '2026-08-01');
+            $this->fail('Se aceptó un rango más largo que el máximo.');
+        } catch (ErrorDeDominio $error) {
+            $this->assertSame(CodigoDeError::CAMPO_FUERA_DE_RANGO, $error->codigo);
+            $this->assertSame('hasta', $error->detalle['campo'] ?? null, 'El rechazo debe nombrar su campo.');
         }
     }
 
